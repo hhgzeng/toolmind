@@ -12,13 +12,13 @@ import knowledgeIcon from '../assets/knowledge.svg'
 import modelIcon from '../assets/model.svg'
 import mcpIcon from '../assets/mcp.svg'
 import { User, SwitchButton, Setting } from '@element-plus/icons-vue'
-import { useAgentCardStore } from "../store/archive/agent_card"
+// import { useAgentCardStore } from "../store/archive/agent_card"
 import { useUserStore } from "../store/user"
 // import { getAgentsAPI } from "../apis/agent"
 import { logoutAPI, getUserInfoAPI } from "../apis/auth"
 // import { Agent } from "../type"
 
-const agentCardStore = useAgentCardStore()
+// const agentCardStore = useAgentCardStore()
 const userStore = useUserStore()
 const route = useRoute()
 const router = useRouter()
@@ -89,10 +89,10 @@ onMounted(async () => {
   // updateList()
 })
 
-const godefault = () => {
-  agentCardStore.clear()
-  router.push("/")
-}
+// const godefault = () => {
+//   agentCardStore.clear()
+//   router.push("/")
+// }
   
 // const updateList = async () => {
 //   try {
@@ -169,7 +169,7 @@ watch(
   <div class="ai-body">
     <div class="ai-nav">
       <div class="left">
-        <div class="item-img" @click="godefault">
+        <div class="item-img">
           <img :src="robotIcon" alt="Logo" class="logo" />
         </div>
         <div class="nav-links">

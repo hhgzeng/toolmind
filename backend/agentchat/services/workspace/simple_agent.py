@@ -10,7 +10,7 @@ from langchain.agents.middleware import wrap_tool_call
 from langchain_core.messages import BaseMessage, AIMessage, ToolMessage, AIMessageChunk
 
 from agentchat.core.callbacks import usage_metadata_callback
-from agentchat.tools import WorkSpacePlugins
+# from agentchat.tools import WorkSpacePlugins
 from agentchat.schema.usage_stats import UsageStatsAgentType
 from agentchat.schema.workspace import WorkSpaceAgents
 # from agentchat.api.services.tool import ToolService

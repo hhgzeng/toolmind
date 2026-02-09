@@ -5,7 +5,7 @@ import NotFound from '../pages/notFound/index';
 import Index from '../pages/index.vue'
 // import conversation from '../pages/conversation/conversation.vue';
 // import DefaultPage from '../pages/conversation/defaultPage/defaultPage.vue';
-import Construct from '../pages/archive/construct';
+// import Construct from '../pages/construct';
 import Configuration from '../pages/configuration'
 import Login from '../pages/login'
 import { Register } from '../pages/login'
@@ -109,14 +109,14 @@ const routes: RouteRecordRaw[] = [
       //     }
       //   ]
       // },
-      {
-        path: '/construct',
-        name: 'construct',
-        meta: {
-          current: 'construct'
-        },
-        component: Construct,
-      },
+      // {
+      //   path: '/construct',
+      //   name: 'construct',
+      //   meta: {
+      //     current: 'construct'
+      //   },
+      //   component: Construct,
+      // },
       {
         path: '/configuration',
         name: 'configuration',
