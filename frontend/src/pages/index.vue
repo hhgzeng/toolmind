@@ -4,21 +4,15 @@ import { useRouter } from "vue-router"
 import { useRoute } from "vue-router"
 import { ElMessage, ElMessageBox } from 'element-plus'
 import workspaceIcon from '../assets/workspace.svg'
-// import applicationCenterIcon from '../assets/application-center.svg'
-// import dialogIcon from '../assets/dialog.svg'
 import robotIcon from '../assets/robot.svg'
 import pluginIcon from '../assets/plugin.svg'
 import knowledgeIcon from '../assets/knowledge.svg'
 import modelIcon from '../assets/model.svg'
 import mcpIcon from '../assets/mcp.svg'
 import { User, SwitchButton, Setting } from '@element-plus/icons-vue'
-// import { useAgentCardStore } from "../store/archive/agent_card"
 import { useUserStore } from "../store/user"
-// import { getAgentsAPI } from "../apis/agent"
 import { logoutAPI, getUserInfoAPI } from "../apis/auth"
-// import { Agent } from "../type"
 
-// const agentCardStore = useAgentCardStore()
 const userStore = useUserStore()
 const route = useRoute()
 const router = useRouter()
@@ -60,11 +54,9 @@ const appCenterColumns = ref([
   ]
 ])
 const current = ref(route.meta.current)
-// const cardList = ref<Agent[]>([])
 
 // 顶栏按钮激活态
 const isWorkspaceActive = computed(() => route.path.startsWith('/workspace'))
-// const isAppCenterActive = computed(() => route.path.startsWith('/homepage')) // 探索模块
 
 // 初始化用户状态
 onMounted(async () => {
@@ -85,28 +77,10 @@ onMounted(async () => {
       console.error('初始化时获取用户信息失败:', error)
     }
   }
-  
-  // updateList()
 })
-
-// const godefault = () => {
-//   agentCardStore.clear()
-//   router.push("/")
-// }
-  
-// const updateList = async () => {
-//   try {
-//     const response = await getAgentsAPI()
-//     cardList.value = response.data.data
-//   } catch (error) {
-//     console.error('获取智能体列表失败:', error)
-//   }
-// }
 
 const goCurrent = (item: string) => {
   const routes: Record<string, string> = {
-    // "homepage": "/homepage", // 探索模块
-    // "conversation": "/conversation",
     "agent": "/agent",
     "mcp-server": "/mcp-server",
     "knowledge": "/knowledge",
@@ -258,73 +232,7 @@ watch(
                 <span>数据看板</span>
               </template>
             </el-menu-item>
-            <!-- 探索模块 -->
-            <!-- <el-menu-item index="homepage" @click="goCurrent('homepage')">
-              <template #title>
-                <el-icon>
-                  <img src="../assets/explore.svg" width="22px" height="22px" />
-                </el-icon>
-                <span>探索</span>
-              </template>
-            </el-menu-item> -->
-            <!-- 会话模块 -->
-            <!-- <el-menu-item index="conversation" @click="goCurrent('conversation')">
-              <template #title>
-                <el-icon>
-                  <img src="../assets/dialog.svg" width="22px" height="22px" />
-                </el-icon>
-                <span>会话</span>
-              </template>
-            </el-menu-item> -->
-            <!-- 智能体模块 -->
-            <!-- <el-menu-item index="agent" @click="goCurrent('agent')">
-              <template #title>
-                <el-icon>
-                  <img src="../assets/robot.svg" width="22px" height="22px" />
-                </el-icon>
-                <span>智能体</span>
-              </template>
-            </el-menu-item> -->
-            <!-- 工具模块 -->
-            <!-- <el-menu-item index="tool" @click="goCurrent('tool')">
-              <template #title>
-                <el-icon>
-                  <img src="../assets/plugin.svg" width="22px" height="22px" />
-                </el-icon>
-                <span>工具</span>
-              </template>
-            </el-menu-item> -->
           </el-menu>
-          
-          <!-- 底部帮助链接 -->
-          <div class="sidebar-footer">
-            <div class="help-links">
-              <a
-                href="https://github.com/Shy2593666979/AgentChat"
-                target="_blank"
-                class="help-link"
-                title="GitHub 仓库"
-              >
-                <img
-                  src="../assets/github.png"
-                  alt="GitHub"
-                  class="help-icon"
-                />
-              </a>
-              <a
-                href="https://shy2593666979.github.io/agentchat-docs/"
-                target="_blank"
-                class="help-link"
-                title="帮助文档"
-              >
-                <img
-                  src="../assets/help.png"
-                  alt="帮助文档"
-                  class="help-icon"
-                />
-              </a>
-            </div>
-          </div>
         </div>
       </el-col>
       <div class="content">
