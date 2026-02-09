@@ -14,4 +14,4 @@ vector_db/
 
 node_modules/
 
-config.yaml
+backend/agentchat/config.yaml
