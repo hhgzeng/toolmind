@@ -1,25 +1,16 @@
 // router/index.ts
 import { createRouter, createWebHistory } from 'vue-router';
-// import ChatPage from '../pages/conversation/chatPage/chatPage.vue';
 import NotFound from '../pages/notFound/index';
 import Index from '../pages/index.vue'
-// import conversation from '../pages/conversation/conversation.vue';
-// import DefaultPage from '../pages/conversation/defaultPage/defaultPage.vue';
-// import Construct from '../pages/construct';
 import Configuration from '../pages/configuration'
 import Login from '../pages/login'
 import { Register } from '../pages/login'
-// import Agent from '../pages/agent'
-// import AgentEditor from '../pages/agent/agent-editor.vue'
 import McpServer from '../pages/mcp-server'
 import Knowledge from '../pages/knowledge'
 import KnowledgeFile from '../pages/knowledge/knowledge-file.vue'
-// import Tool from '../pages/tool'
 import Model from '../pages/model'
 import ModelEditor from '../pages/model/model-editor.vue'
 import Profile from '../pages/profile'
-// import Homepage from '../pages/archive/homepage'
-// import MarsChat from '../pages/archive/mars'
 import Workspace from '../pages/workspace/workspace.vue'
 import WorkspacePage from '../pages/workspace/workspacePage/workspacePage.vue'
 import WorkspaceDefaultPage from '../pages/workspace/defaultPage/defaultPage.vue'
@@ -81,42 +72,6 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true
     },
     children: [
-      // {
-      //   path: '/homepage',
-      //   name: 'homepage',
-      //   component: Homepage,
-      //   meta: {
-      //     current: 'homepage'
-      //   }
-      // },
-      // {
-      //   path: '/conversation',
-      //   name: 'conversation',
-      //   component: conversation,
-      //   meta: {
-      //     current: 'conversation'
-      //   },
-      //   children: [
-      //     {
-      //       path: '/conversation/',
-      //       name: 'defaultPage',
-      //       component: DefaultPage,
-      //     },
-      //     {
-      //       path: '/conversation/chatPage',
-      //       name: 'chatPage',
-      //       component: ChatPage,
-      //     }
-      //   ]
-      // },
-      // {
-      //   path: '/construct',
-      //   name: 'construct',
-      //   meta: {
-      //     current: 'construct'
-      //   },
-      //   component: Construct,
-      // },
       {
         path: '/configuration',
         name: 'configuration',
@@ -125,22 +80,6 @@ const routes: RouteRecordRaw[] = [
         },
         component: Configuration,
       },
-      // {
-      //   path: '/agent',
-      //   name: 'agent',
-      //   meta: {
-      //     current: 'agent'
-      //   },
-      //   component: Agent,
-      // },
-      // {
-      //   path: '/agent/editor',
-      //   name: 'agent-editor',
-      //   meta: {
-      //     current: 'agent'
-      //   },
-      //   component: AgentEditor,
-      // },
       {
         path: '/mcp-server',
         name: 'mcp-server',
@@ -165,14 +104,6 @@ const routes: RouteRecordRaw[] = [
         },
         component: KnowledgeFile,
       },
-      // {
-      //   path: '/tool',
-      //   name: 'tool',
-      //   meta: {
-      //     current: 'tool'
-      //   },
-      //   component: Tool,
-      // },
       {
         path: '/model',
         name: 'model',
@@ -197,14 +128,6 @@ const routes: RouteRecordRaw[] = [
         },
         component: Profile,
       },
-      // {
-      //   path: '/mars',
-      //   name: 'mars',
-      //   meta: {
-      //     current: 'mars'
-      //   },
-      //   component: MarsChat,
-      // },
       {
         path: '/dashboard',
         name: 'dashboard',
