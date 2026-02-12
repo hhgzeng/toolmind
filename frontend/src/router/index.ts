@@ -2,7 +2,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import NotFound from '../pages/notFound/index';
 import Index from '../pages/index.vue'
-import Configuration from '../pages/configuration'
 import Login from '../pages/login'
 import { Register } from '../pages/login'
 import McpServer from '../pages/mcp-server'
@@ -72,14 +71,6 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true
     },
     children: [
-      {
-        path: '/configuration',
-        name: 'configuration',
-        meta: {
-          current: 'configuration'
-        },
-        component: Configuration,
-      },
       {
         path: '/mcp-server',
         name: 'mcp-server',

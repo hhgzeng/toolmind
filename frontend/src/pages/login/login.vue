@@ -31,8 +31,8 @@ const handleLogin = async () => {
       ElMessage.success('登录成功')
       
       // 使用store管理用户状态
-      const userData = responseData.data || {}
-      if (userData.access_token && userData.user_id) {
+      const userData = responseData.data
+      if (userData?.access_token && userData?.user_id) {
         // 先保存基础用户信息
         userStore.setUserInfo(userData.access_token, {
           id: userData.user_id,
@@ -104,9 +104,9 @@ const goToRegister = () => {
         <!-- Logo和标题 -->
         <div class="header">
           <div class="logo">
-            <span class="logo-text">AgentChat</span>
+            <span class="logo-text">ToolMind</span>
           </div>
-          <p class="subtitle">更智能、更多元的大模型应用开发平台</p>
+          <p class="subtitle">一个更懂你想法的工具智能体</p>
         </div>
 
         <!-- 登录表单 -->
@@ -151,19 +151,6 @@ const goToRegister = () => {
           >
             登录
           </el-button>
-        </div>
-
-        <!-- 底部版本信息 -->
-        <div class="footer">
-          <div class="version-badge" title="AgentChat 版本">v2.2.0</div>
-          <div class="footer-icons">
-            <a href="https://github.com/Shy2593666979/AgentChat" target="_blank" class="icon-link" title="GitHub">
-              <img src="../../assets/github.png" alt="GitHub" class="icon-img" />
-            </a>
-            <a href="https://uawlh9wstr9.feishu.cn/wiki/QOaLwMDtBiiduWk4YtAcavEsnne" target="_blank" class="icon-link" title="帮助文档">
-              <img src="../../assets/help.png" alt="帮助文档" class="icon-img" />
-            </a>
-          </div>
         </div>
       </div>
     </div>

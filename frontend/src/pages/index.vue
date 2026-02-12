@@ -2,13 +2,7 @@
 import { onMounted, ref, watch, computed } from "vue"
 import { useRouter } from "vue-router"
 import { useRoute } from "vue-router"
-import { ElMessage, ElMessageBox } from 'element-plus'
-import workspaceIcon from '../assets/workspace.svg'
-import robotIcon from '../assets/robot.svg'
-import pluginIcon from '../assets/plugin.svg'
-import knowledgeIcon from '../assets/knowledge.svg'
-import modelIcon from '../assets/model.svg'
-import mcpIcon from '../assets/mcp.svg'
+import { ElMessage } from 'element-plus'
 import { User, SwitchButton, Setting } from '@element-plus/icons-vue'
 import { useUserStore } from "../store/user"
 import { logoutAPI, getUserInfoAPI } from "../apis/auth"
@@ -16,47 +10,8 @@ import { logoutAPI, getUserInfoAPI } from "../apis/auth"
 const userStore = useUserStore()
 const route = useRoute()
 const router = useRouter()
-const itemName = ref("智言平台")
-const showAppCenterMenu = ref(false)
-let appCenterHoverTimer: any = null
 
-const openAppCenterMenu = () => {
-  if (appCenterHoverTimer) clearTimeout(appCenterHoverTimer)
-  showAppCenterMenu.value = true
-}
-
-const closeAppCenterMenu = () => {
-  if (appCenterHoverTimer) clearTimeout(appCenterHoverTimer)
-  appCenterHoverTimer = setTimeout(() => {
-    showAppCenterMenu.value = false
-  }, 120)
-}
-
-const goWorkspaceTop = () => {
-  router.push('/workspace')
-}
-
-const appCenterColumns = ref([
-  [
-    // { label: '会话', icon: dialogIcon, route: '/conversation' },
-    { label: '工作台', icon: workspaceIcon, route: '/workspace' }
-  ],
-  [
-    { label: '智能体', icon: robotIcon, route: '/agent' },
-    { label: '工具', icon: pluginIcon, route: '/tool' }
-  ],
-  [
-    { label: '知识库', icon: knowledgeIcon, route: '/knowledge' },
-    { label: '模型', icon: modelIcon, route: '/model' }
-  ],
-  [
-    { label: 'MCP', icon: mcpIcon, route: '/mcp-server' }
-  ]
-])
 const current = ref(route.meta.current)
-
-// 顶栏按钮激活态
-const isWorkspaceActive = computed(() => route.path.startsWith('/workspace'))
 
 // 初始化用户状态
 onMounted(async () => {
@@ -81,12 +36,10 @@ onMounted(async () => {
 
 const goCurrent = (item: string) => {
   const routes: Record<string, string> = {
-    "agent": "/agent",
+    "workspace": "/workspace",
+    "model": "/model",
     "mcp-server": "/mcp-server",
     "knowledge": "/knowledge",
-    "tool": "/tool",
-    "model": "/model",
-    "workspace": "/workspace",
     "dashboard": "/dashboard"
   }
   
@@ -100,7 +53,7 @@ const handleUserCommand = async (command: string) => {
       router.push('/profile')
       break
     case 'settings':
-      router.push('/configuration')
+      router.push('/model')
       break
     case 'logout':
       await handleLogout()
@@ -144,10 +97,10 @@ watch(
     <div class="ai-nav">
       <div class="left">
         <div class="item-img">
-          <img :src="robotIcon" alt="Logo" class="logo" />
+          <img src="../assets/robot.svg" alt="Logo" class="logo" />
         </div>
         <div class="nav-links">
-          <img src="../assets/agentchat.svg" alt="智言平台" class="brand-logo-img" />
+          <img src="../assets/toolmind.svg" alt="ToolMind" class="brand-logo-img" />
         </div>
       </div>
       <div class="right">
@@ -167,9 +120,6 @@ watch(
             </div>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="profile" :icon="User">
-                  个人资料
-                </el-dropdown-item>
                 <el-dropdown-item command="settings" :icon="Setting">
                   系统设置
                 </el-dropdown-item>
@@ -197,7 +147,7 @@ watch(
                 <el-icon>
                   <img src="../assets/workspace.svg" width="22px" height="22px" />
                 </el-icon>
-                <span>工作台</span>
+                <span>对话</span>
               </template>
             </el-menu-item>
             <el-menu-item index="model" @click="goCurrent('model')">
@@ -265,12 +215,6 @@ watch(
       align-items: center;
       font-weight: 600;
       color: #0f172a;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      
-      &:hover {
-        opacity: 0.8;
-      }
       
       .item-img {
         margin-right: 0;

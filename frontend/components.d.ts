@@ -7,12 +7,6 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
-    AgentCard: typeof import('./src/components/archive/agentCard/agentCard.vue')['default']
-    AgentFormDialog: typeof import('./src/components/archive/dialog/create_agent/AgentFormDialog.vue')['default']
-    CommonCard: typeof import('./src/components/commonCard/commonCard.vue')['default']
-    Create_agent: typeof import('./src/components/archive/dialog/create_agent/create_agent.vue')['default']
-    Drawer: typeof import('./src/components/drawer/drawer.vue')['default']
-    ElBadge: typeof import('element-plus/es')['ElBadge']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCol: typeof import('element-plus/es')['ElCol']
     ElDialog: typeof import('element-plus/es')['ElDialog']
@@ -29,8 +23,6 @@ declare module 'vue' {
     ElSelect: typeof import('element-plus/es')['ElSelect']
     ElTable: typeof import('element-plus/es')['ElTable']
     ElTableColumn: typeof import('element-plus/es')['ElTableColumn']
-    ElTabPane: typeof import('element-plus/es')['ElTabPane']
-    ElTabs: typeof import('element-plus/es')['ElTabs']
     ElTag: typeof import('element-plus/es')['ElTag']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ElUpload: typeof import('element-plus/es')['ElUpload']

@@ -393,12 +393,9 @@ watch(
       <!-- 欢迎区域（有对话时隐藏） -->
       <div v-if="messages.length === 0" class="welcome-section">
         <div class="avatar-wrapper">
-          <img src="../../../assets/robot.svg" alt="智言" class="avatar" />
+          <img src="../../../assets/robot.svg" alt="ToolMind" class="avatar" />
         </div>
-        <h1 class="welcome-title">我是智言小助手，很高兴见到你！</h1>
-        <p class="welcome-subtitle">
-          欢迎体验智言灵寻LingSeek，一位懂得完成复杂任务的Agent助理~
-        </p>
+        <h class="welcome-title">今天有什么可以帮到你？</h>
       </div>
 
       <!-- 模式选择（有对话时隐藏） -->
@@ -446,7 +443,7 @@ watch(
         <div class="input-wrapper" :class="{ 'lingseek-glow': selectedMode === 'lingseek' }">
           <textarea
             v-model="inputMessage"
-            placeholder="给智言发消息，让智言帮你完成任务~"
+            placeholder="给 ToolMind 发送消息"
             class="message-input"
             rows="4"
             @keydown="handleKeydown"
@@ -511,10 +508,7 @@ watch(
                 </div>
               </div>
               
-              <!-- 工具选择 -->
-              
-
-              <!-- MCP 服务器选择（紧跟工具选择后） -->
+              <!-- MCP 服务器选择 -->
               <div class="selector-dropdown" ref="mcpDropdownRef">
                 <div 
                   class="selector-item"

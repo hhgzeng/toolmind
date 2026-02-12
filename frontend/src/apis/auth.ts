@@ -11,7 +11,15 @@ export interface RegisterForm {
   user_password: string
 }
 
+export interface LoginResponseData {
+  access_token: string
+  user_id: string
+}
+
 export interface LoginResponse {
+  status_message: string
+  data?: LoginResponseData
+  status_code: number
   success: boolean
   message?: string
   token?: string

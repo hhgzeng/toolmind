@@ -3,14 +3,6 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, SwitchButton, Setting } from '@element-plus/icons-vue'
-import workspaceIcon from '../../assets/workspace.svg'
-import applicationCenterIcon from '../../assets/application-center.svg'
-import dialogIcon from '../../assets/dialog.svg'
-import robotIcon from '../../assets/robot.svg'
-import pluginIcon from '../../assets/plugin.svg'
-import knowledgeIcon from '../../assets/knowledge.svg'
-import modelIcon from '../../assets/model.svg'
-import mcpIcon from '../../assets/mcp.svg'
 import { useUserStore } from '../../store/user'
 import { logoutAPI, getUserInfoAPI } from '../../apis/auth'
 import { 
@@ -137,7 +129,7 @@ const handleUserCommand = async (command: string) => {
       router.push('/profile')
       break
     case 'settings':
-      router.push('/configuration')
+      router.push('/model')
       break
     case 'logout':
       await handleLogout()
@@ -165,53 +157,10 @@ const handleAvatarError = (event: Event) => {
   }
 }
 
-// 跳转到应用中心
+// 开启新对话
 const goToHomepage = () => {
-  router.push('/model') // 跳转到模型页面
-}
-
-// 跳转到工作台（当前页）
-const goToWorkspace = () => {
   router.push('/workspace')
 }
-
-// 应用中心下拉（与首页保持一致）
-const showAppCenterMenu = ref(false)
-let appCenterHoverTimer: any = null
-
-const openAppCenterMenu = () => {
-  if (appCenterHoverTimer) clearTimeout(appCenterHoverTimer)
-  showAppCenterMenu.value = true
-}
-
-const closeAppCenterMenu = () => {
-  if (appCenterHoverTimer) clearTimeout(appCenterHoverTimer)
-  appCenterHoverTimer = setTimeout(() => {
-    showAppCenterMenu.value = false
-  }, 120)
-}
-
-const appCenterColumns = ref([
-  [
-    // { label: '会话', icon: dialogIcon, route: '/conversation' },
-    { label: '工作台', icon: workspaceIcon, route: '/workspace' }
-  ],
-  [
-    // { label: '智能体', icon: robotIcon, route: '/agent' },
-    // { label: '工具', icon: pluginIcon, route: '/tool' }
-  ],
-  [
-    { label: '知识库', icon: knowledgeIcon, route: '/knowledge' },
-    { label: '模型', icon: modelIcon, route: '/model' }
-  ],
-  [
-    { label: 'MCP', icon: mcpIcon, route: '/mcp-server' }
-  ]
-])
-
-// 顶栏按钮激活态（工作台页自身）
-const isWorkspaceActive = computed(() => route.path.startsWith('/workspace'))
-const isAppCenterActive = computed(() => route.path.startsWith('/homepage'))
 
 onMounted(async () => {
   userStore.initUserState()
@@ -245,7 +194,7 @@ onMounted(async () => {
           <img src="../../assets/robot.svg" alt="Logo" class="logo" />
         </div>
         <div class="nav-links">
-          <img src="../../assets/agentchat.svg" alt="智言平台" class="brand-logo-img" />
+          <img src="../../assets/toolmind.svg" alt="ToolMind" class="brand-logo-img" />
         </div>
       </div>
       <div class="nav-right">
@@ -264,9 +213,6 @@ onMounted(async () => {
             </div>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="profile" :icon="User">
-                  个人资料
-                </el-dropdown-item>
                 <el-dropdown-item command="settings" :icon="Setting">
                   系统设置
                 </el-dropdown-item>
@@ -284,14 +230,14 @@ onMounted(async () => {
     <div class="workspace-main">
     <!-- 左侧边栏 -->
     <div class="sidebar">
-      <!-- 应用中心按钮 -->
+      <!-- 新对话按钮 -->
       <div class="create-section">
         <button @click="goToHomepage" class="create-btn-native">
           <div class="btn-content">
             <span class="icon">
-              <img src="../../assets/application-center.svg" width="30px" height="30px" />
+              <img src="../../assets/edit.svg" width="25px" height="25px" />
             </span>
-            <span>应用中心</span>
+            <span>新对话</span>
           </div>
         </button>
       </div>
@@ -371,16 +317,14 @@ onMounted(async () => {
     align-items: center;
 
     .logo-section {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      margin-right: 0;
 
       .logo {
         width: 32px;
         height: 32px;
-          display: block;
-          object-fit: contain;
+        object-fit: contain;
         filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
+        transition: all 0.3s ease;
       }
     }
 

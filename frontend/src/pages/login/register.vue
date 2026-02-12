@@ -107,9 +107,9 @@ const goToLogin = () => {
         <!-- Logo和标题 -->
         <div class="header">
           <div class="logo">
-            <span class="logo-text">AgentChat</span>
+            <span class="logo-text">ToolMind</span>
           </div>
-          <p class="subtitle">创建您的账户，开始智能对话之旅</p>
+          <p class="subtitle">创建您的账户，打开工具智能大门</p>
         </div>
 
         <!-- 注册表单 -->
@@ -125,7 +125,7 @@ const goToLogin = () => {
             />
           </div>
 
-          <div class="form-group">
+          <!-- <div class="form-group">
             <label class="form-label">邮箱（可选）</label>
             <el-input
               v-model="registerForm.user_email"
@@ -134,7 +134,7 @@ const goToLogin = () => {
               class="register-input"
               @keyup.enter="handleRegister"
             />
-          </div>
+          </div> -->
 
           <div class="form-group">
             <label class="form-label">密码</label>
@@ -178,19 +178,6 @@ const goToLogin = () => {
           >
             注册
           </el-button>
-        </div>
-
-        <!-- 底部版本信息 -->
-        <div class="footer">
-          <div class="version-badge" title="AgentChat 版本">v2.2.0</div>
-          <div class="footer-icons">
-            <a href="https://github.com/Shy2593666979/AgentChat" target="_blank" class="icon-link" title="GitHub">
-              <img src="../../assets/github.png" alt="GitHub" class="icon-img" />
-            </a>
-            <a href="https://uawlh9wstr9.feishu.cn/wiki/QOaLwMDtBiiduWk4YtAcavEsnne" target="_blank" class="icon-link" title="帮助文档">
-              <img src="../../assets/help.png" alt="帮助文档" class="icon-img" />
-            </a>
-          </div>
         </div>
       </div>
     </div>
