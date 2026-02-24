@@ -20,7 +20,6 @@ from agentchat.core.callbacks import usage_metadata_callback
 from agentchat.api.services.llm import LLMService
 from agentchat.core.models.manager import ModelManager
 # from agentchat.api.services.tool import ToolService
-from agentchat.services.rag_handler import RagHandler
 from agentchat.core.agents.mcp_agent import MCPAgent, MCPConfig
 from agentchat.api.services.mcp_server import MCPService
 
@@ -35,7 +34,6 @@ MAX_TOOLS_SIZE = 10
 
 class AgentConfig(BaseModel):
     mcp_ids: List[str]
-    knowledge_ids: List[str]
     tool_ids: List[str]
     system_prompt: str
     enable_memory: bool = False
@@ -135,7 +133,6 @@ class StreamingAgent:
 
         self.tools = await self.setup_tools()
 
-        await self.setup_knowledge_tool()
         await self.setup_language_model()
 
         self.search_tool = self.setup_search_tool()
@@ -254,26 +251,6 @@ class StreamingAgent:
             mcp_agent_as_tools.append(create_mcp_agent_as_tool(mcp_agent, mcp_server.get("mcp_as_tool_name"), mcp_server.get("description")))
 
         return mcp_agent_as_tools
-
-    async def setup_knowledge_tool(self):
-        @tool(parse_docstring=True)
-        async def retrival_knowledge(query: str) -> str:
-            """
-            通过检索知识库来获取信息
-
-            Args:
-                query (str): 用户问题
-
-            Returns:
-                str: 返回从知识库检索来的信息
-            """
-            knowledge_message = await RagHandler.retrieve_ranked_documents(
-                query, self.agent_config.knowledge_ids
-            )
-            return knowledge_message
-
-        self.tools.append(retrival_knowledge)
-
 
     async def astream(self, messages: List[BaseMessage]) -> AsyncGenerator[Dict[str, Any], None]:
         """流式调用主方法"""

@@ -40,6 +40,8 @@ const selectedNode = ref<string | null>(null)
 const showNodeDetail = ref(false)
 const taskResultContent = ref('')
 const showTaskResult = ref(false)
+const evaluationScore = ref<number | null>(null)
+const evaluationReasoning = ref('')
 const resultContainer = ref<HTMLElement>()
 // 结果接收控制（任务流程结束后才开始）
 const isReceivingResult = ref(false)
@@ -528,6 +530,7 @@ const loadSessionInfo = async (sessionId: string) => {
         if (context.answer) {
           taskResultContent.value = context.answer
           showTaskResult.value = true
+          // 历史记录如果能提供得分也可以在这里读取，目前如果是已完成的至少是大于等于80的，这里不显示或者根据已有据设置
           console.log('✅ 执行结果已加载，长度:', taskResultContent.value.length)
         } else {
           console.warn('⚠️ 未找到 answer 字段')
@@ -606,6 +609,8 @@ const startTask = async () => {
   nodeStatusMap.value.clear()
   taskResultContent.value = ''
   resultBuffer.value = ''
+  evaluationScore.value = null
+  evaluationReasoning.value = ''
   showTaskResult.value = false
   isReceivingResult.value = false
   isStreaming.value = true
@@ -676,8 +681,17 @@ const startTask = async () => {
       },
       (messageChunk) => {
         // 统一写入缓冲。若尚未开始接收（通常为首个 task_result 到达），立即启动接收与排空
-        console.log('📄 收到任务结果数据块:', messageChunk)
         if (typeof messageChunk === 'string') {
+          console.log('📄 收到任务结果数据块:', messageChunk)
+          
+          // 提取评价结果(自我反馈未通过的特定标记)
+          if (messageChunk.includes('⚠️ 自我反馈未通过') && messageChunk.includes('匹配度:')) {
+            const match = messageChunk.match(/匹配度:\s*(\d+)/)
+            if (match && match[1]) {
+              evaluationScore.value = parseInt(match[1])
+            }
+          }
+          
           resultBuffer.value += messageChunk
         }
         if (!isReceivingResult.value) {
@@ -696,6 +710,9 @@ const startTask = async () => {
       () => {
         console.log('✅ 任务执行完成')
         isStreaming.value = false
+        if (evaluationScore.value === null) {
+          evaluationScore.value = 100 // 或者设置成功标志
+        }
         // 任务流程结束时，开启接收阶段并以流式回放缓冲
         startReceivingResults()
       }
@@ -938,6 +955,16 @@ const getNodeColor = (status: string) => {
         <div class="column-header">
           <span class="header-icon">📄</span>
           <h2 class="header-title">任务结果</h2>
+          
+          <span v-if="evaluationScore !== null && evaluationScore >= 80" class="status-badge completed" style="margin-right: 8px;">
+            <span class="status-icon">✓</span>
+            <span>通过 ({{ evaluationScore }}分)</span>
+          </span>
+          <span v-else-if="evaluationScore !== null && evaluationScore < 80" class="status-badge error" style="margin-right: 8px;">
+            <span class="status-icon">✕</span>
+            <span>未通过 ({{ evaluationScore }}分)</span>
+          </span>
+          
           <span v-if="isReceivingResult" class="status-badge streaming">
             <span class="status-dot"></span>
             <span>接收中</span>
@@ -1258,6 +1285,18 @@ $error: #ef4444;
         color: #047857;
         border-color: rgba(16, 185, 129, 0.2);
         box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
+        
+        .status-icon {
+          font-weight: 900;
+          font-size: 15px;
+        }
+      }
+
+      &.error {
+        background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%);
+        color: #b91c1c;
+        border-color: rgba(239, 68, 68, 0.2);
+        box-shadow: 0 4px 16px rgba(239, 68, 68, 0.25);
         
         .status-icon {
           font-weight: 900;

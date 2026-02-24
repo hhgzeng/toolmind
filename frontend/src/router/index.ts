@@ -5,8 +5,6 @@ import Index from '../pages/index.vue'
 import Login from '../pages/login'
 import { Register } from '../pages/login'
 import McpServer from '../pages/mcp-server'
-import Knowledge from '../pages/knowledge'
-import KnowledgeFile from '../pages/knowledge/knowledge-file.vue'
 import Model from '../pages/model'
 import ModelEditor from '../pages/model/model-editor.vue'
 import Profile from '../pages/profile'
@@ -80,22 +78,6 @@ const routes: RouteRecordRaw[] = [
         component: McpServer,
       },
       {
-        path: '/knowledge',
-        name: 'knowledge',
-        meta: {
-          current: 'knowledge'
-        },
-        component: Knowledge,
-      },
-      {
-        path: '/knowledge/:knowledgeId/files',
-        name: 'knowledge-file',
-        meta: {
-          current: 'knowledge'
-        },
-        component: KnowledgeFile,
-      },
-      {
         path: '/model',
         name: 'model',
         meta: {
@@ -144,7 +126,7 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token');
-  
+
   // 如果目标路由需要认证
   if (to.meta.requiresAuth) {
     if (token) {

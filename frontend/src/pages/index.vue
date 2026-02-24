@@ -39,7 +39,6 @@ const goCurrent = (item: string) => {
     "workspace": "/workspace",
     "model": "/model",
     "mcp-server": "/mcp-server",
-    "knowledge": "/knowledge",
     "dashboard": "/dashboard"
   }
   
@@ -164,14 +163,6 @@ watch(
                   <img src="../assets/mcp.svg" width="22px" height="22px" />
                 </el-icon>
                 <span>MCP</span>
-              </template>
-            </el-menu-item>
-            <el-menu-item index="knowledge" @click="goCurrent('knowledge')">
-              <template #title>
-                <el-icon>
-                  <img src="../assets/knowledge.svg" width="22px" height="22px" />
-                </el-icon>
-                <span>知识库</span>
               </template>
             </el-menu-item>
             <el-menu-item index="dashboard" @click="goCurrent('dashboard')">

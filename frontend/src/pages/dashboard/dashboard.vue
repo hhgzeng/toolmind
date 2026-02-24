@@ -4,7 +4,7 @@
       <div class="title-wrap">
         <h2>数据看板</h2>
       </div>
-      <p class="sub">根据模型/智能体与时间范围查看调用与 Token 用量趋势</p>
+      <p class="sub">根据模型与时间范围查看调用与 Token 用量趋势</p>
     </div>
 
     <div class="filters-container">
@@ -31,7 +31,7 @@
         </el-select>
       </div>
 
-      <div class="filter-group">
+      <!-- <div class="filter-group">
         <label>智能体</label>
         <el-select
           v-model="filters.agent"
@@ -52,7 +52,7 @@
             :value="agent"
           />
         </el-select>
-      </div>
+      </div> -->
 
       <div class="filter-group">
         <label>时间范围</label>
