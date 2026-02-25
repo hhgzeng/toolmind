@@ -17,6 +17,7 @@ from agentchat.database.models.message import MessageDownTable, MessageLikeTable
 from agentchat.database.models.role import Role
 from agentchat.database.models.workspace_session import WorkSpaceSession
 from agentchat.database.models.usage_stats import UsageStats
+from agentchat.database.models.lingseek_config import LingseekModelConfigTable
 
 from agentchat.settings import app_settings
 

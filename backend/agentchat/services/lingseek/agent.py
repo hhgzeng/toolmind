@@ -35,13 +35,11 @@ class LingSeekAgent:
 
         self.user_id = user_id
         
-    @property
-    def conversation_model(self):
-        return ModelManager.get_conversation_model()
+    async def get_conversation_model(self):
+        return await ModelManager.get_conversation_model(user_id=self.user_id)
         
-    @property
-    def tool_call_model(self):
-        return ModelManager.get_lingseek_intent_model()
+    async def get_tool_call_model(self):
+        return await ModelManager.get_lingseek_intent_model(user_id=self.user_id)
 
     async def _generate_guide_prompt(self, lingseek_guide_prompt):
         """
@@ -52,7 +50,8 @@ class LingSeekAgent:
         sop_content = ""
         answer = ""
         split_tags = ["<Thought_END>", "</Thought_END>"]
-        async for one in self.conversation_model.astream(input=lingseek_guide_prompt, config={"callbacks": [usage_metadata_callback]}):
+        model = await self.get_conversation_model()
+        async for one in model.astream(input=lingseek_guide_prompt, config={"callbacks": [usage_metadata_callback]}):
             answer += f"{one.content}"
             if sop_flag:
                 yield one
@@ -71,7 +70,8 @@ class LingSeekAgent:
             yield one
 
     async def _generate_tasks(self, lingseek_task_prompt):
-        conversation_json_model = self.conversation_model.bind(response_format={"type": "json_object"})
+        model = await self.get_conversation_model()
+        conversation_json_model = model.bind(response_format={"type": "json_object"})
 
         response = await conversation_json_model.ainvoke(input=lingseek_task_prompt, config={"callbacks": [usage_metadata_callback]})
 
@@ -89,7 +89,8 @@ class LingSeekAgent:
 
     async def _generate_title(self, query):
         title_prompt = GenerateTitlePrompt.format(query=query)
-        response = await self.conversation_model.ainvoke(input=title_prompt, config={"callbacks": [usage_metadata_callback]})
+        model = await self.get_conversation_model()
+        response = await model.ainvoke(input=title_prompt, config={"callbacks": [usage_metadata_callback]})
         return response.content
 
     async def _add_workspace_session(self, query, contexts: WorkSpaceSessionContext):
@@ -164,7 +165,8 @@ class LingSeekAgent:
         messages: List[BaseMessage] = [SystemMessage(content="你是一个专业的结果评判助手。"), HumanMessage(content=eval_prompt)]
         
         tools = [convert_to_openai_tool(web_search)]
-        eval_model = self.tool_call_model.bind_tools(tools)
+        model = await self.get_tool_call_model()
+        eval_model = model.bind_tools(tools)
         
         try:
             while True:
@@ -201,7 +203,8 @@ class LingSeekAgent:
                 # 尝试修复一般的 JSON 格式错误或者报错，注意应传入原本的 content
                 json_content_to_fix = locals().get('content', '')
                 fix_message = FixJsonPrompt.format(json_content=json_content_to_fix, json_error=str(err))
-                fix_response = await self.conversation_model.ainvoke(input=fix_message, config={"callbacks": [usage_metadata_callback]})
+                model = await self.get_conversation_model()
+                fix_response = await model.ainvoke(input=fix_message, config={"callbacks": [usage_metadata_callback]})
                 fix_content = fix_response.content.strip()
                 
                 json_match = re.search(r'\{.*\}', fix_content, re.DOTALL)
@@ -253,7 +256,8 @@ class LingSeekAgent:
 
 
             tools = await self._obtain_lingseek_tools(lingseek_task.plugins, lingseek_task.mcp_servers, lingseek_task.web_search)
-            tool_call_model = self.tool_call_model.bind_tools(tools) if len(tools) else self.tool_call_model
+            model = await self.get_tool_call_model()
+            tool_call_model = model.bind_tools(tools) if len(tools) else model
 
             messages: List[BaseMessage] = [SystemMessage(content=SystemMessagePrompt), HumanMessage(content=lingseek_task.query)]
             context_task = []
@@ -289,7 +293,8 @@ class LingSeekAgent:
                 }
 
             final_response = ""
-            async for chunk in self.conversation_model.astream(messages):
+            model = await self.get_conversation_model()
+            async for chunk in model.astream(messages):
                 final_response += chunk.content
                 yield {
                     "event": "task_result",

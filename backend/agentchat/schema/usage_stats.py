@@ -1,7 +1,6 @@
 from typing import Optional
 from enum import Enum
 from pydantic import BaseModel
-from agentchat.settings import app_settings
 
 class UsageStatsRequest(BaseModel):
     agent: Optional[str] = None
@@ -16,6 +15,6 @@ class UsageStatsAgentType(str, Enum):
 
 
 class UsageStatsModelType(str, Enum):
-    tool_call_model = app_settings.multi_models.tool_call_model.model_name
-    conversation_model = app_settings.multi_models.conversation_model.model_name
+    tool_call_model = "tool_call_model"
+    conversation_model = "conversation_model"
 

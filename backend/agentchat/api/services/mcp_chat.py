@@ -5,7 +5,6 @@ from agentchat.api.services.mcp_stdio_server import MCPServerService
 from agentchat.services.mcp_openai.mcp_manager import MCPManager
 from agentchat.core.models.anthropic import DeepAsyncAnthropic
 from agentchat.api.services.llm import LLMService
-from agentchat.services.rag_handler import RagHandler
 
 
 class MCPChatAgent:
@@ -34,34 +33,24 @@ class MCPChatAgent:
 
 
     async def ainvoke(self, user_input: str, dialog_id: str, stream: bool=False):
-        # 并发获取History 和 RAG Message
-        history_messages, recall_knowledge_data = await asyncio.gather(
-            self.get_history_message(user_input, dialog_id),
-            RagHandler.rag_query(user_input, self.knowledges_id)
-        )
+        # 并发获取History
+        history_messages = await self.get_history_message(user_input, dialog_id)
         # mcp_tool_query = MCP_TOOL_TEMPLATE.format(query=user_input, history=history_message)
         mcp_tool_messages = history_messages.copy()
         mcp_response = await self.mcp_manager.process_query(mcp_tool_messages)
 
-        # 合并Tool Message 和 RAG Message
-        mcp_response.append({"role": "user", "content": recall_knowledge_data})
         if stream:
             return self._stream_response(mcp_response)
         else:
             return await self._normal_response(mcp_response)
 
     async def get_history_message(self, user_input: str, dialog_id: str, top_k: int = 5) :
-        # 如果开启Embedding，默认走RAG检索聊天记录
-        if self.enable_memory:
-            messages = await self._retrieval_history(user_input, dialog_id, top_k)
-            return messages
-        else:
-            messages = await self._direct_history(dialog_id, top_k)
+        messages = await self._direct_history(dialog_id, top_k)
 
-            result = []
-            for message in messages:
-                result.append(message.to_json())
-            return result
+        result = []
+        for message in messages:
+            result.append(message.to_json())
+        return result
 
     async def _stream_response(self, messages):
         async for text in self.deep_anthropic.ainvoke_stream(messages):
@@ -76,9 +65,7 @@ class MCPChatAgent:
         messages = HistoryService.select_history(dialog_id, top_k)
         return messages
 
-    async def _retrieval_history(self, user_input: str, dialog_id: str, top_k: int):
-        messages = await RagHandler.rag_query(user_input, dialog_id, 0.6, top_k, False)
-        return messages
+
 
 
 

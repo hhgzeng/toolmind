@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete, Connection, Cpu, Search, Refresh, Calendar, ChatDotRound, RefreshRight, Star, Link, Timer } from '@element-plus/icons-vue'
@@ -8,8 +8,11 @@ import {
   getVisibleLLMsAPI, 
   createLLMAPI, 
   deleteLLMAPI,
+  getLingseekConfigAPI,
+  updateLingseekConfigAPI,
   type LLMResponse,
-  type CreateLLMRequest
+  type CreateLLMRequest,
+  type LingseekModelConfig
 } from '../../apis/llm'
 
 const router = useRouter()
@@ -19,6 +22,14 @@ const models = ref<LLMResponse[]>([])
 const loading = ref(false)
 const searchKeyword = ref('')
 const llmTypes = ref<string[]>(['LLM', 'Embedding', 'Rerank'])
+
+// Lingseek 配置数据
+const lingseekConfig = ref<LingseekModelConfig>({
+  conversation_model_id: null,
+  tool_call_model_id: null,
+  reasoning_model_id: null
+})
+const savingLingseek = ref(false)
 
 // 创建对话框控制
 const createDialogVisible = ref(false)
@@ -63,17 +74,55 @@ const fetchModels = async () => {
   } finally {
     loading.value = false
   }
+
+  try {
+    const configRes = await getLingseekConfigAPI()
+    if (configRes.data.status_code === 200) {
+      if (Object.keys(configRes.data.data).length > 0) {
+        lingseekConfig.value = configRes.data.data
+      }
+    }
+  } catch (error) {
+    console.error('获取 Lingseek 配置失败', error)
+  }
 }
 
-// 搜索模型
-const searchModels = () => {
-  fetchModels()
+// 保存 Lingseek 配置
+const saveLingseekConfig = async () => {
+  savingLingseek.value = true
+  try {
+    const res = await updateLingseekConfigAPI(lingseekConfig.value)
+    if (res.data.status_code === 200) {
+      ElMessage.success('Lingseek 引擎配置已保存')
+      lingseekConfig.value = res.data.data
+    } else {
+      ElMessage.error(res.data.status_message || '保存配置失败')
+    }
+  } catch (error) {
+    ElMessage.error('保存 Lingseek 配置失败')
+  } finally {
+    savingLingseek.value = false
+  }
 }
+
+// 模型过滤（搜索功能）
+const filteredModels = computed(() => {
+  if (!searchKeyword.value) {
+    return models.value
+  }
+  
+  const keyword = searchKeyword.value.toLowerCase()
+  return models.value.filter(model => {
+    return (
+      (model.model && model.model.toLowerCase().includes(keyword)) ||
+      (model.provider && model.provider.toLowerCase().includes(keyword))
+    )
+  })
+})
 
 // 清空搜索
 const clearSearch = () => {
   searchKeyword.value = ''
-  fetchModels()
 }
 
 // 打开创建对话框
@@ -125,12 +174,6 @@ const goToModelEditor = (model: LLMResponse) => {
 
 // 删除模型
 const deleteModel = async (model: LLMResponse) => {
-  // 检查是否为官方模型
-  if (isOfficialModel(model)) {
-    ElMessage.warning('官方模型不可删除')
-    return
-  }
-  
   // 显示删除确认对话框
   modelToDelete.value = model
   deleteDialogVisible.value = true
@@ -164,10 +207,7 @@ const cancelDelete = () => {
   modelToDelete.value = null
 }
 
-// 检查是否为官方模型
-const isOfficialModel = (model: LLMResponse): boolean => {
-  return model.user_id === '0'
-}
+
 
 // 测试模型连接
 const testModel = async (model: LLMResponse) => {
@@ -190,15 +230,7 @@ const getProviderColor = (provider: string) => {
   return colors[provider] || 'info'
 }
 
-// 获取模型类型颜色
-const getTypeColor = (type: string) => {
-  const colors: Record<string, string> = {
-    'LLM': 'primary',
-    'Embedding': 'success',
-    'Rerank': 'warning'
-  }
-  return colors[type] || 'info'
-}
+
 
 // 格式化时间
 const formatTime = (timeStr: string) => {
@@ -264,7 +296,6 @@ onMounted(() => {
             v-model="searchKeyword"
             placeholder="🔍 搜索模型名称或提供商..."
             :prefix-icon="Search"
-            @keyup.enter="searchModels"
             clearable
             @clear="clearSearch"
             style="width: 300px"
@@ -294,119 +325,84 @@ onMounted(() => {
 
     <!-- 模型列表 -->
     <div class="model-list" v-loading="loading">
-      <div class="model-grid" v-if="models.length > 0">
-        <!-- 模型卡片，增强设计感 -->
-        <div 
-          v-for="model in models" 
-          :key="model.llm_id" 
-          class="model-card"
-          :class="[model.llm_type.toLowerCase(), isOfficialModel(model) ? 'official-model' : '']"
+      <!-- 模型列表 (表格视图) -->
+      <div class="model-table-container" v-if="filteredModels.length > 0">
+        <el-table 
+          :data="filteredModels" 
+          style="width: 100%" 
+          :header-cell-style="{ background: '#f8fafc', color: '#64748b', fontWeight: '600' }"
+          row-class-name="model-table-row"
         >
-          <!-- 卡片背景装饰 -->
-          <div class="card-decoration">
-            <div class="deco-circle circle-1"></div>
-            <div class="deco-circle circle-2"></div>
-            <div class="deco-line line-1"></div>
-            <div class="deco-line line-2"></div>
-          </div>
+          <!-- 模型信息列 -->
+          <el-table-column label="模型" min-width="180">
+            <template #default="{ row }">
+              <div class="model-info-cell">
+                <div class="model-avatar" :class="row.llm_type.toLowerCase()">
+                  <span v-if="row.provider === 'OpenAI'" class="provider-icon">O</span>
+                  <span v-else-if="row.provider === 'Anthropic'" class="provider-icon">A</span>
+                  <span v-else-if="row.provider === 'Google'" class="provider-icon">G</span>
+                  <span v-else class="provider-icon">{{ row.provider[0] }}</span>
+                </div>
+                <div class="model-title">
+                  <div class="model-name">{{ row.model }}</div>
+                  <div class="model-provider">{{ row.provider }}</div>
+                </div>
+              </div>
+            </template>
+          </el-table-column>
 
-          <!-- 顶部类型标签 -->
-          <div class="model-badge">
-            <span class="badge-icon">
-              <el-icon v-if="model.llm_type === 'LLM'"><ChatDotRound /></el-icon>
-              <el-icon v-else-if="model.llm_type === 'Embedding'"><Connection /></el-icon>
-              <el-icon v-else><RefreshRight /></el-icon>
-            </span>
-            <span class="badge-text">{{ model.llm_type }}</span>
-          </div>
-          
-          <!-- 官方标记 -->
-          <div class="official-badge" v-if="isOfficialModel(model)">
-            <el-icon><Star /></el-icon>
-            <span>官方</span>
-          </div>
 
-          <div class="card-content">
-            <!-- 模型信息 -->
-            <div class="model-header">
-              <div class="model-avatar" :class="model.llm_type.toLowerCase()">
-                <span v-if="model.provider === 'OpenAI'" class="provider-icon">O</span>
-                <span v-else-if="model.provider === 'Anthropic'" class="provider-icon">A</span>
-                <span v-else-if="model.provider === 'Google'" class="provider-icon">G</span>
-                <span v-else class="provider-icon">{{ model.provider[0] }}</span>
-              </div>
-              
-              <div class="model-title">
-                <h3 class="model-name">{{ model.model }}</h3>
-                <div class="model-provider">{{ model.provider }}</div>
-              </div>
-            </div>
-            
-            <!-- 模型详情 -->
-            <div class="model-details">
-              <!-- 优化基础URL和创建时间显示 -->
-              <div class="detail-item">
-                <div class="detail-icon">
-                  <el-icon><Link /></el-icon>
-                </div>
-                <div class="detail-content">
-                  <div class="detail-label url-label">
-                    <span>基础URL</span>
-                  </div>
-                  <el-tooltip 
-                    :content="model.base_url" 
-                    placement="top" 
-                    :show-after="500"
-                    effect="light"
-                    popper-class="url-tooltip"
-                  >
-                    <div class="detail-value url-value">{{ truncateUrl(model.base_url, 38) }}</div>
-                  </el-tooltip>
-                </div>
-              </div>
 
-              <div class="detail-item">
-                <div class="detail-icon">
-                  <el-icon><Timer /></el-icon>
-                </div>
-                <div class="detail-content">
-                  <div class="detail-label date-label">
-                    <span>创建时间</span>
-                  </div>
-                  <div class="detail-value date-value">{{ formatTimeFriendly(model.create_time) }}</div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- 操作按钮 -->
-            <div class="card-actions">
-              <el-button 
-                size="default" 
-                :type="isOfficialModel(model) ? 'info' : 'primary'"
-                @click.stop="goToModelEditor(model)"
-                :disabled="isOfficialModel(model)"
-                :title="isOfficialModel(model) ? '官方模型不可编辑' : '编辑模型'"
-                class="action-btn edit-btn"
-                :class="{ 'disabled': isOfficialModel(model) }"
+          <!-- 基础URL列 -->
+          <el-table-column label="基础URL" min-width="250">
+            <template #default="{ row }">
+              <el-tooltip 
+                :content="row.base_url" 
+                placement="top" 
+                :show-after="500"
+                effect="light"
+                popper-class="url-tooltip"
               >
-                <el-icon><Edit /></el-icon>
-                <span>编辑</span>
-              </el-button>
-              <el-button 
-                size="default" 
-                :type="isOfficialModel(model) ? 'info' : 'danger'"
-                @click.stop="deleteModel(model)"
-                :disabled="isOfficialModel(model)"
-                :title="isOfficialModel(model) ? '官方模型不可删除' : '删除模型'"
-                class="action-btn delete-btn"
-                :class="{ 'disabled': isOfficialModel(model) }"
-              >
-                <el-icon><Delete /></el-icon>
-                <span>删除</span>
-              </el-button>
-            </div>
-          </div>
-        </div>
+                <div class="url-value">{{ truncateUrl(row.base_url, 38) }}</div>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+
+          <!-- 创建时间列 -->
+          <el-table-column label="创建时间" width="220">
+            <template #default="{ row }">
+              <div class="date-value">{{ formatTimeFriendly(row.create_time) }}</div>
+            </template>
+          </el-table-column>
+
+          <!-- 操作列 -->
+          <el-table-column label="操作" width="200" align="left">
+            <template #default="{ row }">
+              <div class="action-buttons-cell">
+                <el-button 
+                  size="small" 
+                  type="primary"
+                  @click.stop="goToModelEditor(row)"
+                  title="编辑模型"
+                  class="action-btn edit-btn"
+                >
+                  <el-icon><Edit /></el-icon>
+                  <span>编辑</span>
+                </el-button>
+                <el-button 
+                  size="small" 
+                  type="danger"
+                  @click.stop="deleteModel(row)"
+                  title="删除模型"
+                  class="action-btn delete-btn"
+                >
+                  <el-icon><Delete /></el-icon>
+                  <span>删除</span>
+                </el-button>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
       
       <!-- 空状态 -->
@@ -423,6 +419,91 @@ onMounted(() => {
           size="large"
         >
           🚀 立即创建
+        </el-button>
+      </div>
+    </div>
+
+    <!-- Lingseek 引擎配置区域 -->
+    <div class="lingseek-config-section">
+      <div class="section-title">
+        <h3>🚀 Lingseek 核心引擎配置</h3>
+        <p>为 Lingseek 的不同功能组件配置专属的 AI 模型</p>
+      </div>
+      
+      <div class="config-grid">
+        <div class="config-card">
+          <div class="config-icon"><el-icon><ChatDotRound /></el-icon></div>
+          <div class="config-info">
+            <h4>对话与任务生成模型</h4>
+            <p>负责理解用户意图并规划任务执行路径</p>
+          </div>
+          <el-select 
+            v-model="lingseekConfig.conversation_model_id" 
+            placeholder="请选择会话模型" 
+            class="model-select"
+            clearable
+          >
+            <el-option
+              v-for="m in models"
+              :key="m.llm_id"
+              :label="m.model + ' (' + m.provider + ')'"
+              :value="m.llm_id"
+            />
+          </el-select>
+        </div>
+        
+        <div class="config-card">
+          <div class="config-icon"><el-icon><Connection /></el-icon></div>
+          <div class="config-info">
+            <h4>工具调用模型</h4>
+            <p>负责执行 MCP 协议和外部工具调用</p>
+          </div>
+          <el-select 
+            v-model="lingseekConfig.tool_call_model_id" 
+            placeholder="请选择工具模型" 
+            class="model-select"
+            clearable
+          >
+            <el-option
+              v-for="m in models"
+              :key="m.llm_id"
+              :label="m.model + ' (' + m.provider + ')'"
+              :value="m.llm_id"
+            />
+          </el-select>
+        </div>
+        
+        <div class="config-card">
+          <div class="config-icon"><el-icon><Cpu /></el-icon></div>
+          <div class="config-info">
+            <h4>结果推理与评估模型</h4>
+            <p>对任务执行的最终结果进行自我验证和评估</p>
+          </div>
+          <el-select 
+            v-model="lingseekConfig.reasoning_model_id" 
+            placeholder="请选择评估模型" 
+            class="model-select"
+            clearable
+          >
+            <el-option
+              v-for="m in models.filter(m => m.llm_type === 'LLM' || m.llm_type === 'Rerank')"
+              :key="m.llm_id"
+              :label="m.model + ' (' + m.provider + ')'"
+              :value="m.llm_id"
+            />
+          </el-select>
+        </div>
+      </div>
+      
+      <div class="save-actions">
+        <el-button 
+          type="primary" 
+          size="large" 
+          @click="saveLingseekConfig" 
+          :loading="savingLingseek"
+          class="save-config-btn"
+        >
+          📝 保存引擎配置
         </el-button>
       </div>
     </div>
@@ -473,22 +554,6 @@ onMounted(() => {
                 </div>
               </div>
               
-              <div class="form-item">
-                <label class="form-label">
-                  <span class="label-text">模型类型</span>
-                  <span class="required-mark">*</span>
-                </label>
-                <div class="select-wrapper">
-                  <select v-model="createForm.llm_type" class="form-select">
-                    <option value="LLM">🤖 LLM - 大语言模型</option>
-                    <option value="Embedding">🔗 Embedding - 嵌入模型</option>
-                    <option value="Rerank">📈 Rerank - 重排序模型</option>
-                  </select>
-                  <div class="select-arrow">
-                    <span>▼</span>
-                  </div>
-                </div>
-              </div>
             </div>
             
             <!-- 连接配置区域 -->
@@ -545,8 +610,8 @@ onMounted(() => {
           </button>
           <button 
             class="dialog-btn confirm-btn" 
-            :class="{ 'disabled': !createForm.model || !createForm.api_key || !createForm.base_url || !createForm.provider || !createForm.llm_type }"
-            :disabled="!createForm.model || !createForm.api_key || !createForm.base_url || !createForm.provider || !createForm.llm_type || createLoading"
+            :class="{ 'disabled': !createForm.model || !createForm.api_key || !createForm.base_url || !createForm.provider }"
+            :disabled="!createForm.model || !createForm.api_key || !createForm.base_url || !createForm.provider || createLoading"
             @click.stop="handleCreate"
           >
             <span v-if="createLoading" class="btn-icon loading">⏳</span>
@@ -701,428 +766,116 @@ onMounted(() => {
   .model-list {
     min-height: 300px;
     position: relative;
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
     
-    .model-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 24px;
-    }
-    
-    .model-card {
-      background-color: #fff;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-      overflow: hidden;
-      border: 1px solid #ebeef5;
-      position: relative;
-      z-index: 1;
-      
-      &:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+    .model-table-container {
+      /* Custom Table Styles */
+      :deep(.el-table) {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #ebeef5;
         
-        .card-decoration {
-          .deco-circle {
-            opacity: 0.8;
-          }
-          
-          .deco-line {
-            opacity: 0.7;
-          }
-        }
-        
-        .model-badge {
-          transform: translateY(0) scale(1.05);
-        }
-      }
-      
-      &.official-model {
-        box-shadow: 0 8px 24px rgba(64, 158, 255, 0.15);
-        border: 1px solid rgba(64, 158, 255, 0.3);
-        
-        .card-decoration {
-          opacity: 0.8;
-        }
-      }
-      
-      &.llm {
-        border-top: 3px solid #409eff;
-      }
-      
-      &.embedding {
-        border-top: 3px solid #67c23a;
-      }
-      
-      &.rerank {
-        border-top: 3px solid #e6a23c;
-      }
-      
-      .card-decoration {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        opacity: 0.3;
-        transition: opacity 0.3s;
-        z-index: -1;
-        
-        .deco-circle {
-          position: absolute;
-          border-radius: 50%;
-          opacity: 0.4;
-          transition: all 0.6s;
-          
-          &.circle-1 {
-            width: 160px;
-            height: 160px;
-            right: -60px;
-            bottom: -60px;
-            background: radial-gradient(circle, rgba(64, 158, 255, 0.2) 0%, rgba(64, 158, 255, 0) 70%);
-          }
-          
-          &.circle-2 {
-            width: 120px;
-            height: 120px;
-            top: -40px;
-            left: -40px;
-            background: radial-gradient(circle, rgba(103, 194, 58, 0.2) 0%, rgba(103, 194, 58, 0) 70%);
-          }
-        }
-        
-        .deco-line {
-          position: absolute;
-          opacity: 0.3;
-          transition: all 0.6s;
-          
-          &.line-1 {
-            height: 2px;
-            width: 100%;
-            top: 50%;
-            left: 0;
-            background: linear-gradient(90deg, transparent, rgba(64, 158, 255, 0.3), transparent);
-          }
-          
-          &.line-2 {
-            width: 2px;
-            height: 100%;
-            top: 0;
-            left: 70%;
-            background: linear-gradient(180deg, transparent, rgba(103, 194, 58, 0.3), transparent);
-          }
-        }
-      }
-      
-      .model-badge {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        padding: 8px 16px;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 30px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        transition: all 0.3s;
-        backdrop-filter: blur(4px);
-        border: 1px solid rgba(235, 238, 245, 0.6);
-        z-index: 2;
-        
-        .badge-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          
-          .el-icon {
-            font-size: 16px;
-            color: #409eff;
-          }
-        }
-        
-        .badge-text {
-          font-size: 14px;
+        th.el-table__cell {
+          background-color: #f8fafc !important;
+          color: #64748b;
           font-weight: 600;
-          color: #303133;
-        }
-      }
-      
-      .official-badge {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        padding: 6px 12px;
-        background: #fef6e4;
-        border: 1px solid #f8d4a5;
-        border-radius: 30px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        z-index: 2;
-        
-        .el-icon {
-          color: #e6a23c;
-          font-size: 14px;
+          border-bottom: 2px solid #e2e8f0;
+          padding: 12px 16px;
         }
         
-        span {
-          font-size: 12px;
-          font-weight: 600;
-          color: #e6a23c;
+        td.el-table__cell {
+          border-bottom: 1px solid #f1f5f9;
+          padding: 16px;
         }
       }
       
-      .card-content {
-        padding: 30px 24px 24px;
-      }
-      
-      .model-header {
+      .model-info-cell {
         display: flex;
         align-items: center;
-        margin-bottom: 28px;
         
         .model-avatar {
-          width: 60px;
-          height: 60px;
-          border-radius: 16px;
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-right: 20px;
+          margin-right: 16px;
           flex-shrink: 0;
-          position: relative;
-          overflow: hidden;
-          
-          &::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
-            z-index: 1;
-          }
-          
-          .provider-icon {
-            font-size: 28px;
-            font-weight: 700;
-            color: white;
-            z-index: 2;
-            position: relative;
-          }
+          color: white;
+          font-weight: bold;
+          font-size: 20px;
           
           &.llm {
             background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
-            box-shadow: 0 6px 16px rgba(64, 158, 255, 0.3);
+            box-shadow: 0 4px 10px rgba(64, 158, 255, 0.2);
           }
-          
           &.embedding {
             background: linear-gradient(135deg, #67c23a 0%, #529b2e 100%);
-            box-shadow: 0 6px 16px rgba(103, 194, 58, 0.3);
+            box-shadow: 0 4px 10px rgba(103, 194, 58, 0.2);
           }
-          
           &.rerank {
             background: linear-gradient(135deg, #e6a23c 0%, #d9b55b 100%);
-            box-shadow: 0 6px 16px rgba(230, 162, 60, 0.3);
+            box-shadow: 0 4px 10px rgba(230, 162, 60, 0.2);
           }
         }
         
         .model-title {
           .model-name {
-            font-size: 20px;
-            font-weight: 700;
-            color: #303133;
-            margin: 0 0 8px 0;
-            line-height: 1.2;
-          }
-          
-          .model-provider {
             font-size: 15px;
-            font-weight: 500;
-            color: #606266;
+            font-weight: 600;
+            color: #303133;
+            margin-bottom: 4px;
+          }
+          .model-provider {
+            font-size: 13px;
+            color: #909399;
           }
         }
       }
       
-      .model-details {
-        background: #f8f9fa;
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 24px;
-        border: 1px solid #ebeef5;
+      .url-value {
+        font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+        color: #409eff;
+        background-color: rgba(64, 158, 255, 0.1);
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 13px;
+        cursor: pointer;
+        display: inline-block;
+        border: 1px dashed rgba(64, 158, 255, 0.3);
         
-        .detail-item {
-          display: flex;
-          align-items: flex-start;
-          margin-bottom: 16px;
-          
-          &:last-child {
-            margin-bottom: 0;
-          }
-          
-          .detail-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            background: rgba(64, 158, 255, 0.1);
-            margin-right: 16px;
-            flex-shrink: 0;
-            
-            .el-icon {
-              font-size: 16px;
-              color: #409eff;
-            }
-          }
-          
-          .detail-content {
-            flex: 1;
-            
-            .detail-label {
-              font-size: 13px;
-              color: #909399;
-              margin-bottom: 8px;
-              font-weight: 500;
-              display: flex;
-              align-items: center;
-              
-              span {
-                position: relative;
-                padding: 0 4px;
-                z-index: 1;
-              }
-              
-              &.url-label span {
-                color: #409eff;
-                font-weight: 600;
-                
-                &::before {
-                  content: '';
-                  position: absolute;
-                  bottom: 0;
-                  left: 0;
-                  right: 0;
-                  height: 6px;
-                  background-color: rgba(64, 158, 255, 0.15);
-                  z-index: -1;
-                  border-radius: 3px;
-                }
-              }
-              
-              &.date-label span {
-                color: #67c23a;
-                font-weight: 600;
-                
-                &::before {
-                  content: '';
-                  position: absolute;
-                  bottom: 0;
-                  left: 0;
-                  right: 0;
-                  height: 6px;
-                  background-color: rgba(103, 194, 58, 0.15);
-                  z-index: -1;
-                  border-radius: 3px;
-                }
-              }
-            }
-            
-            .detail-value {
-              font-size: 14px;
-              font-weight: 500;
-              color: #606266;
-              word-break: break-all;
-              
-              &.url-value {
-                font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-                background: linear-gradient(to right, #409eff, #5cadff);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-                cursor: pointer;
-                position: relative;
-                display: inline-block;
-                padding: 2px 6px;
-                border-radius: 4px;
-                background-color: rgba(64, 158, 255, 0.1);
-                border: 1px dashed rgba(64, 158, 255, 0.3);
-                
-                &:hover {
-                  background-color: rgba(64, 158, 255, 0.15);
-                  border-color: rgba(64, 158, 255, 0.5);
-                }
-              }
-              
-              &.date-value {
-                font-family: 'Inter', sans-serif;
-                font-weight: 600;
-                color: #67c23a;
-                letter-spacing: 0.5px;
-                background-color: rgba(103, 194, 58, 0.1);
-                padding: 2px 10px;
-                border-radius: 12px;
-                display: inline-block;
-              }
-            }
-          }
+        &:hover {
+          background-color: rgba(64, 158, 255, 0.15);
+          border-color: rgba(64, 158, 255, 0.5);
         }
       }
       
-      .card-actions {
+      .date-value {
+        color: #67c23a;
+        background-color: rgba(103, 194, 58, 0.1);
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-block;
+      }
+      
+      .action-buttons-cell {
         display: flex;
-        justify-content: flex-end;
-        gap: 12px;
+        justify-content: flex-start;
+        gap: 8px;
         
         .action-btn {
+          border-radius: 6px;
           transition: all 0.3s;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-          min-width: 90px;
-          justify-content: center;
           
-          .el-icon {
-            font-size: 16px;
-          }
-          
-          &:hover:not(.disabled) {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-          }
-          
-          &.edit-btn:not(.disabled) {
-            background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
-            border: none;
-            
-            &:hover {
-              background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
-            }
-          }
-          
-          &.delete-btn:not(.disabled) {
-            background: linear-gradient(135deg, #f56c6c 0%, #e45656 100%);
-            border: none;
-            
-            &:hover {
-              background: linear-gradient(135deg, #f78989 0%, #f56c6c 100%);
-            }
-          }
-          
-          &.disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            
-            &:hover {
-              transform: none;
-              box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-            }
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
           }
         }
       }
@@ -1131,21 +884,8 @@ onMounted(() => {
     .empty-state {
       text-align: center;
       padding: 80px 30px;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
       position: relative;
       overflow: hidden;
-      
-      &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 4px;
-        background: linear-gradient(90deg, #409eff, #67c23a, #e6a23c);
-      }
       
       .empty-icon {
         margin-bottom: 24px;
@@ -1200,6 +940,124 @@ onMounted(() => {
           box-shadow: 0 6px 16px rgba(64, 158, 255, 0.3);
           background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
         }
+      }
+    }
+  }
+}
+
+/* Lingseek 引擎配置样式 */
+.lingseek-config-section {
+  margin-top: 40px;
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #ebeef5;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: linear-gradient(180deg, #409eff, #3a7be2);
+  }
+
+  .section-title {
+    margin-bottom: 24px;
+    
+    h3 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #303133;
+      margin: 0 0 8px 0;
+    }
+    
+    p {
+      color: #909399;
+      font-size: 14px;
+      margin: 0;
+    }
+  }
+
+  .config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .config-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid #ebeef5;
+    transition: all 0.3s;
+    
+    &:hover {
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+      transform: translateY(-2px);
+      border-color: #c6e2ff;
+    }
+    
+    .config-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(64, 158, 255, 0.1);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      
+      .el-icon {
+        font-size: 24px;
+        color: #409eff;
+      }
+    }
+    
+    .config-info {
+      margin-bottom: 20px;
+      
+      h4 {
+        margin: 0 0 8px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #303133;
+      }
+      
+      p {
+        margin: 0;
+        font-size: 13px;
+        color: #606266;
+        line-height: 1.5;
+      }
+    }
+    
+    .model-select {
+      width: 100%;
+    }
+  }
+  
+  .save-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 20px;
+    border-top: 1px solid #ebeef5;
+    
+    .save-config-btn {
+      padding: 12px 28px;
+      font-size: 16px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
+      border: none;
+      
+      &:hover {
+        background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
+        box-shadow: 0 6px 16px rgba(64, 158, 255, 0.3);
       }
     }
   }

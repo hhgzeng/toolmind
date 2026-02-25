@@ -32,13 +32,6 @@ const editForm = reactive<UpdateLLMRequest>({
   llm_type: ''
 })
 
-// 模型类型选项
-const llmTypeOptions = [
-  { label: 'LLM', value: 'LLM' },
-  { label: 'Embedding', value: 'Embedding' },
-  { label: 'Rerank', value: 'Rerank' }
-]
-
 // 表单验证规则
 const formRules: FormRules = {
   model: [
@@ -52,9 +45,6 @@ const formRules: FormRules = {
   ],
   provider: [
     { required: true, message: '请输入提供商', trigger: 'blur' }
-  ],
-  llm_type: [
-    { required: true, message: '请选择模型类型', trigger: 'change' }
   ]
 }
 
@@ -83,15 +73,6 @@ const fetchModelDetail = async () => {
       
       const targetModel = allModels.find(model => model.llm_id === modelId)
       if (targetModel) {
-        // 检查是否为官方模型
-        if (targetModel.user_id === '0') {
-          ElMessage.warning('官方模型不可编辑，请返回模型列表')
-          setTimeout(() => {
-            router.push('/model')
-          }, 1500)
-          return
-        }
-        
         currentModel.value = targetModel
         // 填充表单
         Object.assign(editForm, {
@@ -147,12 +128,6 @@ const handleUpdate = async () => {
 // 删除模型
 const handleDelete = async () => {
   if (!currentModel.value) return
-  
-  // 检查是否为官方模型
-  if (currentModel.value.user_id === '0') {
-    ElMessage.warning('⚠️ 官方模型不可删除')
-    return
-  }
   
   try {
     await ElMessageBox.confirm(
@@ -264,23 +239,7 @@ onMounted(() => {
               </el-form-item>
             </div>
             
-            <div class="form-row">
-              <el-form-item label="模型类型" prop="llm_type">
-                <el-select 
-                  v-model="editForm.llm_type" 
-                  placeholder="请选择模型类型"
-                  class="form-select"
-                  clearable
-                >
-                  <el-option
-                    v-for="option in llmTypeOptions"
-                    :key="option.value"
-                    :label="option.label"
-                    :value="option.value"
-                  />
-                </el-select>
-              </el-form-item>
-            </div>
+            <!-- Removed llm_type row -->
           </div>
           
           <div class="form-section">

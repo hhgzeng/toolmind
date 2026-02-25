@@ -1,10 +1,4 @@
 from enum import Enum
-from typing import List
-from pydantic import BaseModel
 
 class WorkSpaceAgents(Enum):
     LingSeekAgent: str = "lingseek"
-
-    SimpleAgent: str = "simple"
-
-    WeChatAgent: str = "wechat-agent"

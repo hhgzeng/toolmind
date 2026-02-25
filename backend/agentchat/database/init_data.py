@@ -72,16 +72,6 @@ async def update_system_mcp_server():
 #                                         system_prompt="")
 
 
-# 认定OS下有一个默认LLM API KEY
-async def insert_llm_to_mysql():
-    api_key = app_settings.multi_models.conversation_model.api_key
-    base_url = app_settings.multi_models.conversation_model.base_url
-    model = app_settings.multi_models.conversation_model.model_name
-    llm_type = 'LLM'
-    provider = 'Qwen'
-
-    await LLMService.create_llm(user_id=SystemUser, model=model, llm_type=llm_type,
-                                api_key=api_key, base_url=base_url, provider=provider)
 
 
 # 初始化默认的Tool

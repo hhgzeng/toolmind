@@ -30,6 +30,14 @@ export interface UpdateLLMRequest {
   llm_type?: string
 }
 
+export interface LingseekModelConfig {
+  config_id?: string
+  user_id?: string
+  conversation_model_id?: string | null
+  tool_call_model_id?: string | null
+  reasoning_model_id?: string | null
+}
+
 export interface ApiResponse<T> {
   status_code: number
   status_message: string
@@ -102,4 +110,21 @@ export function deleteLLMAPI(data: { llm_id: string }) {
     method: 'DELETE',
     data
   })
-} 
+}
+
+// 获取 Lingseek 模型配置
+export function getLingseekConfigAPI() {
+  return request<ApiResponse<LingseekModelConfig>>({
+    url: '/api/v1/model/lingseek_config',
+    method: 'GET'
+  })
+}
+
+// 更新 Lingseek 模型配置
+export function updateLingseekConfigAPI(data: LingseekModelConfig) {
+  return request<ApiResponse<LingseekModelConfig>>({
+    url: '/api/v1/model/lingseek_config',
+    method: 'POST',
+    data
+  })
+}

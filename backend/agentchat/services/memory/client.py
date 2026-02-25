@@ -118,7 +118,6 @@ logger = logging.getLogger(__name__)
 class AsyncMemory(MemoryBase):
     def __init__(self):
 
-        self.embedding_model = ModelManager.get_embedding_model()
         self.vector_store = VectorStoreManager.get_chroma_vector()
         self.llm = ModelManager.get_conversation_model()
         self.db = MemoryHistoryDao
