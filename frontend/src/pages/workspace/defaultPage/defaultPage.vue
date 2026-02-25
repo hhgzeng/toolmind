@@ -4,8 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { MdPreview } from "md-editor-v3"
 import "md-editor-v3/lib/style.css"
-import { getWorkspacePluginsAPI, workspaceSimpleChatStreamAPI, type WorkSpaceSimpleTask } from '../../../apis/workspace'
-import { getVisibleLLMsAPI, type LLMResponse } from '../../../apis/llm'
+import { getWorkspacePluginsAPI } from '../../../apis/workspace'
 import { useUserStore } from '../../../store/user'
 
 const userStore = useUserStore()
@@ -13,13 +12,7 @@ const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
 const inputMessage = ref('')
-const selectedMode = ref('normal')
-const plugins = ref<any[]>([])
-const showModelSelector = ref(false)
-// const showToolSelector = ref(false)
 const showSearchSelector = ref(false)
-const selectedModel = ref<string>('')
-const selectedModelId = ref<string>('')
 const selectedTools = ref<string[]>([])
 const showMcpSelector = ref(false)
 const selectedMcpServers = ref<string[]>([])
@@ -32,12 +25,7 @@ const currentSessionId = ref<string>('')  // 当前会话ID
 const chatConversationRef = ref<HTMLElement | null>(null)  // 聊天容器引用
 const isGenerating = ref(false)  // 是否正在生成回复
 
-// 模型数据（来自应用中心"可见模型"）
-const modelOptions = ref<LLMResponse[]>([])
-const modelsLoading = ref(false)
 
-// 本页对话消息（用户在上，AI在下）
-const messages = ref<Array<{ role: 'user' | 'assistant'; content: string }>>([])
 
 // 头像加载错误处理
 const handleAvatarError = (event: Event) => {
@@ -47,72 +35,7 @@ const handleAvatarError = (event: Event) => {
   }
 }
 
-const modes = [
-  {
-    id: 'normal',
-    label: '日常模式',
-    icon: '💬'
-  },
-  {
-    id: 'lingseek',
-    label: '灵寻LingSeek',
-    icon: '✨'
-  }
-]
 
-// 从接口加载模型
-const fetchModels = async () => {
-  modelsLoading.value = true
-  try {
-    const res = await getVisibleLLMsAPI()
-    if (res.data && res.data.status_code === 200) {
-      const grouped = res.data.data || {}
-      const list: LLMResponse[] = []
-      Object.values(grouped).forEach((arr: any) => {
-        if (Array.isArray(arr)) list.push(...arr)
-      })
-      // 仅保留 LLM 类型
-      modelOptions.value = list.filter(m => (m.llm_type || '').toUpperCase() === 'LLM')
-      // 默认选择第一个
-      if (!selectedModelId.value && modelOptions.value.length > 0) {
-        selectedModelId.value = modelOptions.value[0].llm_id
-        selectedModel.value = modelOptions.value[0].model
-      }
-    }
-  } catch (e) {
-    console.error('获取模型失败', e)
-  } finally {
-    modelsLoading.value = false
-  }
-}
-
-// 获取可用插件
-const fetchPlugins = async () => {
-  try {
-    const response = await getWorkspacePluginsAPI()
-    if (response.data.status_code === 200) {
-      plugins.value = response.data.data || []
-      console.log('可用插件:', plugins.value)
-    }
-  } catch (error) {
-    console.error('获取插件列表出错:', error)
-  }
-}
-
-// 选择模式
-const selectMode = (modeId: string) => {
-  selectedMode.value = modeId
-}
-
-// 选择模型
-const selectModel = (llmId: string) => {
-  const model = modelOptions.value.find(m => m.llm_id === llmId)
-  if (model) {
-    selectedModelId.value = model.llm_id
-    selectedModel.value = model.model
-  }
-  showModelSelector.value = false
-}
 
 // 切换工具选择
 // const toggleTool = (toolId: string) => {
@@ -172,16 +95,7 @@ const generateSessionId = (): string => {
   return crypto.randomUUID().replace(/-/g, '')
 }
 
-// 自动滚动到底部
-const scrollToBottom = () => {
-  if (chatConversationRef.value) {
-    setTimeout(() => {
-      if (chatConversationRef.value) {
-        chatConversationRef.value.scrollTop = chatConversationRef.value.scrollHeight
-      }
-    }, 100)
-  }
-}
+
 
 // 发送消息
 const handleSend = async () => {
@@ -198,96 +112,22 @@ const handleSend = async () => {
   
   const query = inputMessage.value.trim()
   
-  // 根据模式跳转到不同的页面
-  if (selectedMode.value === 'lingseek') {
-    // 灵寻模式：直接跳转到任务流程图页面（三列布局）
-    console.log('跳转到灵寻任务页面')
-    console.log('query:', query)
-    // console.log('tools:', selectedTools.value)
-    console.log('webSearch:', webSearchEnabled.value)
-    
-    // 立即清空输入框
-    inputMessage.value = ''
-    
-    router.push({
-      name: 'taskGraphPage',
-      query: {
-        query: query,
-        // tools: JSON.stringify(selectedTools.value),
-        webSearch: webSearchEnabled.value.toString(),
-        mcp_servers: JSON.stringify(selectedMcpServers.value)
-      }
-    })
-  } else {
-    // 日常模式：在本页进行对话（流式）
-    console.log('=== 日常模式发送消息 ===')
-    console.log('selectedModelId:', selectedModelId.value)
-    console.log('query:', query)
-    console.log('session_id:', currentSessionId.value)
-    
-    if (!selectedModelId.value) {
-      ElMessage.warning('请先选择模型')
-      return
+  // 直接跳转到任务流程图页面（三列布局）
+  console.log('跳转到灵寻任务页面')
+  console.log('query:', query)
+  console.log('webSearch:', webSearchEnabled.value)
+  
+  // 立即清空输入框
+  inputMessage.value = ''
+  
+  router.push({
+    name: 'taskGraphPage',
+    query: {
+      query: query,
+      webSearch: webSearchEnabled.value.toString(),
+      mcp_servers: JSON.stringify(selectedMcpServers.value)
     }
-
-    // 如果还没有session_id，生成一个新的
-    if (!currentSessionId.value) {
-      currentSessionId.value = generateSessionId()
-      console.log('生成新的 session_id:', currentSessionId.value)
-    }
-
-    // 立即清空输入框，提升用户体验
-    inputMessage.value = ''
-    
-    // 设置正在生成状态（转圈）
-    isGenerating.value = true
-
-    // 将用户消息加入消息列表
-    console.log('将用户消息加入 messages')
-    messages.value.push({ role: 'user' as const, content: query })
-    
-    // 自动滚动到底部
-    scrollToBottom()
-    
-    // 预置一条AI消息用于流式累加（先添加到数组，然后通过索引更新以触发响应式）
-    const aiMsgIndex = messages.value.length
-    messages.value.push({ role: 'assistant', content: '' })
-    console.log('当前 messages 长度:', messages.value.length)
-
-    try {
-      const payload: WorkSpaceSimpleTask = {
-        query,
-        model_id: selectedModelId.value,
-        plugins: selectedTools.value,
-        mcp_servers: selectedMcpServers.value,
-        session_id: currentSessionId.value  // 添加session_id参数
-      }
-      console.log('准备调用 workspaceSimpleChatStreamAPI，payload:', payload)
-      await workspaceSimpleChatStreamAPI(
-        payload,
-        (chunk) => {
-          console.log('收到 chunk，累加到 aiMsg:', chunk)
-          // 通过索引更新以触发 Vue 的响应式
-          messages.value[aiMsgIndex].content += chunk
-          // 每次收到新内容时自动滚动到底部
-          scrollToBottom()
-        },
-        (err) => {
-          console.error('日常模式流式出错', err)
-          ElMessage.error('对话失败，请稍后重试')
-          isGenerating.value = false  // 出错时解除生成状态
-        },
-        () => {
-          console.log('日常模式流式结束')
-          isGenerating.value = false  // 完成时解除生成状态
-        }
-      )
-    } catch (e) {
-      console.error('日常模式对话异常', e)
-      ElMessage.error('对话异常')
-      isGenerating.value = false  // 异常时解除生成状态
-    }
-  }
+  })
 }
 
 // 键盘事件处理
@@ -302,45 +142,12 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 }
 
-// 加载会话历史
-const loadSessionHistory = async (sessionId: string) => {
-  try {
-    // 导入 API
-    const { getWorkspaceSessionsAPI } = await import('../../../apis/workspace')
-    const response = await getWorkspaceSessionsAPI()
-    
-    if (response.data.status_code === 200) {
-      const session = response.data.data.find((s: any) => s.session_id === sessionId)
-      
-      if (session && session.contexts && Array.isArray(session.contexts)) {
-        // 将 contexts 转换为 messages 格式
-        messages.value = session.contexts.map((ctx: any) => [
-          { role: 'user' as const, content: ctx.query || '' },
-          { role: 'assistant' as const, content: ctx.answer || '' }
-        ]).flat().filter((msg: any) => msg.content) // 过滤掉空内容
-        
-        console.log('已加载会话历史，消息数量:', messages.value.length)
-        
-        // 加载历史后滚动到底部
-        scrollToBottom()
-      }
-    }
-  } catch (error) {
-    console.error('加载会话历史失败:', error)
-    ElMessage.error('加载会话历史失败')
-  }
-}
-
 onMounted(async () => {
-  fetchPlugins()
-  fetchModels()
-  
   // 检查是否有 session_id 参数，如果有则加载会话历史
   const sessionId = route.query.session_id as string
   if (sessionId) {
     console.log('加载已有会话:', sessionId)
     currentSessionId.value = sessionId  // 设置当前会话ID
-    await loadSessionHistory(sessionId)
   } else {
     // 如果没有session_id，生成一个新的
     currentSessionId.value = generateSessionId()
@@ -373,74 +180,29 @@ watch(
       console.log('检测到会话ID变化:', oldSessionId, '->', newSessionId)
       // 更新当前会话ID
       currentSessionId.value = newSessionId as string
-      // 清空当前消息
-      messages.value = []
-      // 加载新会话的历史
-      await loadSessionHistory(newSessionId as string)
     } else if (!newSessionId && oldSessionId) {
       // 如果从有session_id变为没有，生成新的session_id
       currentSessionId.value = generateSessionId()
       console.log('生成新会话ID:', currentSessionId.value)
-      messages.value = []
     }
   }
 )
 </script>
 
 <template>
-  <div class="chat-page" :class="{ 'chat-active': messages.length > 0 }">
+  <div class="chat-page">
     <div class="chat-container">
-      <!-- 欢迎区域（有对话时隐藏） -->
-      <div v-if="messages.length === 0" class="welcome-section">
+      <!-- 欢迎区域 -->
+      <div class="welcome-section">
         <div class="avatar-wrapper">
           <img src="../../../assets/robot.svg" alt="ToolMind" class="avatar" />
         </div>
-        <h class="welcome-title">今天有什么可以帮到你？</h>
-      </div>
-
-      <!-- 模式选择（有对话时隐藏） -->
-      <div v-if="messages.length === 0" class="mode-selector">
-        <button
-          v-for="mode in modes"
-          :key="mode.id"
-          :class="['mode-btn', { active: selectedMode === mode.id }]"
-          @click="selectMode(mode.id)"
-        >
-          <span class="mode-icon">{{ mode.icon }}</span>
-          <span class="mode-label">{{ mode.label }}</span>
-        </button>
-      </div>
-
-      <!-- 对话历史（有对话时显示在上方） -->
-      <div v-if="messages.length > 0" class="chat-conversation" ref="chatConversationRef">
-        <div v-for="(msg, idx) in messages" :key="idx" class="message-group">
-          <!-- User Message -->
-          <div v-if="msg.role === 'user'" class="user-message">
-            <div class="message-content">
-              <span>{{ msg.content }}</span>
-            </div>
-            <img :src="userStore.userInfo?.avatar || '/src/assets/user.svg'" alt="User Avatar" class="avatar" @error="handleAvatarError" />
-          </div>
-          
-          <!-- AI Message -->
-          <div v-if="msg.role === 'assistant'" class="ai-message">
-            <img src="/src/assets/robot.svg" alt="AI Avatar" class="avatar" />
-            <div class="message-content">
-              <!-- 加载转圈器 - 仅在内容为空且正在生成时显示 -->
-              <div v-if="!msg.content && isGenerating && idx === messages.length - 1" class="loading-spinner-container">
-                <div class="loading-spinner"></div>
-                <span class="loading-text">AI正在思考中...</span>
-              </div>
-              <!-- 实际内容 - 有内容时显示 -->
-              <MdPreview v-if="msg.content" :editorId="'workspace-ai-' + idx" :modelValue="msg.content" />
-            </div>
-          </div>
-        </div>
+        <h1 class="welcome-title">今天有什么可以帮到你？</h1>
       </div>
 
       <!-- 输入区域（固定在底部） -->
-      <div class="input-section" :class="{ 'input-fixed': messages.length > 0 }">
-        <div class="input-wrapper" :class="{ 'lingseek-glow': selectedMode === 'lingseek' }">
+      <div class="input-section">
+        <div class="input-wrapper lingseek-glow">
           <textarea
             v-model="inputMessage"
             placeholder="给 ToolMind 发送消息"
@@ -452,52 +214,8 @@ watch(
           <!-- 底部控制栏 -->
           <div class="input-footer">
             <div class="footer-left">
-              <!-- 模型选择（仅日常模式显示） -->
-              <div v-if="selectedMode === 'normal'" class="selector-dropdown">
-                <div 
-                  :class="['selector-item', { open: showModelSelector }]"
-                  @click="showModelSelector = !showModelSelector"
-                >
-                  <img src="../../../assets/model.svg" alt="模型" class="selector-icon-img" />
-                  <span class="selector-text">{{ selectedModel || (modelsLoading ? '加载中...' : '选择模型') }}</span>
-                  <span class="selector-arrow">▲</span>
-                </div>
-                
-                <!-- 模型下拉菜单 -->
-                <transition name="dropdown">
-                  <div v-if="showModelSelector" class="dropdown-menu model-menu">
-                    <div v-if="modelsLoading" class="dropdown-empty">
-                      <span class="empty-icon">⏳</span>
-                      <span class="empty-text">正在加载模型...</span>
-                    </div>
-                    <div v-else-if="modelOptions.length === 0" class="dropdown-empty">
-                      <img src="../../../assets/model.svg" alt="模型" class="empty-icon-img" />
-                      <span class="empty-text">暂无可用模型</span>
-                    </div>
-                    <div
-                      v-for="m in modelOptions"
-                      :key="m.llm_id"
-                      :class="['dropdown-item', { selected: selectedModelId === m.llm_id }]"
-                      @click="selectModel(m.llm_id)"
-                    >
-                      <div class="item-left">
-                        <div class="item-icon-wrapper">
-                          <img src="../../../assets/model.svg" alt="模型" class="item-icon-img" />
-                        </div>
-                        <div class="item-content">
-                          <div class="item-text">{{ m.model }}</div>
-                        </div>
-                      </div>
-                      <div v-if="selectedModelId === m.llm_id" class="item-check-wrapper">
-                        <span class="item-check">✓</span>
-                      </div>
-                    </div>
-                  </div>
-                </transition>
-              </div>
-
-              <!-- 联网搜索（仅灵寻模式显示） -->
-              <div v-if="selectedMode === 'lingseek'" class="selector-dropdown">
+              <!-- 联网搜索 -->
+              <div class="selector-dropdown">
                 <div 
                   :class="['selector-item', { active: webSearchEnabled }]"
                   @click="toggleWebSearch"

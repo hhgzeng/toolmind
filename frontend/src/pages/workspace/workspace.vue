@@ -88,7 +88,7 @@ const deleteSession = async (sessionId: string, event: Event) => {
   }
 }
 
-// 选择会话 - 根据agent类型跳转到不同页面
+// 选择会话 - 对所有会话统一跳转到任务图页面
 const selectSession = (sessionId: string) => {
   selectedSession.value = sessionId
   
@@ -102,32 +102,18 @@ const selectSession = (sessionId: string) => {
   
   console.log('选择会话:', sessionId, '类型:', session.agent)
   
-  // 根据agent类型判断跳转页面
-  if (session.agent === 'simple') {
-    // 日常模式，跳转到日常对话页面，并传递session_id
-    router.push({
-      name: 'workspaceDefaultPage',
-      query: {
-        session_id: sessionId
-      }
-    })
-  } else {
-    // lingseek模式，跳转到三列布局页面
-    router.push({
-      name: 'taskGraphPage',
-      query: {
-        session_id: sessionId
-      }
-    })
-  }
+  // 统一跳转到三列布局页面 (LingSeek模式)
+  router.push({
+    name: 'taskGraphPage',
+    query: {
+      session_id: sessionId
+    }
+  })
 }
 
 // 用户下拉菜单命令处理
 const handleUserCommand = async (command: string) => {
   switch (command) {
-    case 'profile':
-      router.push('/profile')
-      break
     case 'settings':
       router.push('/model')
       break

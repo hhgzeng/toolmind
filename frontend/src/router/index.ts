@@ -7,7 +7,6 @@ import { Register } from '../pages/login'
 import McpServer from '../pages/mcp-server'
 import Model from '../pages/model'
 import ModelEditor from '../pages/model/model-editor.vue'
-import Profile from '../pages/profile'
 import Workspace from '../pages/workspace/workspace.vue'
 import WorkspacePage from '../pages/workspace/workspacePage/workspacePage.vue'
 import WorkspaceDefaultPage from '../pages/workspace/defaultPage/defaultPage.vue'
@@ -92,14 +91,6 @@ const routes: RouteRecordRaw[] = [
           current: 'model'
         },
         component: ModelEditor,
-      },
-      {
-        path: '/profile',
-        name: 'profile',
-        meta: {
-          current: 'profile'
-        },
-        component: Profile,
       },
       {
         path: '/dashboard',

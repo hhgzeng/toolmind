@@ -48,9 +48,6 @@ const goCurrent = (item: string) => {
 // 用户下拉菜单命令处理
 const handleUserCommand = async (command: string) => {
   switch (command) {
-    case 'profile':
-      router.push('/profile')
-      break
     case 'settings':
       router.push('/model')
       break

@@ -4,8 +4,8 @@ from agentchat.database.models.agent import AgentTable
 from agentchat.database.models.history import HistoryTable
 from agentchat.database.models.memory_history import MemoryHistoryTable
 from agentchat.database.models.user import SystemUser
-from agentchat.database.models.knowledge import KnowledgeTable
-from agentchat.database.models.knowledge_file import KnowledgeFileTable
+# from agentchat.database.models.knowledge import KnowledgeTable
+# from agentchat.database.models.knowledge_file import KnowledgeFileTable
 from agentchat.database.models.tool import ToolTable
 from agentchat.database.models.dialog import DialogTable
 from agentchat.database.models.mcp_server import MCPServerTable, MCPServerStdioTable

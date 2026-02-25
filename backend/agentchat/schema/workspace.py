@@ -8,11 +8,3 @@ class WorkSpaceAgents(Enum):
     SimpleAgent: str = "simple"
 
     WeChatAgent: str = "wechat-agent"
-
-
-class WorkSpaceSimpleTask(BaseModel):
-    query: str
-    model_id: str
-    session_id: str
-    plugins: List[str] = []
-    mcp_servers: List[str] = []
