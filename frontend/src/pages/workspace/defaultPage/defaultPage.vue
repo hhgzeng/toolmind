@@ -117,6 +117,11 @@ const handleSend = async () => {
 
 // 键盘事件处理
 const handleKeydown = (event: KeyboardEvent) => {
+  // 如果正在使用输入法，不处理回车事件
+  if (event.isComposing) {
+    return
+  }
+
   // 直接回车发送，Shift+Enter 换行
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()

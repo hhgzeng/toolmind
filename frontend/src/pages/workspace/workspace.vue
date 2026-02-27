@@ -146,9 +146,23 @@ const fetchSessions = async () => {
   }
 }
 
-// 删除会话
-const deleteSession = async (sessionId: string, event: Event) => {
+// 删除会话确认状态
+const sessionToDelete = ref<string | null>(null)
+
+const confirmDeleteSession = (sessionId: string, event: Event) => {
   event.stopPropagation()
+  sessionToDelete.value = sessionId
+  activeMenuId.value = null
+}
+
+const cancelDelete = () => {
+  sessionToDelete.value = null
+}
+
+// 执行删除会话
+const executeDelete = async () => {
+  if (!sessionToDelete.value) return
+  const sessionId = sessionToDelete.value
   
   try {
     const response = await deleteWorkspaceSessionAPI(sessionId)
@@ -166,6 +180,8 @@ const deleteSession = async (sessionId: string, event: Event) => {
   } catch (error) {
     console.error('删除会话出错:', error)
     ElMessage.error('删除会话失败')
+  } finally {
+    sessionToDelete.value = null
   }
 }
 
@@ -307,8 +323,15 @@ onBeforeUnmount(() => {
               <!-- 操作菜单 -->
               <transition name="menu-fade">
                 <div v-if="activeMenuId === session.sessionId" class="action-menu">
-                  <button class="menu-item delete" @click="deleteSession(session.sessionId, $event)">
-                    删除对话
+                  <button class="menu-item delete" @click="confirmDeleteSession(session.sessionId, $event)">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 6h18"></path>
+                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                    删除
                   </button>
                 </div>
               </transition>
@@ -375,6 +398,20 @@ onBeforeUnmount(() => {
       <router-view />
     </div>
     </div>
+
+    <!-- 确认删除对话框 -->
+    <transition name="fade">
+      <div v-if="sessionToDelete" class="confirm-dialog-overlay" @click="cancelDelete">
+        <div class="confirm-dialog" @click.stop>
+          <h3 class="dialog-title">永久删除对话</h3>
+          <p class="dialog-message">删除后，该对话将不可恢复。确认删除吗？</p>
+          <div class="dialog-footer">
+            <button class="dialog-btn cancel-btn" @click="cancelDelete">取消</button>
+            <button class="dialog-btn delete-btn" @click="executeDelete">删除</button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -578,7 +615,9 @@ onBeforeUnmount(() => {
             min-width: 120px;
 
             .menu-item {
-              display: block;
+              display: flex;
+              align-items: center;
+              gap: 8px;
               width: 100%;
               padding: 8px 14px;
               background: transparent;
@@ -590,6 +629,12 @@ onBeforeUnmount(() => {
               text-align: left;
               transition: background 0.15s ease;
               font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
+
+              .menu-icon {
+                width: 16px;
+                height: 16px;
+                flex-shrink: 0;
+              }
 
               &:hover {
                 background: #f5f5f5;
@@ -837,5 +882,98 @@ onBeforeUnmount(() => {
       margin: 0;
     }
   }
+}
+
+// 确认对话框样式
+.confirm-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+
+.confirm-dialog {
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  width: 90%;
+  max-width: 320px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  animation: dialog-scale-in 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  .dialog-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .dialog-message {
+    margin: 0 0 24px 0;
+    font-size: 14px;
+    color: #666;
+    line-height: 1.5;
+  }
+
+  .dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+
+    .dialog-btn {
+      padding: 8px 24px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      background: white;
+      transition: all 0.2s;
+      outline: none;
+
+      &.cancel-btn {
+        border: 1px solid #e5e5e5;
+        color: #333;
+
+        &:hover {
+          background: #f5f5f5;
+        }
+      }
+
+      &.delete-btn {
+        border: 1px solid #ff3b30;
+        color: #ff3b30;
+
+        &:hover {
+          background: #fff0f0;
+        }
+      }
+    }
+  }
+}
+
+@keyframes dialog-scale-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
