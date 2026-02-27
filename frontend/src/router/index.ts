@@ -6,7 +6,6 @@ import Login from '../pages/login'
 import { Register } from '../pages/login'
 import McpServer from '../pages/mcp-server'
 import Model from '../pages/model'
-import ModelEditor from '../pages/model/model-editor.vue'
 import Workspace from '../pages/workspace/workspace.vue'
 import WorkspacePage from '../pages/workspace/workspacePage/workspacePage.vue'
 import WorkspaceDefaultPage from '../pages/workspace/defaultPage/defaultPage.vue'
@@ -48,16 +47,13 @@ const routes: RouteRecordRaw[] = [
         path: 'workspacePage',
         name: 'workspacePage',
         component: WorkspacePage,
+      },
+      {
+        path: 'taskGraph',
+        name: 'taskGraphPage',
+        component: TaskGraphPage,
       }
     ]
-  },
-  {
-    path: '/workspace/taskGraph',
-    name: 'taskGraphPage',
-    component: TaskGraphPage,
-    meta: {
-      requiresAuth: true
-    }
   },
   {
     path: '/',
@@ -83,14 +79,6 @@ const routes: RouteRecordRaw[] = [
           current: 'model'
         },
         component: Model,
-      },
-      {
-        path: '/model/editor',
-        name: 'model-editor',
-        meta: {
-          current: 'model'
-        },
-        component: ModelEditor,
       },
       {
         path: '/dashboard',

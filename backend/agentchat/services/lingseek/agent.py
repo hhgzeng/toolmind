@@ -122,7 +122,6 @@ class LingSeekAgent:
         lingseek_task_prompt = GenerateTaskPrompt.format(
             tools_str=tools_str,
             query=lingseek_task.query,
-            guide_prompt=lingseek_task.guide_prompt,
             current_time=get_beijing_time(),
         )
 
@@ -320,7 +319,7 @@ class LingSeekAgent:
                     lingseek_task.query,
                     WorkSpaceSessionContext(
                         query=lingseek_task.query,
-                        guide_prompt=lingseek_task.guide_prompt,
+                        guide_prompt="",
                         task=context_task,
                         task_graph=tasks_show,
                         answer=final_response

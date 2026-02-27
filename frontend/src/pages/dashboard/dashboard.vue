@@ -10,19 +10,17 @@
 
       <div class="header-actions">
         <div class="filter-group">
-          <label>模型</label>
           <el-select
             v-model="filters.model"
             placeholder="全部模型"
             clearable
             filterable
-            size="large"
             popper-class="dashboard-select-popper"
             class="filter-select"
             @change="handleFilterChange"
-            style="width: 250px"
+            style="width: 160px"
           >
-            <el-option label="全部" value="" />
+            <el-option label="全部模型" value="" />
             <el-option
               v-for="model in modelsList"
               :key="model"
@@ -33,19 +31,17 @@
         </div>
 
         <div class="filter-group">
-          <label>时间范围</label>
           <el-select
             v-model="filters.delta_days"
-            size="large"
             popper-class="dashboard-select-popper"
             class="filter-select"
             @change="handleFilterChange"
-            style="width: 220px"
+            style="width: 140px"
           >
-            <el-option label="周内" :value="7" />
-            <el-option label="月内" :value="30" />
-            <el-option label="年内" :value="365" />
-            <el-option label="全部" :value="10000" />
+          <el-option label="全部时间" :value="10000" />
+          <el-option label="周内" :value="7" />
+          <el-option label="月内" :value="30" />
+          <el-option label="年内" :value="365" />
           </el-select>
         </div>
       </div>
@@ -214,7 +210,6 @@ const initCallCountChart = () => {
       splitLine: { lineStyle: { color: '#eee' } },
       axisLabel: { color: '#606266' }
     },
-    dataZoom: [{ type: 'inside' }],
     series: []
   }
   
@@ -508,7 +503,7 @@ onBeforeUnmount(() => {
 <style scoped lang="scss">
 .dashboard-container {
   padding: 30px;
-  background-color: #f5f7fa;
+  background-color: #ffffff;
   min-height: calc(100vh - 60px);
 }
 
@@ -556,21 +551,7 @@ onBeforeUnmount(() => {
 
 .filter-group {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  min-width: 220px;
-  
-  label {
-    font-size: 12px;
-    color: #4f5d75;
-    white-space: nowrap;
-    padding-left: 4px;
-    font-weight: 600;
-    letter-spacing: .3px;
-    -webkit-font-smoothing: antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Source Han Sans CN', sans-serif;
-  }
+  align-items: center;
 }
 
 /* Select 美化 (适用 Element Plus 2.6+) */
@@ -579,13 +560,14 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 0 1px #dcdfe6 inset !important;
   transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
   background: #ffffff;
-  padding: 8px 18px !important;
-  min-height: 42px;
+  padding: 8px 20px !important;
+  min-height: 40px !important;
+  height: 40px !important;
 }
 .filter-select :deep(.el-select__placeholder),
 .filter-select :deep(.el-select__selected-item) {
   color: #475569;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.2;
 }
 .filter-select :deep(.el-select__wrapper.is-hovering),

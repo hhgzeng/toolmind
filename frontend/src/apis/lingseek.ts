@@ -15,14 +15,14 @@ export const generateLingSeekGuidePromptAPI = async (
   onClose?: () => void
 ) => {
   const token = localStorage.getItem('token')
-  
+
   console.log('=== generateLingSeekGuidePromptAPI 调用 ===')
   console.log('参数:', data)
   console.log('Token:', token ? `${token.substring(0, 20)}...` : '无')
   console.log('请求 URL:', `${BASE_URL}/api/v1/workspace/lingseek/guide_prompt`)
-  
+
   const ctrl = new AbortController()
-  
+
   try {
     await fetchEventSource(`${BASE_URL}/api/v1/workspace/lingseek/guide_prompt`, {
       method: 'POST',
@@ -40,7 +40,7 @@ export const generateLingSeekGuidePromptAPI = async (
             // 后端返回的是 JSON 格式: { "event": "...", "data": { "chunk": "..." } }
             const parsedData = JSON.parse(event.data)
             console.log('📦 解析后的数据:', parsedData)
-            
+
             if (parsedData.data && parsedData.data.chunk) {
               const chunk = parsedData.data.chunk
               console.log('📝 提取的 chunk:', chunk)
@@ -87,11 +87,11 @@ export const regenerateLingSeekGuidePromptAPI = async (
   onClose?: () => void
 ) => {
   const token = localStorage.getItem('token')
-  
+
   console.log('开始调用 guide_prompt/feedback 接口，参数:', data)
-  
+
   const ctrl = new AbortController()
-  
+
   try {
     await fetchEventSource(`${BASE_URL}/api/v1/workspace/lingseek/guide_prompt/feedback`, {
       method: 'POST',
@@ -109,7 +109,7 @@ export const regenerateLingSeekGuidePromptAPI = async (
             // 后端返回的是 JSON 格式: { "event": "...", "data": { "chunk": "..." } }
             const parsedData = JSON.parse(event.data)
             console.log('📦 解析后的数据:', parsedData)
-            
+
             if (parsedData.data && parsedData.data.chunk) {
               const chunk = parsedData.data.chunk
               console.log('📝 提取的 chunk:', chunk)
@@ -150,11 +150,11 @@ export const generateLingSeekTasksAPI = async (
   onClose?: () => void
 ) => {
   const token = localStorage.getItem('token')
-  
+
   console.log('开始调用 task 接口，参数:', data)
-  
+
   const ctrl = new AbortController()
-  
+
   try {
     await fetchEventSource(`${BASE_URL}/api/v1/workspace/lingseek/task`, {
       method: 'POST',
@@ -172,7 +172,7 @@ export const generateLingSeekTasksAPI = async (
             // 后端返回的是 JSON 格式: { "event": "...", "data": { "chunk": "..." } }
             const parsedData = JSON.parse(event.data)
             console.log('📦 解析后的数据:', parsedData)
-            
+
             if (parsedData.data && parsedData.data.chunk) {
               const chunk = parsedData.data.chunk
               console.log('📝 提取的 chunk:', chunk)
@@ -207,7 +207,7 @@ export const generateLingSeekTasksAPI = async (
 export const startLingSeekTaskAPI = async (
   data: {
     query: string
-    guide_prompt: string
+    guide_prompt?: string
     web_search?: boolean
     plugins?: string[]
     mcp_servers?: string[]
@@ -220,11 +220,11 @@ export const startLingSeekTaskAPI = async (
   onClose?: () => void
 ) => {
   const token = localStorage.getItem('token')
-  
+
   console.log('开始调用 task_start 接口，参数:', data)
-  
+
   const ctrl = new AbortController()
-  
+
   try {
     await fetchEventSource(`${BASE_URL}/api/v1/workspace/lingseek/task_start`, {
       method: 'POST',
@@ -235,6 +235,16 @@ export const startLingSeekTaskAPI = async (
       body: JSON.stringify(data),
       signal: ctrl.signal,
       openWhenHidden: true,
+      async onopen(response) {
+        if (response.ok) {
+          console.log('✅ task_start 连接成功')
+          return
+        }
+        // 非 2xx 状态码，抛错阻止 fetchEventSource 重试
+        const errorText = await response.text().catch(() => '')
+        console.error(`❌ task_start 请求失败: ${response.status}`, errorText)
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
+      },
       onmessage(event) {
         console.log('📨 收到原始消息:', event.data)
         if (event.data) {
@@ -242,7 +252,7 @@ export const startLingSeekTaskAPI = async (
             // 后端返回的是 JSON 格式: { "event": "...", "data": {...} }
             const parsedData = JSON.parse(event.data)
             console.log('📦 解析后的数据:', parsedData)
-            
+
             // 处理不同类型的事件
             if (parsedData.event === 'generate_tasks' && parsedData.data?.graph) {
               // 处理任务图数据

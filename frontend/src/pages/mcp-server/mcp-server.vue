@@ -410,46 +410,18 @@ onUnmounted(() => {
     <Teleport to="body">
       <div v-if="dialogVisible" class="modal-overlay" @click.self="closeDialog">
         <div class="modal-dialog">
-          <div class="modal-header">
-            <h3>{{ editingServer ? '编辑 MCP 服务器' : '创建 MCP 服务器' }}</h3>
-            <button class="close-btn" @click="closeDialog">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-          </div>
-          
           <div class="modal-body">
             <!-- 服务器配置向导 -->
             <div class="config-wizard">
-              <div class="wizard-header">
-                <div class="wizard-icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="#409eff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M12 12L2 7L12 2L22 7L12 12Z" stroke="#409eff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </div>
-                <div class="wizard-text">
-                  <h4>{{ editingServer ? '更新服务器配置' : '配置新的MCP服务器' }}</h4>
-                  <p>{{ editingServer ? '修改现有服务器的连接参数和配置' : '填写以下信息来添加新的MCP服务器' }}</p>
-                </div>
-              </div>
+
 
               <form @submit.prevent="handleSubmit" class="mcp-form">
                 <!-- 服务器信息 -->
-                <div class="form-section">
-                  <div class="section-title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="#409eff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    <span v-if="editingServer">服务器信息</span>
-                    <span v-else>基础信息</span>
-                  </div>
                   
                   <div class="form-grid">
                     <div class="form-group" style="grid-column: 1 / -1;">
-                      <label for="config">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <label for="config" style="font-size: 18px; font-weight: 600; color: #1c1c1e; margin-bottom: 20px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                           <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                           <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -465,7 +437,7 @@ onUnmounted(() => {
                           rows="10"
                           :placeholder="configPlaceholder"
                           :class="{ 'error': formErrors.config }"
-                          style="font-family: monospace; font-size: 13px; line-height: 1.5; padding: 12px;"
+                          style="font-family: monospace; font-size: 15px; line-height: 1.6;"
                         ></textarea>
                         <div class="json-indicator">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -477,33 +449,24 @@ onUnmounted(() => {
                         </div>
                       </div>
                       <span v-if="formErrors.config" class="error-text">{{ formErrors.config }}</span>
-                      <div class="input-help">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <circle cx="12" cy="12" r="10" stroke="#67c23a" stroke-width="2"/>
-                          <polyline points="16,12 12,8 8,12" stroke="#67c23a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <line x1="12" y1="16" x2="12" y2="8" stroke="#67c23a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <span>所有的 MCP 工具均通过 Remote 类型的 JSON 格式代码添加</span>
-                      </div>
                     </div>
                   </div>
-                </div>
               </form>
             </div>
           </div>
           
           <div class="modal-footer">
-            <button type="button" @click="closeDialog" class="btn btn-cancel">
+            <button type="button" @click="closeDialog" class="dialog-btn cancel-btn">
               取消
             </button>
             <button 
               type="button" 
               @click="handleSubmit"
               :disabled="formLoading"
-              class="btn btn-primary"
+              class="dialog-btn save-btn"
             >
-              <span v-if="formLoading" class="loading-spinner"></span>
-              {{ editingServer ? '保存修改' : '添加服务器' }}
+              <span v-if="formLoading" class="loading-spinner" style="border-top-color: #007aff;"></span>
+              {{ editingServer ? '保存' : '添加' }}
             </button>
           </div>
         </div>
@@ -651,44 +614,24 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
-          
-          <div class="modal-footer">
-            <button type="button" @click="closeToolsDialog" class="btn btn-primary">关闭</button>
-          </div>
         </div>
       </div>
     </Teleport>
 
     <!-- 删除确认对话框 -->
     <Teleport to="body">
-      <div v-if="deleteDialogVisible" class="modal-overlay" @click="cancelDelete">
-        <div class="delete-dialog-container" @click.stop>
-          <!-- 对话框主体 -->
-          <div class="delete-dialog-body">
-            <p v-if="serverToDelete">
-              确定要删除MCP服务器 <strong>"{{ serverToDelete.server_name }}"</strong> 吗？
-            </p>
-          </div>
-          
-          <!-- 对话框底部 -->
-          <div class="delete-dialog-footer">
-            <button 
-              class="delete-dialog-btn cancel-btn" 
-              @click="cancelDelete"
-              :disabled="deleteLoading"
-            >
-              取消
-            </button>
-            <button 
-              class="delete-dialog-btn confirm-btn" 
-              :disabled="deleteLoading"
-              @click="confirmDelete"
-            >
-              {{ deleteLoading ? '删除中...' : '确认删除' }}
-            </button>
+      <transition name="fade">
+        <div v-if="deleteDialogVisible" class="confirm-dialog-overlay" @click="cancelDelete">
+          <div class="confirm-dialog" @click.stop>
+            <h3 class="dialog-title">确认删除服务器</h3>
+            <p class="dialog-message" v-if="serverToDelete">确定要删除 MCP 服务器 <strong>"{{ serverToDelete.server_name }}"</strong> 吗？</p>
+            <div class="dialog-footer">
+              <button class="dialog-btn cancel-btn" @click="cancelDelete" :disabled="deleteLoading">取消</button>
+              <button class="dialog-btn delete-btn" @click="confirmDelete" :disabled="deleteLoading">{{ deleteLoading ? '删除中...' : '删除' }}</button>
+            </div>
           </div>
         </div>
-      </div>
+      </transition>
     </Teleport>
   </div>
 </template>
@@ -708,8 +651,6 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   z-index: 99999 !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   pointer-events: auto;
   overflow: hidden;
 }
@@ -767,66 +708,59 @@ onUnmounted(() => {
 }
 
 .modal-body {
-  padding: 36px;
+  padding: 36px 36px 12px;
   overflow-y: auto;
   flex: 1;
   background: #fafbfc;
 }
 
 .modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 0 36px 36px;
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  background: transparent;
-}
+  background: #fafbfc;
 
-// 表单样式
-// 配置向导样式
-.config-wizard {
-  .wizard-header {
-    display: flex;
+  .dialog-btn {
+    padding: 8px 32px;
+    border-radius: 40px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    background: white;
+    transition: all 0.2s;
+    outline: none;
+    display: inline-flex;
     align-items: center;
-    gap: 16px;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-radius: 24px;
-    margin-bottom: 24px;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-    
-    .wizard-icon {
-      flex-shrink: 0;
-      width: 48px;
-      height: 48px;
-      background: white;
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
+    justify-content: center;
+
+    &.cancel-btn {
+      border: 1px solid #e5e5e5;
+      color: #333;
+
+      &:hover {
+        background: #f5f5f5;
+      }
     }
-    
-    .wizard-text {
-      h4 {
-        margin: 0 0 6px 0;
-        font-size: 18px;
-        font-weight: 600;
-        color: #303133;
+
+    &.save-btn {
+      border: 1px solid #007aff;
+      color: #007aff;
+
+      &:hover {
+        background: #ecf5ff;
       }
       
-      p {
-        margin: 0;
-        font-size: 14px;
-        color: #606266;
-        line-height: 1.5;
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
     }
   }
 }
+
+// 表单样式
+
 
 .mcp-form {
   .form-section {
@@ -838,20 +772,6 @@ onUnmounted(() => {
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-    
-    .section-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 20px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid #f0f2f5;
-      font-weight: 600;
-      color: #303133;
-      font-size: 16px;
-      
-// 移除不需要的状态样式
-    }
   }
   
   .form-grid {
@@ -939,6 +859,14 @@ onUnmounted(() => {
       font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
       line-height: 1.6;
       font-size: 13px;
+      border-radius: 24px;
+      padding: 20px 24px;
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE and Edge */
+      
+      &::-webkit-scrollbar {
+        display: none; /* Chrome, Safari and Opera */
+      }
       
       &::placeholder {
         font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
@@ -968,32 +896,13 @@ onUnmounted(() => {
       font-weight: 500;
     }
     
-    .input-help {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      font-size: 12px;
-      color: #909399;
-      margin-top: 8px;
-      line-height: 1.5;
-      padding: 8px 12px;
-      background: #f8f9fa;
-      border-radius: 6px;
-      border-left: 3px solid #67c23a;
-      
-      svg {
-        flex-shrink: 0;
-        margin-top: 2px;
-      }
-    }
-    
     .textarea-wrapper {
       position: relative;
       
       .json-indicator {
         position: absolute;
-        top: 12px;
-        right: 12px;
+        top: 16px;
+        right: 20px;
         display: flex;
         align-items: center;
         gap: 4px;
@@ -1382,7 +1291,7 @@ onUnmounted(() => {
 .mcp-server-page {
   padding: 30px;
   min-height: calc(100vh - 60px);
-  background-color: #f5f7fa;
+  background-color: #ffffff;
   
   .page-header {
     display: flex;
@@ -1932,98 +1841,97 @@ onUnmounted(() => {
   }
 }
 
-/* 删除确认对话框样式 */
-.delete-dialog-container {
-  position: relative;
+/* 确认对话框样式 */
+.confirm-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+
+.confirm-dialog {
   background: white;
   border-radius: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  padding: 24px;
   width: 90%;
-  max-width: 400px;
-  overflow: hidden;
-  animation: slideIn 0.3s ease-out;
-  border: 1px solid #e5e7eb;
-}
+  max-width: 320px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  animation: dialog-scale-in 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
-.delete-dialog-body {
-  padding: 32px 28px 24px;
-  text-align: center;
-  
-  p {
-    margin: 0;
-    font-size: 16px;
-    color: #374151;
+  .dialog-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .dialog-message {
+    margin: 0 0 24px 0;
+    font-size: 14px;
+    color: #666;
     line-height: 1.5;
-    
-    strong {
-      color: #1f2937;
-      font-weight: 600;
+  }
+
+  .dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+
+    .dialog-btn {
+      padding: 8px 24px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      background: white;
+      transition: all 0.2s;
+      outline: none;
+
+      &.cancel-btn {
+        border: 1px solid #e5e5e5;
+        color: #333;
+
+        &:hover {
+          background: #f5f5f5;
+        }
+      }
+
+      &.delete-btn {
+        border: 1px solid #ff3b30;
+        color: #ff3b30;
+
+        &:hover {
+          background: #fff0f0;
+        }
+      }
     }
   }
 }
 
-.delete-dialog-footer {
-  display: flex;
-  gap: 12px;
-  padding: 0 28px 28px;
-}
-
-.delete-dialog-btn {
-  flex: 1;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 100px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.delete-dialog-btn.cancel-btn {
-  background: #f9fafb;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
-}
-
-.delete-dialog-btn.cancel-btn:hover:not(:disabled) {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.delete-dialog-btn.confirm-btn {
-  background: #3b82f6;
-  color: white;
-  border: 1px solid #3b82f6;
-}
-
-.delete-dialog-btn.confirm-btn:hover:not(:disabled) {
-  background: #2563eb;
-  border-color: #2563eb;
-}
-
-.delete-dialog-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* 删除对话框响应式设计 */
-@media (max-width: 768px) {
-  .delete-dialog-container {
-    width: 95%;
-    margin: 10px;
+@keyframes dialog-scale-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
   }
-  
-  .delete-dialog-body {
-    padding: 24px 20px 20px;
-    
-    p {
-      font-size: 15px;
-    }
+  to {
+    transform: scale(1);
+    opacity: 1;
   }
-  
-  .delete-dialog-footer {
-    padding: 0 20px 24px;
-  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
 

@@ -6,11 +6,13 @@ import { Plus, Edit, Delete, Connection, Cpu, Search, Refresh, Calendar, ChatDot
 import { 
   getVisibleLLMsAPI, 
   createLLMAPI, 
+  updateLLMAPI,
   deleteLLMAPI,
   getLingseekConfigAPI,
   updateLingseekConfigAPI,
   type LLMResponse,
   type CreateLLMRequest,
+  type UpdateLLMRequest,
   type LingseekModelConfig
 } from '../../apis/llm'
 
@@ -41,6 +43,18 @@ const modelToDelete = ref<LLMResponse | null>(null)
 
 // 表单相关
 const createForm = ref<CreateLLMRequest>({
+  model: '',
+  api_key: '',
+  base_url: '',
+  provider: '',
+  llm_type: 'LLM'
+})
+
+// 编辑相关
+const editDialogVisible = ref(false)
+const editLoading = ref(false)
+const editForm = ref<UpdateLLMRequest>({
+  llm_id: '',
   model: '',
   api_key: '',
   base_url: '',
@@ -92,10 +106,9 @@ const saveLingseekConfig = async () => {
   try {
     const res = await updateLingseekConfigAPI(lingseekConfig.value)
     if (res.data.status_code === 200) {
-      ElMessage.success('Lingseek 引擎配置已保存')
-      lingseekConfig.value = res.data.data
-    } else {
-      ElMessage.error(res.data.status_message || '保存配置失败')
+      if (res.data.data && Object.keys(res.data.data).length > 0) {
+        lingseekConfig.value = res.data.data
+      }
     }
   } catch (error) {
     ElMessage.error('保存 Lingseek 配置失败')
@@ -162,12 +175,41 @@ const handleCreate = async () => {
   }
 }
 
-// 跳转到模型编辑器
-const goToModelEditor = (model: LLMResponse) => {
-  router.push({
-    name: 'model-editor',
-    query: { id: model.llm_id }
+// 打开编辑模型对话框
+const openEditDialog = (model: LLMResponse) => {
+  editDialogVisible.value = true
+  Object.assign(editForm.value, {
+    llm_id: model.llm_id,
+    model: model.model || '',
+    api_key: '', // 不回显原有 API 密钥
+    base_url: model.base_url || '',
+    provider: model.provider || '',
+    llm_type: model.llm_type || 'LLM'
   })
+}
+
+// 编辑模型
+const handleEdit = async () => {
+  if (!editForm.value.model || !editForm.value.base_url || !editForm.value.provider) {
+    ElMessage.error('请填写所有必填字段')
+    return
+  }
+  
+  editLoading.value = true
+  try {
+    const response = await updateLLMAPI(editForm.value)
+    
+    if (response.data.status_code === 200) {
+      editDialogVisible.value = false
+      fetchModels()
+    } else {
+      ElMessage.error('修改失败: ' + (response.data.status_message || '未知错误'))
+    }
+  } catch (error) {
+    ElMessage.error('修改失败，请检查输入并稍后重试')
+  } finally {
+    editLoading.value = false
+  }
 }
 
 // 删除模型
@@ -211,7 +253,6 @@ const testModel = async (model: LLMResponse) => {
   ElMessage.info(`正在测试 ${model.model} 连接...`)
   // 这里可以添加实际的测试逻辑
   setTimeout(() => {
-    ElMessage.success(`${model.model} 连接测试完成`)
   }, 2000)
 }
 
@@ -321,8 +362,8 @@ onMounted(() => {
 
 
 
-          <!-- 基础URL列 -->
-          <el-table-column label="基础URL" min-width="250">
+          <!-- 基础 URL 列 -->
+          <el-table-column label="基础 URL" min-width="250">
             <template #default="{ row }">
               <div class="url-value">{{ truncateUrl(row.base_url, 38) }}</div>
             </template>
@@ -335,7 +376,7 @@ onMounted(() => {
                 <el-button 
                   size="small" 
                   type="primary"
-                  @click.stop="goToModelEditor(row)"
+                  @click.stop="openEditDialog(row)"
                   title="编辑模型"
                   class="action-btn edit-btn"
                 >
@@ -395,6 +436,7 @@ onMounted(() => {
             placeholder="请选择会话模型" 
             class="model-select"
             clearable
+            @change="saveLingseekConfig"
           >
             <el-option
               v-for="m in models"
@@ -416,6 +458,7 @@ onMounted(() => {
             placeholder="请选择工具模型" 
             class="model-select"
             clearable
+            @change="saveLingseekConfig"
           >
             <el-option
               v-for="m in models"
@@ -437,6 +480,7 @@ onMounted(() => {
             placeholder="请选择评估模型" 
             class="model-select"
             clearable
+            @change="saveLingseekConfig"
           >
             <el-option
               v-for="m in models.filter(m => m.llm_type === 'LLM' || m.llm_type === 'Rerank')"
@@ -447,32 +491,16 @@ onMounted(() => {
           </el-select>
         </div>
       </div>
-      
-      <div class="save-actions">
-        <el-button 
-          type="primary" 
-          size="large" 
-          @click="saveLingseekConfig" 
-          :loading="savingLingseek"
-          class="save-config-btn"
-        >
-          📝 保存引擎配置
-        </el-button>
-      </div>
+
     </div>
 
     <!-- 创建模型对话框 -->
-    <div v-if="createDialogVisible" class="dialog-overlay" @click="createDialogVisible = false">
-      <div class="dialog-container" @click.stop>
-        <!-- 对话框主体 -->
-        <div class="dialog-body">
-          <div class="form-grid">
-            <!-- 基本信息区域 -->
-            <div class="form-section">
-              <div class="section-header">
-                <h4>📝 基本信息</h4>
-              </div>
-              
+    <Teleport to="body">
+      <transition name="fade">
+        <div v-if="createDialogVisible" class="dialog-overlay" @click="createDialogVisible = false">
+          <div class="dialog-container" @click.stop>
+            <!-- 对话框主体 -->
+            <div class="dialog-body">
               <div class="form-item">
                 <label class="form-label">
                   <span class="label-text">模型名称</span>
@@ -503,14 +531,6 @@ onMounted(() => {
                     class="form-input"
                   />
                 </div>
-              </div>
-              
-            </div>
-            
-            <!-- 连接配置区域 -->
-            <div class="form-section">
-              <div class="section-header">
-                <h4>🔧 连接配置</h4>
               </div>
               
               <div class="form-item">
@@ -545,61 +565,130 @@ onMounted(() => {
                 </div>
               </div>
             </div>
+            
+            <!-- 对话框底部 -->
+            <div class="dialog-footer">
+              <button 
+                class="dialog-btn cancel-btn" 
+                @click.stop="createDialogVisible = false"
+              >取消</button>
+              <button 
+                class="dialog-btn confirm-btn" 
+                :class="{ 'disabled': !createForm.model || !createForm.api_key || !createForm.base_url || !createForm.provider }"
+                :disabled="!createForm.model || !createForm.api_key || !createForm.base_url || !createForm.provider || createLoading"
+                @click.stop="handleCreate"
+              >{{ createLoading ? '创建中...' : '创建' }}</button>
+            </div>
           </div>
         </div>
-        
-        <!-- 对话框底部 -->
-        <div class="dialog-footer">
-          <button 
-            class="dialog-btn cancel-btn" 
-            @click.stop="createDialogVisible = false"
-          >
-            <span class="btn-icon">❌</span>
-            <span class="btn-text">取消</span>
-          </button>
-          <button 
-            class="dialog-btn confirm-btn" 
-            :class="{ 'disabled': !createForm.model || !createForm.api_key || !createForm.base_url || !createForm.provider }"
-            :disabled="!createForm.model || !createForm.api_key || !createForm.base_url || !createForm.provider || createLoading"
-            @click.stop="handleCreate"
-          >
-            <span v-if="createLoading" class="btn-icon loading">⏳</span>
-            <span v-else class="btn-icon">✅</span>
-            <span class="btn-text">{{ createLoading ? '创建中...' : '确定创建' }}</span>
-          </button>
+      </transition>
+    </Teleport>
+
+    <!-- 编辑模型对话框 -->
+    <Teleport to="body">
+      <transition name="fade">
+        <div v-if="editDialogVisible" class="dialog-overlay" @click="editDialogVisible = false">
+          <div class="dialog-container" @click.stop>
+            <!-- 对话框主体 -->
+            <div class="dialog-body">
+              <div class="form-item">
+                <label class="form-label">
+                  <span class="label-text">模型名称</span>
+                  <span class="required-mark">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <input 
+                    v-model="editForm.model"
+                    type="text" 
+                    placeholder="例如：gpt-4, claude-3.5-sonnet"
+                    maxlength="50"
+                    class="form-input"
+                  />
+                </div>
+              </div>
+              
+              <div class="form-item">
+                <label class="form-label">
+                  <span class="label-text">提供商</span>
+                  <span class="required-mark">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <input 
+                    v-model="editForm.provider"
+                    type="text" 
+                    placeholder="例如：OpenAI, Anthropic, 阿里云"
+                    maxlength="50"
+                    class="form-input"
+                  />
+                </div>
+              </div>
+              
+              <div class="form-item">
+                <label class="form-label">
+                  <span class="label-text">基础URL</span>
+                  <span class="required-mark">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <input 
+                    v-model="editForm.base_url"
+                    type="text" 
+                    placeholder="例如：https://api.openai.com/v1"
+                    maxlength="200"
+                    class="form-input"
+                  />
+                </div>
+              </div>
+              
+              <div class="form-item">
+                <label class="form-label">
+                  <span class="label-text">API密钥</span>
+                  <span class="required-mark">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <input 
+                    v-model="editForm.api_key"
+                    type="password" 
+                    placeholder="请输入您的API密钥(留空则不修改)"
+                    maxlength="200"
+                    class="form-input"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <!-- 对话框底部 -->
+            <div class="dialog-footer">
+              <button 
+                class="dialog-btn cancel-btn" 
+                @click.stop="editDialogVisible = false"
+              >取消</button>
+              <button 
+                class="dialog-btn confirm-btn" 
+                :class="{ 'disabled': !editForm.model || !editForm.base_url || !editForm.provider }"
+                :disabled="!editForm.model || !editForm.base_url || !editForm.provider || editLoading"
+                @click.stop="handleEdit"
+              >{{ editLoading ? '保存中...' : '保存' }}</button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </transition>
+    </Teleport>
 
     <!-- 删除确认对话框 -->
-    <div v-if="deleteDialogVisible" class="dialog-overlay" @click="cancelDelete">
-      <div class="delete-dialog-container" @click.stop>
-        <!-- 对话框主体 -->
-        <div class="delete-dialog-body">
-          <p v-if="modelToDelete">
-            确定要删除模型 <strong>"{{ modelToDelete.model }}"</strong> 吗？
-          </p>
+    <Teleport to="body">
+      <transition name="fade">
+        <div v-if="deleteDialogVisible" class="confirm-dialog-overlay" @click="cancelDelete">
+          <div class="confirm-dialog" @click.stop>
+            <h3 class="dialog-title">确认删除模型</h3>
+            <p class="dialog-message" v-if="modelToDelete">确定要删除模型 <strong>"{{ modelToDelete.model }}"</strong> 吗？</p>
+            <div class="confirm-dialog-footer">
+              <button class="confirm-dialog-btn confirm-cancel-btn" @click="cancelDelete" :disabled="deleteLoading">取消</button>
+              <button class="confirm-dialog-btn confirm-delete-btn" @click="confirmDelete" :disabled="deleteLoading">{{ deleteLoading ? '删除中...' : '删除' }}</button>
+            </div>
+          </div>
         </div>
-        
-        <!-- 对话框底部 -->
-        <div class="delete-dialog-footer">
-          <button 
-            class="delete-dialog-btn cancel-btn" 
-            @click="cancelDelete"
-            :disabled="deleteLoading"
-          >
-            取消
-          </button>
-          <button 
-            class="delete-dialog-btn confirm-btn" 
-            :disabled="deleteLoading"
-            @click="confirmDelete"
-          >
-            {{ deleteLoading ? '删除中...' : '确认删除' }}
-          </button>
-        </div>
-      </div>
-    </div>
+      </transition>
+    </Teleport>
   </div>
 </template>
 
@@ -607,7 +696,7 @@ onMounted(() => {
 .model-page {
   padding: 30px;
   min-height: calc(100vh - 60px);
-  background-color: #f5f7fa;
+  background-color: #ffffff;
   
   .page-header {
     display: flex;
@@ -968,26 +1057,7 @@ onMounted(() => {
       }
     }
   }
-  
-  .save-actions {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 20px;
-    border-top: 1px solid #ebeef5;
-    
-    .save-config-btn {
-      padding: 12px 28px;
-      font-size: 16px;
-      border-radius: 100px;
-      background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
-      border: none;
-      
-      &:hover {
-        background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
-        box-shadow: 0 6px 16px rgba(64, 158, 255, 0.3);
-      }
-    }
-  }
+
 }
 
 /* 添加URL工具提示样式 */
@@ -1043,96 +1113,33 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
+  background-color: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
-  padding: 20px;
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.9) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1) translateY(0);
-  }
+  z-index: 3000;
 }
 
 .dialog-container {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   background: white;
   border-radius: 24px;
-  box-shadow: 
-    0 20px 60px rgba(0, 0, 0, 0.3),
-    0 8px 32px rgba(0, 0, 0, 0.15);
-  width: 88%;
-  max-width: 750px;
-  max-height: 88vh;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  animation: slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: dialog-scale-in 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-
-
 
 /* 对话框主体 */
 .dialog-body {
-  padding: 36px;
-  max-height: 65vh;
-  overflow-y: auto;
-  background: #fafbfc;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 36px;
-}
-
-.form-section {
+  padding: 36px 36px 24px 36px;
   background: white;
-  border-radius: 20px;
-  padding: 22px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e2e8f0;
-}
-
-.section-header {
-  margin-bottom: 20px;
-  padding-bottom: 14px;
-  border-bottom: 2px solid #f1f5f9;
-}
-
-.section-header h4 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #1a202c;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .form-item {
-  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
 }
 
 .form-item:last-child {
@@ -1140,40 +1147,41 @@ onMounted(() => {
 }
 
 .form-label {
+  width: 90px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #2d3748;
+  gap: 4px;
+  margin-bottom: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  flex-shrink: 0;
 }
 
 .label-text {
-  color: #374151;
+  color: #333;
 }
 
 .required-mark {
-  color: #ef4444;
-  font-weight: 700;
-  font-size: 16px;
+  color: #ff3b30;
+  font-weight: 500;
+  font-size: 14px;
 }
 
-.input-wrapper,
-.select-wrapper {
+.input-wrapper {
+  flex: 1;
   position: relative;
 }
 
 .form-input {
   width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e5e7eb;
+  padding: 10px 16px;
+  border: 1px solid #e5e5e5;
   border-radius: 100px;
   font-size: 14px;
-  font-weight: 500;
-  color: #1f2937;
+  color: #333;
   background: white;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   box-sizing: border-box;
 }
 
@@ -1184,134 +1192,61 @@ onMounted(() => {
 
 .form-input:focus {
   outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-  transform: translateY(-1px);
+  border-color: #409eff;
+  background: white;
 }
 
 .form-input::placeholder {
-  color: #9ca3af;
-  font-weight: 400;
-}
-
-.form-select {
-  width: 100%;
-  padding: 12px 40px 12px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 100px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #1f2937;
-  background: white;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  appearance: none;
-  box-sizing: border-box;
-}
-
-.form-select:focus {
-  outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-}
-
-.select-arrow {
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: #6b7280;
-  font-size: 12px;
-  transition: transform 0.3s ease;
-}
-
-.select-wrapper:hover .select-arrow {
-  transform: translateY(-50%) rotate(180deg);
+  color: #999;
 }
 
 /* 对话框底部 */
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 16px;
-  padding: 20px 36px;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  gap: 12px;
+  padding: 0 36px 36px 36px;
+  background: transparent;
+  border-top: none;
 }
 
 .dialog-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 24px;
-  border: none;
-  border-radius: 100px;
+  padding: 8px 24px;
+  border-radius: 24px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 100px;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.dialog-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
-}
-
-.dialog-btn:hover::before {
-  left: 100%;
+  background: white;
+  transition: all 0.2s;
+  outline: none;
+  display: inline-block;
+  min-width: auto;
+  border: none;
 }
 
 .cancel-btn {
-  background: #f1f5f9;
-  color: #64748b;
-  border: 2px solid #e2e8f0;
+  border: 1px solid #e5e5e5;
+  color: #333;
 }
 
 .cancel-btn:hover {
-  background: #e2e8f0;
-  color: #475569;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  background: #f5f5f5;
 }
 
 .confirm-btn {
-  background: #f1f5f9;
-  color: #64748b;
-  border: 2px solid #e2e8f0;
+  border: 1px solid #409eff;
+  color: #409eff;
 }
 
 .confirm-btn:hover:not(.disabled) {
-  background: #e2e8f0;
-  color: #475569;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  background: #f0f7ff;
 }
 
 .confirm-btn.disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
-  background: #9ca3af;
-}
-
-.btn-icon {
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-}
-
-.btn-icon.loading {
-  animation: spin 1s linear infinite;
+  border-color: #a0cfff;
+  color: #a0cfff;
 }
 
 @keyframes spin {
@@ -1323,10 +1258,6 @@ onMounted(() => {
   }
 }
 
-.btn-text {
-  font-weight: 600;
-}
-
 /* 对话框响应式设计 */
 @media (max-width: 768px) {
   .dialog-container {
@@ -1336,122 +1267,126 @@ onMounted(() => {
   }
   
   .dialog-body {
-    padding: 24px 20px;
+    padding: 24px 20px 16px 20px;
   }
   
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
+  .form-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
   
-  .form-section {
-    padding: 16px;
+  .form-label {
+    width: 100%;
   }
   
   .dialog-footer {
-    padding: 16px;
-    flex-direction: column;
-  }
-  
-  .dialog-btn {
-    width: 100%;
+    padding: 0 20px 24px 20px;
+    flex-direction: row;
+    justify-content: flex-end;
   }
 }
 
-/* 删除确认对话框样式 */
-.delete-dialog-container {
+/* 确认对话框样式 */
+.confirm-dialog-overlay {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+
+.confirm-dialog {
   background: white;
   border-radius: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  padding: 24px;
   width: 90%;
-  max-width: 400px;
-  overflow: hidden;
-  animation: slideIn 0.3s ease-out;
-  border: 1px solid #e5e7eb;
-}
+  max-width: 320px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  animation: dialog-scale-in 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
-.delete-dialog-body {
-  padding: 32px 28px 24px;
-  text-align: center;
-  
-  p {
-    margin: 0;
-    font-size: 16px;
-    color: #374151;
+  .dialog-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .dialog-message {
+    margin: 0 0 24px 0;
+    font-size: 14px;
+    color: #666;
     line-height: 1.5;
-    
-    strong {
-      color: #1f2937;
-      font-weight: 600;
+  }
+
+  .confirm-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 0;
+    background: transparent;
+    border-top: none;
+
+    .confirm-dialog-btn {
+      padding: 8px 24px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      background: white;
+      transition: all 0.2s;
+      outline: none;
+      display: inline-block;
+      min-width: auto;
+      border: none;
+
+      &.confirm-cancel-btn {
+        border: 1px solid #e5e5e5;
+        color: #333;
+        background: white;
+
+        &:hover {
+          background: #f5f5f5;
+        }
+      }
+
+      &.confirm-delete-btn {
+        border: 1px solid #ff3b30;
+        color: #ff3b30;
+        background: white;
+
+        &:hover {
+          background: #fff0f0;
+        }
+      }
     }
   }
 }
 
-.delete-dialog-footer {
-  display: flex;
-  gap: 12px;
-  padding: 0 28px 28px;
-}
-
-.delete-dialog-btn {
-  flex: 1;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 100px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.delete-dialog-btn.cancel-btn {
-  background: #f9fafb;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
-}
-
-.delete-dialog-btn.cancel-btn:hover:not(:disabled) {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.delete-dialog-btn.confirm-btn {
-  background: #3b82f6;
-  color: white;
-  border: 1px solid #3b82f6;
-}
-
-.delete-dialog-btn.confirm-btn:hover:not(:disabled) {
-  background: #2563eb;
-  border-color: #2563eb;
-}
-
-.delete-dialog-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* 删除对话框响应式设计 */
-@media (max-width: 768px) {
-  .delete-dialog-container {
-    width: 95%;
-    margin: 10px;
+@keyframes dialog-scale-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
   }
-  
-  .delete-dialog-body {
-    padding: 24px 20px 20px;
-    
-    p {
-      font-size: 15px;
-    }
-  }
-  
-  .delete-dialog-footer {
-    padding: 0 20px 24px;
+  to {
+    transform: scale(1);
+    opacity: 1;
   }
 }
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+
 </style>

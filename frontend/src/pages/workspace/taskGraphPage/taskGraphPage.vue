@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick, onBeforeUnmount } from 'vue'
+import { ref, onMounted, computed, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { MdPreview, MdEditor } from 'md-editor-v3'
+import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { 
-  generateLingSeekGuidePromptAPI, 
-  regenerateLingSeekGuidePromptAPI,
   startLingSeekTaskAPI 
 } from '../../../apis/lingseek'
 import { getWorkspaceSessionInfoAPI } from '../../../apis/workspace'
@@ -33,16 +31,46 @@ interface HistoryContext {
 
 // 状态管理
 const taskGraph = ref<GraphNode[]>([])
-const isStreaming = ref(false)
 const showGraph = ref(false)
 const nodeStatusMap = ref<Map<string, NodeStatus>>(new Map())
 const selectedNode = ref<string | null>(null)
 const showNodeDetail = ref(false)
 const taskResultContent = ref('')
 const showTaskResult = ref(false)
-const evaluationScore = ref<number | null>(null)
-const evaluationReasoning = ref('')
 const resultContainer = ref<HTMLElement>()
+
+// 计算属性：分离 markdown 正文与自我反馈区块，独立呈现以自定义样式提取展示
+const parsedTaskResult = computed(() => {
+  let text = taskResultContent.value || '';
+  const feedbacks: { title: string; isSuccess: boolean; content: string }[] = [];
+  
+  // 匹配后端的 blockquote 原始字符串 (✅ 或 ⚠️)
+  const blockquoteRegex = /(?:\n\n|\n)*> \*\*(✅ 自我反馈通过|⚠️ 自我反馈未通过)\*\* \((匹配度:\s*\d+\/100)\)\n> \*\*理由\*\*: ([\s\S]*?)(?=\n> __|\n\n---|\n*$)(?:\n> __.*)?(?:\n\n---)?/g;
+  text = text.replace(blockquoteRegex, (match, status, score, reasonText) => {
+    feedbacks.push({
+      title: `${status} (${score})`,
+      isSuccess: status.includes('通过'),
+      content: reasonText.replace(/^>\s?/gm, '').trim()
+    });
+    return '';
+  });
+
+  // 匹配 HTML details tag (处理前置历史任务数据兼容)
+  const htmlRegex = /(?:\n\n|\n)*<details class="feedback-card (success|error)">\n<summary>(✅|⚠️) <strong>(自我反馈通过|自我反馈未通过)<\/strong> \((匹配度:\s*\d+\/100)\)<\/summary>\n\n\*\*理由\*\*: ([\s\S]*?)(?:\n\n\*系统.*)?\n\n<\/details>(?:\n\n)?/g;
+  text = text.replace(htmlRegex, (match, type, icon, statusText, score, reasonText) => {
+    feedbacks.push({
+      title: `${icon} ${statusText} (${score})`,
+      isSuccess: type === 'success',
+      content: reasonText.trim()
+    });
+    return '';
+  });
+
+  text = text.replace(/(?:\n\n---|\n)+$/, '');
+  
+  return { text, feedbacks };
+});
+
 // 结果接收控制（任务流程结束后才开始）
 const isReceivingResult = ref(false)
 const resultBuffer = ref('')
@@ -52,8 +80,7 @@ const drainChunkSize = 120  // 增大块大小减少渲染频率
 const drainIntervalMs = 80  // 降低刷新频率，减少抖动
 let scrollPending = false
 
-// 指导手册滚动容器引用
-const guideScrollContainer = ref<HTMLElement | null>(null)
+
 
 // 启动结果接收并流式回放缓冲
 const startReceivingResults = () => {
@@ -117,24 +144,16 @@ const startDrain = () => {
   console.log('✅ [startDrain] 定时器已启动，ID:', drainTimer)
 }
 
-// 指导手册编辑/预览切换（默认预览）
-const isEditingGuide = ref(false)
-
-// 指导手册相关
-const guidePrompt = ref('')
-const isGeneratingGuide = ref(false)
-const showFeedbackDialog = ref(false)
-const feedbackText = ref('')
-
 // 历史记录相关
 const isHistoryMode = ref(false)
 const historyContexts = ref<HistoryContext[]>([])
 
+// 用户问题
+const userQuery = ref('')
 
 // 保存任务参数
 const taskParams = ref({
   query: '',
-  guide_prompt: '',
   web_search: false,
   plugins: [] as string[],
   mcp_servers: [] as string[]
@@ -233,9 +252,9 @@ const graphData = computed(() => {
   })
 
   // 设置节点位置（竖向布局：Y轴表示层级，X轴表示同层级的位置）
-  const verticalSpacing = 120  // 层级之间的垂直间距（减小）
-  const horizontalSpacing = 200  // 同层级节点的水平间距（减小）
-  const nodeHeight = 50
+  const verticalSpacing = 90  // 层级之间的垂直间距（减小）
+  const horizontalSpacing = 160  // 同层级节点的水平间距（减小）
+  const nodeHeight = 40
 
   nodes.forEach(node => {
     const levelNodes = levelGroups.get(node.level)!
@@ -260,10 +279,10 @@ const svgViewBox = computed(() => {
   const xs = graphData.value.nodes.map(n => n.x)
   const ys = graphData.value.nodes.map(n => n.y)
   
-  const minX = Math.min(...xs) - 120
-  const maxX = Math.max(...xs) + 120
-  const minY = Math.min(...ys) - 60
-  const maxY = Math.max(...ys) + 80
+  const minX = Math.min(...xs) - 100
+  const maxX = Math.max(...xs) + 100
+  const minY = Math.min(...ys) - 40
+  const maxY = Math.max(...ys) + 60
 
   const width = maxX - minX
   const height = maxY - minY
@@ -279,137 +298,15 @@ const getEdgePath = (edge: { from: string; to: string }) => {
   if (!fromNode || !toNode) return ''
 
   const x1 = fromNode.x
-  const y1 = fromNode.y + 25  // 从节点底部出发（调整为25）
+  const y1 = fromNode.y + 20  // 从节点底部出发
   const x2 = toNode.x
-  const y2 = toNode.y - 25    // 到节点顶部（调整为25）
+  const y2 = toNode.y - 20    // 到节点顶部
 
   // 使用贝塞尔曲线创建平滑的连接线（竖向）
   const midY = (y1 + y2) / 2
   
   return `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`
 }
-
-// 生成指导手册
-const generateGuidePrompt = async () => {
-  console.log('=== 开始生成指导手册 ===')
-  console.log('用户问题:', originalParams.value.query)
-  console.log('选中工具:', originalParams.value.tools)
-  console.log('联网搜索:', originalParams.value.web_search)
-  
-  guidePrompt.value = ''
-  isGeneratingGuide.value = true
-
-  try {
-    await generateLingSeekGuidePromptAPI(
-      {
-        query: originalParams.value.query,
-        tools: originalParams.value.tools,
-        web_search: originalParams.value.web_search,
-        mcp_servers: originalParams.value.mcp_servers
-      },
-      (data) => {
-        // 处理流式数据
-        console.log('📨 接收到指导手册数据块')
-        guidePrompt.value += data
-        // 自动滚动到底部
-        scrollGuideToBottom()
-      },
-      (error) => {
-        console.error('❌ 生成指导手册出错:', error)
-        ElMessage.error('生成指导手册失败')
-        isGeneratingGuide.value = false
-      },
-      () => {
-        console.log('✅ 指导手册生成完成')
-        isGeneratingGuide.value = false
-        ElMessage.success('指导手册生成完成')
-      }
-    )
-  } catch (error) {
-    console.error('生成指导手册异常:', error)
-    ElMessage.error('生成指导手册失败')
-    isGeneratingGuide.value = false
-  }
-}
-
-// 打开重新生成对话框
-const handleRegenerate = () => {
-  showFeedbackDialog.value = true
-  feedbackText.value = ''
-}
-
-// 取消重新生成
-const handleCancelRegenerate = () => {
-  showFeedbackDialog.value = false
-  feedbackText.value = ''
-}
-
-// 确认重新生成
-const handleConfirmRegenerate = async () => {
-  if (!feedbackText.value.trim()) {
-    ElMessage.warning('请输入您的优化建议')
-    return
-  }
-
-  console.log('=== 开始重新生成指导手册 ===')
-  console.log('反馈内容:', feedbackText.value)
-
-  // 保存当前的指导手册
-  const currentGuidePrompt = guidePrompt.value
-  
-  guidePrompt.value = ''
-  isGeneratingGuide.value = true
-  showFeedbackDialog.value = false
-
-  try {
-    await regenerateLingSeekGuidePromptAPI(
-      {
-        query: originalParams.value.query,
-        plugins: originalParams.value.plugins,
-        web_search: originalParams.value.web_search,
-        mcp_servers: originalParams.value.mcp_servers,
-        feedback: feedbackText.value,
-        guide_prompt: currentGuidePrompt
-      },
-      (data) => {
-        // 处理流式数据
-        guidePrompt.value += data
-        // 自动滚动到底部
-        scrollGuideToBottom()
-      },
-      (error) => {
-        console.error('❌ 重新生成指导手册出错:', error)
-        ElMessage.error('重新生成失败')
-        isGeneratingGuide.value = false
-      },
-      () => {
-        console.log('✅ 指导手册重新生成完成')
-        isGeneratingGuide.value = false
-        feedbackText.value = ''
-        ElMessage.success('指导手册重新生成完成')
-      }
-    )
-  } catch (error) {
-    console.error('重新生成指导手册异常:', error)
-    ElMessage.error('重新生成失败')
-    isGeneratingGuide.value = false
-  }
-}
-
-// 开始执行任务
-const handleStartTask = () => {
-  if (!guidePrompt.value.trim()) {
-    ElMessage.warning('请先生成指导手册')
-    return
-  }
-
-  console.log('🚀 开始执行任务')
-  // 将当前指导手册内容同步到任务参数
-  taskParams.value.guide_prompt = guidePrompt.value
-  console.log('✅ 已同步指导手册到任务参数，长度:', taskParams.value.guide_prompt.length)
-  startTask()
-}
-
 
 // 初始化
 onMounted(async () => {
@@ -423,11 +320,8 @@ onMounted(async () => {
     console.log('历史会话模式，session_id:', sessionId)
     isHistoryMode.value = true
     await loadSessionInfo(sessionId)
-    
-    // 历史会话模式保留 session_id 参数在 URL 中
-    // 不清理 URL，方便用户分享和刷新
   } else {
-    // 新任务模式：生成指导手册
+    // 新任务模式：直接开始执行任务
     console.log('新任务模式')
     
     // 保存参数
@@ -445,6 +339,9 @@ onMounted(async () => {
     taskParams.value.plugins = originalParams.value.plugins
     taskParams.value.mcp_servers = originalParams.value.mcp_servers
     
+    // 保存用户问题用于显示
+    userQuery.value = originalParams.value.query
+    
     console.log('✅ 用户问题:', originalParams.value.query)
     console.log('✅ 选中工具:', originalParams.value.tools)
     console.log('✅ 联网搜索:', originalParams.value.web_search)
@@ -452,17 +349,49 @@ onMounted(async () => {
     // 清理 URL 参数（保留功能，隐藏参数）
     router.replace({ path: '/workspace/taskGraph' })
     
-    // 自动开始生成指导手册
+    // 直接开始执行任务（AI 自行分解）
     if (originalParams.value.query) {
-      console.log('🚀 开始自动生成指导手册...')
-      await generateGuidePrompt()
+      console.log('🚀 开始自动执行任务...')
+      startTask()
     } else {
-      console.warn('⚠️ 缺少用户问题，无法生成指导手册')
+      console.warn('⚠️ 缺少用户问题，无法执行任务')
     }
   }
   
   console.log('=== taskGraphPage onMounted 结束 ===')
 })
+
+// 监听 session_id 变化，切换会话时重新加载
+watch(
+  () => route.query.session_id,
+  async (newSessionId, oldSessionId) => {
+    if (newSessionId === oldSessionId) return
+    console.log('🔄 会话切换:', oldSessionId, '->', newSessionId)
+    
+    // 重置所有状态
+    taskGraph.value = []
+    nodeStatusMap.value.clear()
+    taskResultContent.value = ''
+    resultBuffer.value = ''
+    showGraph.value = false
+    showTaskResult.value = false
+    selectedNode.value = null
+    showNodeDetail.value = false
+    isReceivingResult.value = false
+    isDraining.value = false
+    userQuery.value = ''
+    isHistoryMode.value = false
+    if (drainTimer !== null) {
+      window.clearInterval(drainTimer)
+      drainTimer = null
+    }
+    
+    if (newSessionId) {
+      isHistoryMode.value = true
+      await loadSessionInfo(newSessionId as string)
+    }
+  }
+)
 
 // 加载历史会话信息
 const loadSessionInfo = async (sessionId: string) => {
@@ -485,12 +414,10 @@ const loadSessionInfo = async (sessionId: string) => {
         const context = historyContexts.value[0]
         console.log('📦 当前 context:', context)
         
-        // 显示指导手册（对应第一列）
-        if (context.guide_prompt) {
-          guidePrompt.value = context.guide_prompt
-          console.log('✅ 指导手册已加载，长度:', guidePrompt.value.length)
-        } else {
-          console.warn('⚠️ 未找到 guide_prompt 字段')
+        // 加载用户问题
+        if (context.query) {
+          userQuery.value = context.query
+          console.log('✅ 用户问题已加载:', userQuery.value)
         }
         
         // 显示任务图（对应第二列）- 使用 task_graph 字段
@@ -592,14 +519,7 @@ const scrollResultToBottom = () => {
   })
 }
 
-// 滚动指导手册到底部
-const scrollGuideToBottom = () => {
-  nextTick(() => {
-    if (guideScrollContainer.value) {
-      guideScrollContainer.value.scrollTop = guideScrollContainer.value.scrollHeight
-    }
-  })
-}
+
 
 // 开始执行任务
 const startTask = async () => {
@@ -609,11 +529,8 @@ const startTask = async () => {
   nodeStatusMap.value.clear()
   taskResultContent.value = ''
   resultBuffer.value = ''
-  evaluationScore.value = null
-  evaluationReasoning.value = ''
   showTaskResult.value = false
   isReceivingResult.value = false
-  isStreaming.value = true
   showGraph.value = false
   // 清理可能遗留的回放定时器
   if (drainTimer !== null) {
@@ -684,14 +601,6 @@ const startTask = async () => {
         if (typeof messageChunk === 'string') {
           console.log('📄 收到任务结果数据块:', messageChunk)
           
-          // 提取评价结果(自我反馈未通过的特定标记)
-          if (messageChunk.includes('⚠️ 自我反馈未通过') && messageChunk.includes('匹配度:')) {
-            const match = messageChunk.match(/匹配度:\s*(\d+)/)
-            if (match && match[1]) {
-              evaluationScore.value = parseInt(match[1])
-            }
-          }
-          
           resultBuffer.value += messageChunk
         }
         if (!isReceivingResult.value) {
@@ -705,14 +614,9 @@ const startTask = async () => {
       (error) => {
         console.error('❌ 任务执行出错:', error)
         ElMessage.error('任务执行失败')
-        isStreaming.value = false
       },
       () => {
         console.log('✅ 任务执行完成')
-        isStreaming.value = false
-        if (evaluationScore.value === null) {
-          evaluationScore.value = 100 // 或者设置成功标志
-        }
         // 任务流程结束时，开启接收阶段并以流式回放缓冲
         startReceivingResults()
       }
@@ -720,7 +624,6 @@ const startTask = async () => {
   } catch (error) {
     console.error('任务执行异常:', error)
     ElMessage.error('请求失败，请检查网络连接')
-    isStreaming.value = false
   }
 }
 
@@ -740,124 +643,52 @@ const getNodeColor = (status: string) => {
 
 <template>
   <div class="task-graph-page" :key="String(route.query.session_id || route.query.query || Date.now())">
-    <!-- 三列布局容器 -->
-    <div class="three-column-layout">
-      <!-- 第一列：指导手册 -->
-      <div class="column column-guide">
-        <div class="column-header">
-          <span class="header-icon">📝</span>
-          <h2 class="header-title">指导手册</h2>
-          <!-- 编辑/预览切换 -->
-          <div class="mode-toggle" role="tablist" aria-label="Guide mode">
-            <button
-              class="mode-btn"
-              :class="{ active: isEditingGuide }"
-              @click="isEditingGuide = true"
-              role="tab"
-              :aria-selected="isEditingGuide"
-            >编辑</button>
-            <button
-              class="mode-btn"
-              :class="{ active: !isEditingGuide }"
-              @click="isEditingGuide = false"
-              role="tab"
-              :aria-selected="!isEditingGuide"
-            >预览</button>
+    <!-- 两列布局容器 -->
+    <div class="two-column-layout">
+      <!-- 左侧容器 -->
+      <div class="left-wrapper">
+        <!-- 用户问题卡片独立出来 -->
+        <div v-if="userQuery" class="user-query-card column">
+          <div class="column-header">
+            <span class="header-icon">
+              <!-- 统一的聊天图标 -->
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; color: white;">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </span>
+            <h2 class="header-title">用户问题</h2>
           </div>
-          <span v-if="isGeneratingGuide" class="status-badge streaming">
-            <span class="status-dot"></span>
-            <span>生成中</span>
-          </span>
-        </div>
-        <div class="column-content">
-          <div class="guide-content-wrapper">
-            <div class="guide-scroll-area">
-              <div class="guide-editor" v-if="isEditingGuide">
-                <MdEditor
-                  v-model="guidePrompt"
-                  language="zh-CN"
-                  :preview="false"
-                  :toolbars-exclude="['save', 'fullscreen', 'github']"
-                  :footers="[]"
-                  style="height: 100%"
-                />
-              </div>
-              <div v-else ref="guideScrollContainer">
-                <div v-if="guidePrompt">
-                  <MdPreview
-                    editorId="guide-preview"
-                    :modelValue="guidePrompt"
-                  />
-                </div>
-                <div v-else class="empty-placeholder">
-                  <span class="empty-icon">📋</span>
-                  <p v-if="isGeneratingGuide">正在生成指导手册...</p>
-                  <p v-else-if="isHistoryMode">正在加载历史数据...</p>
-                  <p v-else>等待生成指导手册</p>
-                </div>
-              </div>
-            </div>
-            
-            <!-- 操作按钮区 -->
-            <div v-if="!isHistoryMode" class="guide-actions">
-              <button
-                @click="handleRegenerate"
-                :disabled="isGeneratingGuide || !guidePrompt"
-                class="action-btn regenerate-btn"
-              >
-                <span class="btn-icon">🔄</span>
-                <span class="btn-text">重新生成</span>
-              </button>
-              
-              <button
-                @click="handleStartTask"
-                :disabled="isGeneratingGuide || !guidePrompt || isStreaming"
-                class="action-btn start-btn"
-              >
-                <span class="btn-icon">🚀</span>
-                <span class="btn-text">开始执行</span>
-              </button>
-            </div>
+          <div class="column-content query-card-body">
+            <p class="query-text">{{ userQuery }}</p>
           </div>
         </div>
-      </div>
 
-      <!-- 第二列：任务流程图 -->
-      <div class="column column-graph">
-        <div class="column-header">
-          <span class="header-icon">🔄</span>
-          <h2 class="header-title">任务流程</h2>
-          <span v-if="isStreaming" class="status-badge streaming">
-            <span class="status-dot"></span>
-            <span>执行中</span>
-          </span>
-          <span v-else-if="showGraph" class="status-badge completed">
-            <span class="status-icon">✓</span>
-            <span>已完成</span>
-          </span>
-        </div>
-        
-        <div class="column-content">
+        <!-- 第一列：任务流程图 -->
+        <div class="column column-graph">
+          <div class="column-header">
+            <span class="header-icon">
+              <!-- 系统内置流程图标 -->
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; color: white;">
+                <rect x="3" y="3" width="7" height="7" rx="2" />
+                <rect x="14" y="3" width="7" height="7" rx="2" />
+                <rect x="14" y="14" width="7" height="7" rx="2" />
+                <rect x="3" y="14" width="7" height="7" rx="2" />
+                <path d="M9 17.5h5" />
+                <path d="M9 6.5h5" />
+                <path d="M6.5 9v5" />
+                <path d="M17.5 9v5" />
+              </svg>
+            </span>
+            <h2 class="header-title">任务流程</h2>
+
+          </div>
+          
+          <div class="column-content">
+
           <div v-if="showGraph" class="graph-wrapper">
-            <!-- 状态说明 -->
-            <div class="legend-bar">
-              <div class="legend-item">
-                <span class="legend-dot pending"></span>
-                <span class="legend-text">待执行</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot executing"></span>
-                <span class="legend-text">执行中</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot completed"></span>
-                <span class="legend-text">已完成</span>
-              </div>
-            </div>
-
             <!-- SVG流程图（竖向） -->
             <div class="graph-container">
-              <svg :viewBox="svgViewBox" class="graph-svg" preserveAspectRatio="xMidYMin meet">
+              <svg :viewBox="svgViewBox" class="graph-svg" preserveAspectRatio="xMidYMid meet">
                 <!-- 定义箭头标记 -->
                 <defs>
                   <marker
@@ -906,36 +737,36 @@ const getNodeColor = (status: string) => {
                 @click="handleNodeClick(node.id)"
               >
                 <rect
-                  x="-80"
-                  y="-25"
-                  width="160"
-                  height="50"
-                  rx="10"
+                  x="-65"
+                  y="-20"
+                  width="130"
+                  height="40"
+                  rx="14"
                   class="node-rect"
                   :fill="node.status === 'completed' ? 'url(#completedGradient)' : node.status === 'executing' ? 'url(#executingGradient)' : '#ffffff'"
                   :stroke="getNodeColor(node.status)"
-                  stroke-width="2"
+                  stroke-width="1.5"
                 />
                 
                 <!-- 节点状态图标 -->
                 <text
-                  x="-68"
-                  y="5"
+                  x="-50"
+                  y="4"
                   class="node-icon"
-                  font-size="16"
+                  font-size="14"
                 >
                   {{ node.status === 'completed' ? '✓' : node.status === 'executing' ? '⟳' : '○' }}
                 </text>
                 
                 <!-- 节点文本 -->
                 <text
-                  x="-48"
-                  y="5"
+                  x="-32"
+                  y="4"
                   class="node-label"
                   text-anchor="start"
                   dominant-baseline="middle"
                 >
-                  {{ node.label.length > 12 ? node.label.substring(0, 12) + '...' : node.label }}
+                  {{ node.label.length > 8 ? node.label.substring(0, 8) + '...' : node.label }}
                 </text>
               </g>
                 </g>
@@ -949,21 +780,25 @@ const getNodeColor = (status: string) => {
           </div>
         </div>
       </div>
+      <!-- 结束左侧容器 -->
+      </div>
 
-      <!-- 第三列：任务执行结果 -->
+      <!-- 第二列：任务执行结果 -->
       <div class="column column-result">
         <div class="column-header">
-          <span class="header-icon">📄</span>
+          <span class="header-icon">
+            <!-- 系统内置文档图标 -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; color: white;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+          </span>
           <h2 class="header-title">任务结果</h2>
           
-          <span v-if="evaluationScore !== null && evaluationScore >= 80" class="status-badge completed" style="margin-right: 8px;">
-            <span class="status-icon">✓</span>
-            <span>通过 ({{ evaluationScore }}分)</span>
-          </span>
-          <span v-else-if="evaluationScore !== null && evaluationScore < 80" class="status-badge error" style="margin-right: 8px;">
-            <span class="status-icon">✕</span>
-            <span>未通过 ({{ evaluationScore }}分)</span>
-          </span>
+
           
           <span v-if="isReceivingResult" class="status-badge streaming">
             <span class="status-dot"></span>
@@ -974,9 +809,27 @@ const getNodeColor = (status: string) => {
           <div v-if="showTaskResult" class="result-wrapper" ref="resultContainer">
             <MdPreview
               editorId="task-result-preview"
-              :modelValue="taskResultContent"
+              :modelValue="parsedTaskResult.text"
               :showCodeRowNumber="true"
             />
+            
+            <!-- 独立呈现的反馈卡片(从Markdown中抽离的iOS 26圆角风格卡片) -->
+            <div v-if="parsedTaskResult.feedbacks.length > 0" class="feedback-cards-container">
+              <details 
+                v-for="(fb, i) in parsedTaskResult.feedbacks" 
+                :key="i"
+                class="feedback-card-native"
+                :class="fb.isSuccess ? 'success' : 'error'"
+              >
+                <summary>
+                  <span class="summary-title">{{ fb.title }}</span>
+                </summary>
+                <div class="feedback-content-native">
+                  <MdPreview :editorId="'fb-preview-' + i" :modelValue="fb.content" />
+                </div>
+              </details>
+            </div>
+
             <div v-if="isReceivingResult" class="typing-indicator">
               <span class="typing-dot"></span>
               <span class="typing-dot"></span>
@@ -1023,40 +876,6 @@ const getNodeColor = (status: string) => {
         </div>
       </div>
     </div>
-
-    <!-- 重新生成反馈弹窗 -->
-    <div v-if="showFeedbackDialog" class="feedback-modal-overlay" @click.self="handleCancelRegenerate">
-      <div class="feedback-modal">
-        <div class="modal-header">
-          <h3 class="modal-title">重新生成指导手册</h3>
-          <button @click="handleCancelRegenerate" class="modal-close">✕</button>
-        </div>
-        
-        <div class="modal-body">
-          <p class="feedback-tip">请告诉我您希望如何优化这个指导手册：</p>
-          <div class="input-wrapper">
-            <textarea
-              v-model="feedbackText"
-              placeholder="例如：更加详细一些、更简洁、调整某个步骤等..."
-              maxlength="500"
-              class="feedback-textarea"
-              rows="6"
-              autofocus
-            ></textarea>
-          </div>
-          <div class="char-count-bottom">{{ feedbackText.length }}/500</div>
-        </div>
-        
-        <div class="modal-footer">
-          <button @click="handleCancelRegenerate" class="cancel-btn">
-            取消
-          </button>
-          <button @click="handleConfirmRegenerate" class="confirm-btn">
-            确认重新生成
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -1073,9 +892,10 @@ $warning: #f59e0b;
 $error: #ef4444;
 
 .task-graph-page {
+  box-sizing: border-box;
   width: 100%;
-  height: 100vh;
-  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 50%, #ffffff 100%);
+  height: 100%;
+  background-color: #ffffff;
   overflow: hidden;
   position: relative;
   
@@ -1120,28 +940,37 @@ $error: #ef4444;
 }
 
 // 三列布局
-.three-column-layout {
+.two-column-layout {
+  box-sizing: border-box;
   display: flex;
   width: 100%;
   height: 100%;
-  gap: 16px;
-  padding: 16px;
+  gap: 20px;
+  padding: 20px;
   position: relative;
   z-index: 1;
+}
+
+.left-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
 }
 
 .column {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px) saturate(180%);
-  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 32px !important;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.3) inset;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
@@ -1279,30 +1108,6 @@ $error: #ef4444;
           box-shadow: 0 0 8px rgba(234, 88, 12, 0.6);
         }
       }
-
-      &.completed {
-        background: linear-gradient(135deg, #d1fae5 0%, #86efac 100%);
-        color: #047857;
-        border-color: rgba(16, 185, 129, 0.2);
-        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
-        
-        .status-icon {
-          font-weight: 900;
-          font-size: 15px;
-        }
-      }
-
-      &.error {
-        background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%);
-        color: #b91c1c;
-        border-color: rgba(239, 68, 68, 0.2);
-        box-shadow: 0 4px 16px rgba(239, 68, 68, 0.25);
-        
-        .status-icon {
-          font-weight: 900;
-          font-size: 15px;
-        }
-      }
     }
 
     /* 编辑/预览切换按钮（新） */
@@ -1333,9 +1138,14 @@ $error: #ef4444;
 
   .column-content {
     flex: 1;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    background: transparent;
+
+    // 添加内边距以便给内部卡片留出空间
+    padding: 0 20px 20px;
 
     // 隐藏滚动条但保持滚动功能
     scrollbar-width: none;  // Firefox
@@ -1367,185 +1177,17 @@ $error: #ef4444;
   }
 }
 
-// 第一列：指导手册
-.column-guide {
-  .guide-content-wrapper {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+// 用户问题卡片
+.user-query-card {
+  flex: 0 0 auto;
 
-    .guide-scroll-area {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      padding: 16px;
-
-      // 预览模式外层容器：允许滚动且隐藏滚动条
-      > div:not(.guide-editor) {
-        flex: 1;
-        overflow-y: auto;
-        min-height: 0;
-        scrollbar-width: none;  // Firefox
-        -ms-overflow-style: none;  // IE/Edge
-        
-        &::-webkit-scrollbar {
-          display: none;  // Chrome/Safari/Edge
-        }
-      }
-
-      .guide-editor {
-        flex: 1;
-        min-height: 0; // 允许子元素伸缩
-        :deep(.md-editor) {
-          border: 1px solid var(--border, #e5e7eb);
-          box-shadow: none;
-          border-radius: 12px;
-          height: 100% !important;
-          display: flex;
-          flex-direction: column;
-        }
-        :deep(.md-editor-toolbar) {
-          border-bottom: 1px solid var(--border, #e5e7eb);
-        }
-        :deep(.md-editor-content-editor),
-        :deep(.md-editor-content-preview) {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
-          height: 100% !important;
-        }
-        :deep(.md-editor-content) { height: 100% !important; }
-      }
-    }
-
-    .guide-actions {
-      display: flex;
-      gap: 12px;
-      padding: 20px 28px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, #ffffff 100%);
-      border-top: 2px solid rgba(102, 126, 234, 0.08);
-      flex-shrink: 0;
-      backdrop-filter: blur(10px);
-
-      .action-btn {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        padding: 14px 24px;
-        border: none;
-        border-radius: 12px;
-        font-size: 14px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-
-        // 按钮光泽效果
-        &::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-          transition: left 0.5s ease;
-        }
-
-        &:hover:not(:disabled)::before {
-          left: 100%;
-        }
-
-        .btn-icon {
-          font-size: 20px;
-          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-        }
-
-        .btn-text {
-          font-size: 14px;
-          letter-spacing: 0.5px;
-        }
-
-        &:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
-          transform: none !important;
-        }
-
-        &.regenerate-btn {
-          background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
-          color: #475569;
-          border: 1px solid rgba(148, 163, 184, 0.3);
-          box-shadow: 
-            0 4px 16px rgba(71, 85, 105, 0.15),
-            0 0 0 1px rgba(255, 255, 255, 0.5) inset;
-
-          &:hover:not(:disabled) {
-            background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
-            box-shadow: 
-              0 6px 24px rgba(71, 85, 105, 0.25),
-              0 0 0 1px rgba(255, 255, 255, 0.7) inset;
-            transform: translateY(-3px) scale(1.02);
-          }
-
-          &:active:not(:disabled) {
-            transform: translateY(-1px) scale(1);
-            box-shadow: 
-              0 3px 12px rgba(71, 85, 105, 0.2),
-              0 0 0 1px rgba(255, 255, 255, 0.5) inset;
-          }
-        }
-
-        &.start-btn {
-          background: linear-gradient(135deg, $primary-start 0%, $primary-end 100%);
-          color: white;
-          border: 1px solid rgba(6, 182, 212, 0.3);
-          box-shadow: 
-            0 8px 24px rgba(6, 182, 212, 0.35),
-            0 4px 12px rgba(59, 130, 246, 0.25),
-            0 0 0 1px rgba(255, 255, 255, 0.2) inset;
-          position: relative;
-          
-          &::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 12px;
-            padding: 2px;
-            background: linear-gradient(135deg, $primary-start, $primary-end, $secondary-start);
-            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            mask-composite: exclude;
-            -webkit-mask-composite: xor;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-          }
-
-          &:hover:not(:disabled) {
-            background: linear-gradient(135deg, color.adjust($primary-start, $lightness: -5%) 0%, color.adjust($primary-end, $lightness: -5%) 100%);
-            box-shadow: 
-              0 12px 32px rgba(6, 182, 212, 0.5),
-              0 6px 16px rgba(59, 130, 246, 0.35),
-              0 0 40px rgba(59, 130, 246, 0.2),
-              0 0 0 1px rgba(255, 255, 255, 0.3) inset;
-            transform: translateY(-3px) scale(1.03);
-            
-            &::before {
-              opacity: 1;
-            }
-          }
-
-          &:active:not(:disabled) {
-            transform: translateY(-1px) scale(1.01);
-            box-shadow: 
-              0 6px 20px rgba(6, 182, 212, 0.4),
-              0 3px 10px rgba(59, 130, 246, 0.3),
-              0 0 0 1px rgba(255, 255, 255, 0.2) inset;
-          }
-        }
-      }
+  .query-card-body {
+    .query-text {
+      margin: 12px 0;
+      font-size: 15px;
+      line-height: 1.8;
+      color: #374151;
+      word-break: break-word;
     }
   }
 }
@@ -1553,101 +1195,24 @@ $error: #ef4444;
 // 第二列：任务流程图
 .column-graph {
   .graph-wrapper {
+    flex: 1;
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 16px;
-
-    .legend-bar {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 20px;
-      padding: 14px 20px;
-      background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
-      border-radius: 16px;
-      margin-bottom: 16px;
-      box-shadow: 
-        0 4px 16px rgba(0, 0, 0, 0.08),
-        0 0 0 1px rgba(102, 126, 234, 0.08) inset;
-      border: 2px solid rgba(102, 126, 234, 0.1);
-
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 12px;
-        border-radius: 12px;
-        background: white;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-        transition: all 0.3s ease;
-
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-
-        .legend-dot {
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          position: relative;
-          
-          &.pending {
-            background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
-            box-shadow: 0 2px 6px rgba(203, 213, 225, 0.5);
-          }
-          
-          &.executing {
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-            box-shadow: 0 2px 6px rgba(251, 191, 36, 0.5);
-            animation: pulse 1.5s ease-in-out infinite;
-            
-            &::after {
-              content: '';
-              position: absolute;
-              inset: -4px;
-              border-radius: 50%;
-              border: 2px solid #fbbf24;
-              animation: ripple 1.5s ease-out infinite;
-            }
-          }
-          
-          &.completed {
-            background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
-            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.5);
-          }
-        }
-
-        .legend-text {
-          font-size: 13px;
-          color: #475569;
-          font-weight: 600;
-        }
-      }
-    }
-    
-    @keyframes ripple {
-      0% {
-        transform: scale(1);
-        opacity: 1;
-      }
-      100% {
-        transform: scale(1.8);
-        opacity: 0;
-      }
-    }
+    padding: 0 0px 20px; // 内卡边缘外边距
+    margin-top: -16px; // 抵消上方标题留白
 
     .graph-container {
       flex: 1;
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      height: 100%;
+      background: transparent;
+      padding: 0;
+      margin-top: 16px;
       overflow: auto;
       display: flex;
-      justify-content: center;
-      align-items: flex-start;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
       
       // 隐藏滚动条但保持滚动功能
       scrollbar-width: none;  // Firefox
@@ -1660,7 +1225,10 @@ $error: #ef4444;
       .graph-svg {
         width: 100%;
         height: auto;
-        min-height: 400px;
+        min-height: 300px;
+        max-width: 320px;
+        margin: auto 0;
+        display: block;
 
         .edge-path {
           fill: none;
@@ -1733,35 +1301,36 @@ $error: #ef4444;
 
 // 第三列：执行结果
 .column-result {
+  .column-content {
+    padding: 0; // 移除外层 padding，以便滚动层贴近边缘
+  }
+
   .result-wrapper {
-    padding: 28px;
+    flex: 1;
     height: 100%;
+    padding: 0 20px 20px; // 内边距转移到这里，调整上下左右边距与用户问题一致
+    margin-top: 0; // 移除上方负边距，让文本距离顶部有适呼吸空间
     overflow-y: auto;
+    overflow-x: hidden; // 防止水平滚动条由于代码块溢出导致整个卡片可滚动
     will-change: scroll-position;  // 提示浏览器优化滚动性能
     contain: layout style paint;   // 隔离渲染层，减少重排
 
+    // 移除滚动条显示
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
     :deep(.md-editor-preview) {
-      background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
-      padding: 28px;
-      border-radius: 16px;
-      box-shadow: 
-        0 4px 20px rgba(0, 0, 0, 0.08),
-        0 0 0 1px rgba(102, 126, 234, 0.05) inset;
-      border: 2px solid rgba(102, 126, 234, 0.1);
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+      margin-top: 0;
+      box-shadow: none;
+      border: none;
       position: relative;
       will-change: contents;  // 提示浏览器内容会频繁变化
-      
-      // 装饰性顶部渐变
-      &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        border-radius: 16px 16px 0 0;
-      }
 
       p {
         margin: 12px 0;
@@ -1834,6 +1403,7 @@ $error: #ef4444;
 
 // 空状态占位符
 .empty-placeholder {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2001,157 +1571,8 @@ $error: #ef4444;
   }
 }
 
-// 重新生成反馈弹窗
-.feedback-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  animation: fadeIn 0.3s ease;
 
-  .feedback-modal {
-    background: white;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 600px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    animation: slideUp 0.3s ease;
-    overflow: hidden;
 
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 24px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border-bottom: 3px solid rgba(255, 255, 255, 0.2);
-
-      .modal-title {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 700;
-      }
-
-      .modal-close {
-        background: none;
-        border: none;
-        color: white;
-        font-size: 24px;
-        cursor: pointer;
-        padding: 0;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        transition: background 0.2s ease;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.2);
-        }
-      }
-    }
-
-    .modal-body {
-      padding: 24px;
-
-      .feedback-tip {
-        font-size: 14px;
-        color: #6b7280;
-        margin: 0 0 16px 0;
-        line-height: 1.6;
-      }
-
-      .input-wrapper {
-        margin-bottom: 8px;
-
-        .feedback-textarea {
-          width: 100%;
-          padding: 12px;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          font-size: 14px;
-          line-height: 1.6;
-          color: #374151;
-          resize: vertical;
-          font-family: inherit;
-          transition: none;
-          box-sizing: border-box;
-          display: block;
-
-          &:focus {
-            outline: none;
-            border-color: #667eea;
-          }
-
-          &::placeholder {
-            color: #9ca3af;
-          }
-        }
-      }
-
-      .char-count-bottom {
-        font-size: 12px;
-        color: #9ca3af;
-        text-align: right;
-        padding: 0 4px;
-      }
-    }
-
-    .modal-footer {
-      display: flex;
-      gap: 12px;
-      padding: 16px 24px;
-      background: #f9fafb;
-      border-top: 1px solid #e5e7eb;
-
-      button {
-        flex: 1;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-
-        &.cancel-btn {
-          background: white;
-          color: #6b7280;
-          border: 1px solid #e5e7eb;
-
-          &:hover {
-            background: #f3f4f6;
-            border-color: #d1d5db;
-          }
-        }
-
-        &.confirm-btn {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-
-          &:hover {
-            background: linear-gradient(135deg, #5568d3 0%, #63408a 100%);
-            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
-            transform: translateY(-1px);
-          }
-
-          &:active {
-            transform: translateY(0);
-          }
-        }
-      }
-    }
-  }
-}
 
 // 动画
 @keyframes fadeIn {
@@ -2233,7 +1654,7 @@ $error: #ef4444;
 
 .task-graph-page {
   /* 主题变量（该页作用域内） */
-  --bg: #f5f7fb;
+  --bg: #ffffff;
   --panel: #ffffff;
   --border: #e5e7eb;
   --border-strong: #d1d5db;
@@ -2257,7 +1678,7 @@ $error: #ef4444;
 
 
 /* 布局与面板 */
-.three-column-layout {
+.two-column-layout {
   gap: 12px;
   padding: 12px;
 }
@@ -2323,62 +1744,11 @@ $error: #ef4444;
   background: #f59e0b;
   box-shadow: none;
 }
-.column .column-header .status-badge.completed {
-  background: #ecfdf5;
-  border-color: #a7f3d0;
-  color: #047857;
-}
 
 .column .column-content {
   background: var(--panel);
 }
 
-/* 指导手册区 */
-.column-guide .guide-content-wrapper .guide-scroll-area .guide-text {
-  background: #fff;
-  border: 1px solid var(--border);
-  box-shadow: none;
-  padding: 20px;
-  border-radius: 12px;
-  line-height: 1.75;
-}
-.column-guide .guide-content-wrapper .guide-scroll-area .guide-text:hover {
-  box-shadow: none;
-  border-color: var(--border-strong);
-}
-.column-guide .guide-content-wrapper .guide-scroll-area .guide-text::before {
-  display: none !important;
-}
-
-.column-guide .guide-actions {
-  background: #fff;
-  border-top: 1px solid var(--border);
-}
-.column-guide .guide-actions .action-btn {
-  border-radius: 10px;
-  padding: 12px 16px;
-}
-.column-guide .guide-actions .action-btn.regenerate-btn {
-  background: #fff;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  box-shadow: none;
-}
-.column-guide .guide-actions .action-btn.regenerate-btn:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: var(--border-strong);
-  transform: none;
-}
-.column-guide .guide-actions .action-btn.start-btn {
-  background: var(--primary);
-  color: #fff;
-  border: 1px solid transparent;
-  box-shadow: none;
-}
-.column-guide .guide-actions .action-btn.start-btn:hover:not(:disabled) {
-  background: var(--primary-600);
-  transform: none;
-}
 
 /* 流程图区 */
 .column-graph .graph-wrapper {
@@ -2415,7 +1785,7 @@ $error: #ef4444;
 }
 
 .column-graph .graph-wrapper .graph-container {
-  border: 1px solid var(--border);
+  border: none;
   box-shadow: none;
 }
 .column-graph .graph-wrapper .graph-container .graph-svg .edge-path {
@@ -2445,9 +1815,9 @@ $error: #ef4444;
 /* 执行结果区 */
 .column-result .result-wrapper :deep(.md-editor-preview) {
   background: #fff;
-  border: 1px solid var(--border);
+  border: none;
   box-shadow: none;
-  padding: 20px;
+  padding: 0;
 }
 .column-result .result-wrapper :deep(.md-editor-preview)::before {
   display: none !important;
@@ -2462,29 +1832,93 @@ $error: #ef4444;
 }
 
 /* 弹窗统一为干净风格 */
-.node-detail-modal .modal-content .modal-header,
-.feedback-modal-overlay .feedback-modal .modal-header {
+.node-detail-modal .modal-content .modal-header {
   background: #fff;
   color: var(--text);
   border-bottom: 1px solid var(--border);
 }
-.node-detail-modal .modal-content .modal-header .modal-close,
-.feedback-modal-overlay .feedback-modal .modal-header .modal-close {
+.node-detail-modal .modal-content .modal-header .modal-close {
   color: var(--muted);
 }
-.feedback-modal-overlay .feedback-modal .modal-footer {
-  background: #fff;
-  border-top: 1px solid var(--border);
+
+/* 自我反馈折叠卡片 (iOS 26 风格) - 抽离原生渲染 */
+.feedback-cards-container {
+  margin: 16px 0 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-.feedback-modal-overlay .feedback-modal .modal-footer button.cancel-btn {
-  background: #fff;
-  border: 1px solid var(--border);
+
+.feedback-card-native {
+  border-radius: 20px;
+  background-color: #f2f2f7;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
 }
-.feedback-modal-overlay .feedback-modal .modal-footer button.confirm-btn {
-  background: var(--primary);
-  color: #fff;
+
+.feedback-card-native summary {
+  padding: 16px 20px;
+  font-weight: 600;
+  font-size: 15px;
+  color: #1c1c1e;
+  cursor: pointer;
+  list-style: none; /* remove default triangle in some browsers */
+  position: relative;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  background-color: transparent;
+  outline: none;
+  border: none;
 }
-.feedback-modal-overlay .feedback-modal .modal-footer button.confirm-btn:hover {
-  background: var(--primary-600);
+
+.feedback-card-native summary::-webkit-details-marker {
+  display: none; /* remove default triangle in safari */
+}
+
+/* Custom icon for details */
+.feedback-card-native summary::after {
+  content: "›"; 
+  display: inline-block;
+  font-size: 22px;
+  line-height: 1;
+  margin-left: auto;
+  transition: transform 0.3s ease;
+  color: #8e8e93;
+  font-family: monospace;
+}
+
+.feedback-card-native[open] summary::after {
+  transform: rotate(90deg);
+}
+
+.feedback-content-native {
+  padding: 0 20px 20px 20px;
+}
+.feedback-content-native :deep(.md-editor-preview) {
+  background: transparent !important;
+  padding: 0;
+}
+.feedback-content-native :deep(.md-editor-preview) p {
+  color: #3a3a3c;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.feedback-card-native.success {
+  background-color: #f2fcf5;
+  border-color: #d1f4e0;
+}
+.feedback-card-native.success summary {
+  color: #0b6833;
+}
+
+.feedback-card-native.error {
+  background-color: #fff8f8;
+  border-color: #ffe5e5;
+}
+.feedback-card-native.error summary {
+  color: #c92a2a;
 }
 </style>

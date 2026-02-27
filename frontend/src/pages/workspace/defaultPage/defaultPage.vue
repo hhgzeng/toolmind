@@ -243,14 +243,14 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
+  background: #ffffff;
   padding: 0;
   overflow-y: auto;
 
   &.chat-active {
     padding: 0;
     overflow: hidden;
-    background-color: #f7f8fa;
+    background-color: #ffffff;
   }
 }
 

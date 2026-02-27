@@ -95,14 +95,16 @@ watch(
     background-color: #ffffff;
     
     .sidebar {
-      height: 100%;
+      height: calc(100% - 32px);
+      margin: 16px;
       width: 260px;
       min-width: 260px;
-      background: #f7f8fa;
+      background: #ffffff;
       display: flex;
       flex-direction: column;
-      border-right: 1px solid #ebebeb;
-      box-shadow: none;
+      border: 1px solid #ebebeb;
+      border-radius: 24px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
 
       .sidebar-header {
         display: flex;
@@ -150,7 +152,7 @@ watch(
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
   
   .el-menu-item {
-    border-radius: 16px;
+    border-radius: 20px;
     margin: 4px 10px;
     padding: 0 16px;
     height: 52px;

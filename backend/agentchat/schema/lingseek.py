@@ -19,7 +19,7 @@ class LingSeekGuidePromptFeedBack(BaseModel):
 
 class LingSeekTask(BaseModel):
     query: str
-    guide_prompt: str
+    guide_prompt: str = ""
     web_search: bool = True
     plugins: List[str] = []
     mcp_servers: List[str] = []

@@ -432,14 +432,16 @@ onBeforeUnmount(() => {
   background-color: #ffffff;
 
   .sidebar {
-    height: 100%;
+    height: calc(100% - 32px);
+    margin: 16px;
     width: 260px;
     min-width: 260px;
-    background: #f7f8fa;
+    background: #ffffff;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #ebebeb;
-    box-shadow: none;
+    border: 1px solid #ebebeb;
+    border-radius: 24px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
 
     .sidebar-header {
       display: flex;
@@ -469,7 +471,7 @@ onBeforeUnmount(() => {
       .create-btn-native {
         width: 100%;
         height: 42px;
-        border-radius: 21px;
+        border-radius: 24px;
         font-weight: 500;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         background: #ffffff;
@@ -561,7 +563,7 @@ onBeforeUnmount(() => {
           display: flex;
           align-items: center;
           padding: 10px 10px;
-          border-radius: 10px;
+          border-radius: 16px;
           cursor: pointer;
           transition: all 0.15s ease;
           position: relative;
@@ -590,7 +592,7 @@ onBeforeUnmount(() => {
             color: #999;
             font-size: 16px;
             cursor: pointer;
-            border-radius: 8px;
+            border-radius: 24px;
             opacity: 0;
             transition: all 0.15s ease;
             flex-shrink: 0;
@@ -608,7 +610,7 @@ onBeforeUnmount(() => {
             top: calc(100% + 4px);
             background: #ffffff;
             border: 1px solid #e5e5e5;
-            border-radius: 10px;
+            border-radius: 16px;
             padding: 4px;
             z-index: 100;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
@@ -625,7 +627,7 @@ onBeforeUnmount(() => {
               color: #333;
               font-size: 13px;
               cursor: pointer;
-              border-radius: 6px;
+              border-radius: 14px;
               text-align: left;
               transition: background 0.15s ease;
               font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
@@ -676,7 +678,19 @@ onBeforeUnmount(() => {
 
     .sidebar-footer {
       padding: 12px 14px;
-      border-top: 1px solid #ebebeb;
+      position: relative;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: -40px;
+        left: 0;
+        right: 0;
+        height: 40px;
+        background: linear-gradient(to bottom, transparent, #ffffff);
+        pointer-events: none;
+        z-index: 1;
+      }
 
       .user-profile-wrapper {
         position: relative;
@@ -687,8 +701,8 @@ onBeforeUnmount(() => {
         align-items: center;
         gap: 10px;
         padding: 8px 8px;
-        border-radius: 10px;
-        transition: background 0.15s ease;
+        border-radius: 16px;
+        transition: all 0.15s ease;
         cursor: pointer;
         user-select: none;
 
@@ -748,7 +762,7 @@ onBeforeUnmount(() => {
           align-items: center;
           gap: 10px;
           padding: 12px 12px;
-          border-radius: 12px;
+          border-radius: 16px;
 
           .popup-avatar {
             width: 36px;
@@ -792,7 +806,7 @@ onBeforeUnmount(() => {
           color: #1f2937;
           font-size: 14px;
           cursor: pointer;
-          border-radius: 12px;
+          border-radius: 14px;
           text-align: left;
           transition: background 0.15s ease;
           font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
@@ -872,7 +886,8 @@ onBeforeUnmount(() => {
     flex-direction: column;
 
     .sidebar {
-      width: 100%;
+      width: calc(100% - 32px);
+      margin: 16px;
       height: auto;
       max-height: 300px;
     }
@@ -900,7 +915,7 @@ onBeforeUnmount(() => {
 
 .confirm-dialog {
   background: white;
-  border-radius: 20px;
+  border-radius: 24px;
   padding: 24px;
   width: 90%;
   max-width: 320px;
@@ -928,7 +943,7 @@ onBeforeUnmount(() => {
 
     .dialog-btn {
       padding: 8px 24px;
-      border-radius: 20px;
+      border-radius: 24px;
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
