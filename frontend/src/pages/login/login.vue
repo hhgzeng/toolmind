@@ -2,6 +2,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { User, Lock } from '@element-plus/icons-vue'
 import { loginAPI, getUserInfoAPI } from '../../apis/auth'
 import { useUserStore } from '../../store/user'
 
@@ -28,8 +29,6 @@ const handleLogin = async () => {
     // response.data结构可能是{status_code: number, data: {...}}
     const responseData = response.data
     if (responseData.status_code === 200) {
-      ElMessage.success('登录成功')
-      
       // 使用store管理用户状态
       const userData = responseData.data
       if (userData?.access_token && userData?.user_id) {
@@ -111,29 +110,25 @@ const goToRegister = () => {
 
         <!-- 登录表单 -->
         <div class="login-form">
-          <div class="form-group">
-            <label class="form-label">账号</label>
-            <el-input
-              v-model="loginForm.username"
-              placeholder="请输入账号"
-              size="large"
-              class="login-input"
-              @keyup.enter="handleLogin"
-            />
-          </div>
+          <el-input
+            v-model="loginForm.username"
+            placeholder="请输入账号"
+            size="large"
+            class="login-input"
+            :prefix-icon="User"
+            @keyup.enter="handleLogin"
+          />
 
-          <div class="form-group">
-            <label class="form-label">密码</label>
-            <el-input
-              v-model="loginForm.password"
-              type="password"
-              placeholder="请输入密码"
-              size="large"
-              class="login-input"
-              show-password
-              @keyup.enter="handleLogin"
-            />
-          </div>
+          <el-input
+            v-model="loginForm.password"
+            type="password"
+            placeholder="请输入密码"
+            size="large"
+            class="login-input"
+            :prefix-icon="Lock"
+            show-password
+            @keyup.enter="handleLogin"
+          />
 
           <div class="form-actions">
             <div class="register-link">
@@ -251,13 +246,13 @@ const goToRegister = () => {
           display: inline-block;
           background: linear-gradient(45deg, #4f81ff, #3b66db);
           color: white;
-          padding: 12px 24px;
-          border-radius: 8px;
-          font-size: 20px;
+          padding: 14px 36px;
+          border-radius: 999px;
+          font-size: 24px;
           font-weight: 700;
           letter-spacing: 2px;
           font-family: 'SF Pro Display', 'Helvetica Neue', 'Arial', sans-serif;
-          box-shadow: 0 4px 12px rgba(79, 129, 255, 0.3);
+          box-shadow: 0 8px 24px rgba(79, 129, 255, 0.25);
         }
       }
 
@@ -272,47 +267,41 @@ const goToRegister = () => {
     }
 
     .login-form {
-      .form-group {
-        margin-bottom: 20px;
+      .login-input {
+        margin-bottom: 16px;
 
-        .form-label {
-          display: block;
-          font-size: 16px;
-          font-weight: 600;
-          color: #2c3e50;
-          margin-bottom: 10px;
-          font-family: 'PingFang SC', 'Helvetica Neue', 'Arial', sans-serif;
-          letter-spacing: 0.5px;
-        }
+        :deep(.el-input__wrapper) {
+          background: #f8f9fc;
+          border: 1px solid #e1e5e9;
+          border-radius: 999px;
+          padding: 8px 18px;
+          box-shadow: none;
 
-        .login-input {
-          :deep(.el-input__wrapper) {
-            background: #f8f9fc;
-            border: 1px solid #e1e5e9;
-            border-radius: 8px;
-            padding: 12px 16px;
-            box-shadow: none;
-
-            &:hover {
-              border-color: #4f81ff;
-            }
-
-            &.is-focus {
-              border-color: #4f81ff;
-              box-shadow: 0 0 0 3px rgba(79, 129, 255, 0.1);
-            }
+          &:hover {
+            border-color: #4f81ff;
           }
 
-          :deep(.el-input__inner) {
-            color: #2c3e50;
-            font-size: 16px;
-            font-family: 'PingFang SC', 'Helvetica Neue', 'Arial', sans-serif;
-            font-weight: 400;
+          &.is-focus {
+            border-color: #4f81ff;
+            box-shadow: 0 0 0 3px rgba(79, 129, 255, 0.1);
+          }
+        }
 
-            &::placeholder {
-              color: #a0a0a0;
-              font-size: 15px;
-            }
+        :deep(.el-input__prefix) {
+          font-size: 18px;
+          color: #8a94a6;
+          margin-right: 6px;
+        }
+
+        :deep(.el-input__inner) {
+          color: #2c3e50;
+          font-size: 15px;
+          font-family: 'PingFang SC', 'Helvetica Neue', 'Arial', sans-serif;
+          font-weight: 400;
+
+          &::placeholder {
+            color: #a0a0a0;
+            font-size: 14px;
           }
         }
       }
@@ -347,7 +336,7 @@ const goToRegister = () => {
         height: 52px;
         background: linear-gradient(45deg, #4f81ff, #3b66db);
         border: none;
-        border-radius: 10px;
+        border-radius: 999px;
         font-size: 18px;
         font-weight: 600;
         font-family: 'PingFang SC', 'Helvetica Neue', 'Arial', sans-serif;

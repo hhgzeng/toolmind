@@ -13,7 +13,9 @@ from agentchat.settings import initialize_app_settings
 from agentchat.settings import app_settings
 
 import warnings
+
 warnings.filterwarnings("ignore")
+
 
 async def register_router(app: FastAPI):
     from agentchat.api.router import router
@@ -23,19 +25,19 @@ async def register_router(app: FastAPI):
     # 健康探针
     @app.get("/health")
     def check_health():
-        return {'status': 'OK'}
+        return {"status": "OK"}
 
 
 def register_middleware(app: FastAPI):
     origins = [
-        '*',
+        "*",
     ]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=False,
-        allow_methods=['*'],
-        allow_headers=['*'],
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     # Trace ID的中间件操作
@@ -44,7 +46,6 @@ def register_middleware(app: FastAPI):
     # 注册白名单中间件
     app.add_middleware(WhitelistMiddleware)
 
-
     return app
 
 
@@ -52,16 +53,18 @@ async def init_config():
     await initialize_app_settings()
 
     # 必须放到init settings 之后 import
-    from agentchat.database.init_data import init_database, update_system_mcp_server # init_default_agent
+    from agentchat.database.init_data import init_database  # init_default_agent
+
     await init_database()
     # await init_default_agent()
-    await update_system_mcp_server()
+
 
 def print_logo():
     from pyfiglet import Figlet
 
     f = Figlet(font="slant")
     print(f.renderText("Agent Chat"))
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -75,9 +78,11 @@ async def lifespan(app: FastAPI):
 
 
 def create_app():
-    app = FastAPI(title=app_settings.server.get("project_name", "AgentChat"),
-                  version=app_settings.server.get("version", "v2.2.0"),
-                  lifespan=lifespan)
+    app = FastAPI(
+        title=app_settings.server.get("project_name", "AgentChat"),
+        version=app_settings.server.get("version", "v2.2.0"),
+        lifespan=lifespan,
+    )
 
     app = register_middleware(app)
 
@@ -92,8 +97,7 @@ def create_app():
     @app.exception_handler(AuthJWTException)
     def authjwt_exception_handler(request, exc):
         return JSONResponse(
-            status_code=exc.status_code,
-            content={"detail": exc.message}
+            status_code=exc.status_code, content={"detail": exc.message}
         )
 
     return app

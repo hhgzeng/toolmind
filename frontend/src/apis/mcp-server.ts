@@ -1,9 +1,6 @@
 import { request } from '../utils/request'
 
 export interface CreateMCPServerRequest {
-  server_name: string
-  url: string
-  type: string
   config?: any | string
 }
 
@@ -28,10 +25,8 @@ export interface MCPServerConfig {
 export interface MCPServer {
   mcp_server_id: string
   server_name: string
-  url: string
-  type: string
   config?: MCPServerConfig[] | any
-  config_enabled: boolean
+  is_active: boolean
   tools: string[]
   params: MCPServerTool[]
   logo_url: string
@@ -77,7 +72,16 @@ export const deleteMCPServerAPI = (server_id: string) => {
     method: 'DELETE',
     data: { server_id }
   })
-} 
+}
+
+// 更新MCP服务器
+export const updateMCPServerAPI = (data: { server_id: string; config?: any; is_active?: boolean }) => {
+  return request<MCPServerSingleResponse>({
+    url: '/api/v1/mcp_server',
+    method: 'PUT',
+    data
+  })
+}
 
 // MCP用户配置相关接口
 export interface MCPUserConfigCreateRequest {

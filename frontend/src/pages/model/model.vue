@@ -3,7 +3,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete, Connection, Cpu, Search, Refresh, Calendar, ChatDotRound, RefreshRight, Star, Link, Timer } from '@element-plus/icons-vue'
-import modelIcon from '../../assets/model.svg'
 import { 
   getVisibleLLMsAPI, 
   createLLMAPI, 
@@ -151,7 +150,6 @@ const handleCreate = async () => {
     const response = await createLLMAPI(createForm.value)
     
     if (response.data.status_code === 200) {
-      ElMessage.success('创建成功')
       createDialogVisible.value = false
       fetchModels()
     } else {
@@ -188,7 +186,6 @@ const confirmDelete = async () => {
     const response = await deleteLLMAPI({ llm_id: modelToDelete.value.llm_id })
     
     if (response.data.status_code === 200) {
-      ElMessage.success('删除成功')
       deleteDialogVisible.value = false
       fetchModels()
     } else {
@@ -232,12 +229,6 @@ const getProviderColor = (provider: string) => {
 
 
 
-// 格式化时间
-const formatTime = (timeStr: string) => {
-  if (!timeStr) return '-'
-  return new Date(timeStr).toLocaleDateString('zh-CN')
-}
-
 // 截断URL函数
 const truncateUrl = (url: string, maxLength: number): string => {
   if (!url) return '';
@@ -261,22 +252,6 @@ const truncateUrl = (url: string, maxLength: number): string => {
   return protocol + start + '...' + end;
 };
 
-// 改进格式化时间函数，使其更友好
-const formatTimeFriendly = (timeStr: string) => {
-  if (!timeStr) return '-';
-  
-  try {
-    const date = new Date(timeStr);
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    
-    return `${year}/${month}/${day}`;
-  } catch(e) {
-    return timeStr;
-  }
-}
-
 onMounted(() => {
   fetchModels()
 })
@@ -287,14 +262,14 @@ onMounted(() => {
     <!-- 页面头部 -->
     <div class="page-header">
       <h2>
-        <img :src="modelIcon" class="model-icon" alt="Model" />
+        <el-icon class="model-icon"><Cpu /></el-icon>
         模型管理
       </h2>
       <div class="header-actions">
         <div class="search-box">
           <el-input
             v-model="searchKeyword"
-            placeholder="🔍 搜索模型名称或提供商..."
+            placeholder="搜索模型名称或提供商..."
             :prefix-icon="Search"
             clearable
             @clear="clearSearch"
@@ -303,21 +278,14 @@ onMounted(() => {
         </div>
         
         <div class="action-buttons">
-          <el-button 
-            :icon="Refresh" 
-            @click="fetchModels"
-            :loading="loading"
-            class="refresh-btn"
-          >
-            🔄 刷新
-          </el-button>
+
           <el-button 
             type="primary" 
             :icon="Plus"
             @click="openCreateDialog"
             class="add-btn"
           >
-            🚀 添加模型
+            添加模型
           </el-button>
         </div>
       </div>
@@ -356,22 +324,7 @@ onMounted(() => {
           <!-- 基础URL列 -->
           <el-table-column label="基础URL" min-width="250">
             <template #default="{ row }">
-              <el-tooltip 
-                :content="row.base_url" 
-                placement="top" 
-                :show-after="500"
-                effect="light"
-                popper-class="url-tooltip"
-              >
-                <div class="url-value">{{ truncateUrl(row.base_url, 38) }}</div>
-              </el-tooltip>
-            </template>
-          </el-table-column>
-
-          <!-- 创建时间列 -->
-          <el-table-column label="创建时间" width="220">
-            <template #default="{ row }">
-              <div class="date-value">{{ formatTimeFriendly(row.create_time) }}</div>
+              <div class="url-value">{{ truncateUrl(row.base_url, 38) }}</div>
             </template>
           </el-table-column>
 
@@ -533,7 +486,6 @@ onMounted(() => {
                     maxlength="50"
                     class="form-input"
                   />
-                  <span class="char-count">{{ createForm.model.length }}/50</span>
                 </div>
               </div>
               
@@ -550,7 +502,6 @@ onMounted(() => {
                     maxlength="50"
                     class="form-input"
                   />
-                  <span class="char-count">{{ createForm.provider.length }}/50</span>
                 </div>
               </div>
               
@@ -575,7 +526,6 @@ onMounted(() => {
                     maxlength="200"
                     class="form-input"
                   />
-                  <span class="char-count">{{ createForm.base_url.length }}/200</span>
                 </div>
               </div>
               
@@ -592,7 +542,6 @@ onMounted(() => {
                     maxlength="200"
                     class="form-input"
                   />
-                  <span class="char-count">{{ createForm.api_key.length }}/200</span>
                 </div>
               </div>
             </div>
@@ -667,20 +616,11 @@ onMounted(() => {
     margin-bottom: 32px;
     background: linear-gradient(to right, #ffffff, #f8fafc);
     padding: 28px;
-    border-radius: 16px;
+    border-radius: 24px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     position: relative;
     overflow: hidden;
-    
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 4px;
-      background: linear-gradient(90deg, #409eff, #67c23a, #e6a23c);
-    }
+
     
     h2 {
       font-size: 26px;
@@ -695,8 +635,10 @@ onMounted(() => {
       background-clip: text;
       
       .model-icon {
+        font-size: 30px;
         width: 32px;
         height: 32px;
+        color: #409eff;
       }
       
       &::before {
@@ -714,7 +656,7 @@ onMounted(() => {
         margin-right: 12px;
         
         :deep(.el-input__wrapper) {
-          border-radius: 8px;
+          border-radius: 100px;
           transition: all 0.3s;
           border: 1px solid #dcdfe6;
           
@@ -730,7 +672,7 @@ onMounted(() => {
         gap: 12px;
         
         .el-button {
-          border-radius: 8px;
+          border-radius: 100px;
           padding: 12px 20px;
           font-size: 14px;
           font-weight: 500;
@@ -766,15 +708,11 @@ onMounted(() => {
   .model-list {
     min-height: 300px;
     position: relative;
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
     
     .model-table-container {
       /* Custom Table Styles */
       :deep(.el-table) {
-        border-radius: 12px;
+        border-radius: 24px;
         overflow: hidden;
         border: 1px solid #ebeef5;
         
@@ -799,7 +737,7 @@ onMounted(() => {
         .model-avatar {
           width: 44px;
           height: 44px;
-          border-radius: 12px;
+          border-radius: 16px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -841,10 +779,9 @@ onMounted(() => {
         font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
         color: #409eff;
         background-color: rgba(64, 158, 255, 0.1);
-        padding: 4px 8px;
-        border-radius: 6px;
+        padding: 4px 12px;
+        border-radius: 100px;
         font-size: 13px;
-        cursor: pointer;
         display: inline-block;
         border: 1px dashed rgba(64, 158, 255, 0.3);
         
@@ -854,29 +791,14 @@ onMounted(() => {
         }
       }
       
-      .date-value {
-        color: #67c23a;
-        background-color: rgba(103, 194, 58, 0.1);
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 13px;
-        font-weight: 600;
-        display: inline-block;
-      }
-      
       .action-buttons-cell {
         display: flex;
         justify-content: flex-start;
         gap: 8px;
         
         .action-btn {
-          border-radius: 6px;
+          border-radius: 100px;
           transition: all 0.3s;
-          
-          &:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-          }
         }
       }
     }
@@ -929,7 +851,7 @@ onMounted(() => {
         padding: 12px 24px;
         font-size: 16px;
         font-weight: 500;
-        border-radius: 8px;
+        border-radius: 100px;
         background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
         border: none;
         box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
@@ -949,22 +871,13 @@ onMounted(() => {
 .lingseek-config-section {
   margin-top: 40px;
   background: white;
-  border-radius: 16px;
+  border-radius: 24px;
   padding: 32px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
   position: relative;
   overflow: hidden;
   border: 1px solid #ebeef5;
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 6px;
-    height: 100%;
-    background: linear-gradient(180deg, #409eff, #3a7be2);
-  }
 
   .section-title {
     margin-bottom: 24px;
@@ -992,7 +905,7 @@ onMounted(() => {
 
   .config-card {
     background: #f8f9fa;
-    border-radius: 12px;
+    border-radius: 24px;
     padding: 24px;
     border: 1px solid #ebeef5;
     transition: all 0.3s;
@@ -1007,7 +920,7 @@ onMounted(() => {
       width: 48px;
       height: 48px;
       background: rgba(64, 158, 255, 0.1);
-      border-radius: 12px;
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1039,6 +952,20 @@ onMounted(() => {
     
     .model-select {
       width: 100%;
+      
+      :deep(.el-select__wrapper) {
+        border-radius: 100px !important;
+      }
+      
+      :deep(.el-popper.is-light) {
+        border-radius: 16px !important;
+      }
+      
+      :deep(.el-select-dropdown__item) {
+        border-radius: 8px !important;
+        margin: 0 8px;
+        width: calc(100% - 16px);
+      }
     }
   }
   
@@ -1051,7 +978,7 @@ onMounted(() => {
     .save-config-btn {
       padding: 12px 28px;
       font-size: 16px;
-      border-radius: 8px;
+      border-radius: 100px;
       background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
       border: none;
       
@@ -1152,7 +1079,7 @@ onMounted(() => {
   left: 50%;
   transform: translate(-50%, -50%);
   background: white;
-  border-radius: 20px;
+  border-radius: 24px;
   box-shadow: 
     0 20px 60px rgba(0, 0, 0, 0.3),
     0 8px 32px rgba(0, 0, 0, 0.15);
@@ -1182,7 +1109,7 @@ onMounted(() => {
 
 .form-section {
   background: white;
-  border-radius: 14px;
+  border-radius: 20px;
   padding: 22px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid #e2e8f0;
@@ -1239,15 +1166,20 @@ onMounted(() => {
 
 .form-input {
   width: 100%;
-  padding: 16px 20px;
+  padding: 12px 16px;
   border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 15px;
+  border-radius: 100px;
+  font-size: 14px;
   font-weight: 500;
   color: #1f2937;
   background: white;
   transition: all 0.3s ease;
   box-sizing: border-box;
+}
+
+/* 如果使用 el-input 组件则需要对它覆盖 */
+:deep(.el-input__wrapper) {
+  border-radius: 100px;
 }
 
 .form-input:focus {
@@ -1264,10 +1196,10 @@ onMounted(() => {
 
 .form-select {
   width: 100%;
-  padding: 16px 50px 16px 20px;
+  padding: 12px 40px 12px 16px;
   border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 15px;
+  border-radius: 100px;
+  font-size: 14px;
   font-weight: 500;
   color: #1f2937;
   background: white;
@@ -1298,15 +1230,6 @@ onMounted(() => {
   transform: translateY(-50%) rotate(180deg);
 }
 
-.char-count {
-  position: absolute;
-  right: 16px;
-  bottom: -24px;
-  font-size: 12px;
-  color: #6b7280;
-  font-weight: 500;
-}
-
 /* 对话框底部 */
 .dialog-footer {
   display: flex;
@@ -1320,15 +1243,15 @@ onMounted(() => {
 .dialog-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 28px;
+  gap: 8px;
+  padding: 10px 24px;
   border: none;
-  border-radius: 12px;
-  font-size: 15px;
+  border-radius: 100px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 120px;
+  min-width: 100px;
   justify-content: center;
   position: relative;
   overflow: hidden;
@@ -1442,7 +1365,7 @@ onMounted(() => {
   left: 50%;
   transform: translate(-50%, -50%);
   background: white;
-  border-radius: 12px;
+  border-radius: 24px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   width: 90%;
   max-width: 400px;
@@ -1478,7 +1401,7 @@ onMounted(() => {
   flex: 1;
   padding: 12px 20px;
   border: none;
-  border-radius: 8px;
+  border-radius: 100px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;

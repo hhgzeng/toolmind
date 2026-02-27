@@ -6,16 +6,17 @@ from agentchat.core.models.manager import ModelManager
 
 
 class StructuredResponseAgent:
-    def __init__(self, response_format):
+    def __init__(self, response_format, user_id: str = None):
         self.response_format = response_format
-        self.structured_agent = self._create_structured_agent()
+        self.user_id = user_id
 
-    def _create_structured_agent(self):
+    async def _create_structured_agent(self):
+        model = await ModelManager.get_conversation_model(user_id=self.user_id)
         return create_agent(
-            model=ModelManager.get_conversation_model(),
-            response_format=ToolStrategy(self.response_format)
+            model=model, response_format=ToolStrategy(self.response_format)
         )
 
-    def get_structured_response(self, messages):
-        result = self.structured_agent.invoke({"messages": messages})
+    async def get_structured_response(self, messages):
+        structured_agent = await self._create_structured_agent()
+        result = await structured_agent.ainvoke({"messages": messages})
         return result["structured_response"]

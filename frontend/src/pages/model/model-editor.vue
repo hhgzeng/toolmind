@@ -143,7 +143,6 @@ const handleDelete = async () => {
     const response = await deleteLLMAPI({ llm_id: currentModel.value.llm_id })
     
     if (response.data.status_code === 200) {
-      ElMessage.success('删除成功')
       router.push('/model')
     } else {
       ElMessage.error(response.data.status_message || '删除失败')
@@ -205,91 +204,105 @@ onMounted(() => {
           </div>
         </div>
         
-        <el-form
-          ref="editFormRef"
-          :model="editForm"
-          :rules="formRules"
-          label-width="120px"
-          label-position="left"
-          class="edit-form"
-        >
+        <div class="form-grid">
+          <!-- 基本信息区域 -->
           <div class="form-section">
-            <h4 class="section-title">基本信息</h4>
-            <div class="form-row">
-              <el-form-item label="模型名称" prop="model">
-                <el-input 
-                  v-model="editForm.model" 
-                  placeholder="请输入模型名称，如：gpt-4"
-                  clearable
-                  maxlength="50"
-                  show-word-limit
-                  class="form-input"
-                />
-              </el-form-item>
-              
-              <el-form-item label="提供商" prop="provider">
-                <el-input 
-                  v-model="editForm.provider" 
-                  placeholder="请输入提供商，如：OpenAI"
-                  clearable
-                  maxlength="50"
-                  show-word-limit
-                  class="form-input"
-                />
-              </el-form-item>
+            <div class="section-header">
+              <h4>📝 基本信息</h4>
             </div>
             
-            <!-- Removed llm_type row -->
-          </div>
-          
-          <div class="form-section">
-            <h4 class="section-title">连接配置</h4>
-            <div class="form-row">
-              <el-form-item label="基础URL" prop="base_url">
-                <el-input 
-                  v-model="editForm.base_url" 
-                  placeholder="请输入基础URL，如：https://api.openai.com/v1"
-                  clearable
-                  maxlength="200"
-                  show-word-limit
+            <div class="form-item">
+              <label class="form-label">
+                <span class="label-text">模型名称</span>
+                <span class="required-mark">*</span>
+              </label>
+              <div class="input-wrapper">
+                <input 
+                  v-model="editForm.model"
+                  type="text" 
+                  placeholder="例如：gpt-4, claude-3.5-sonnet"
+                  maxlength="50"
                   class="form-input"
                 />
-              </el-form-item>
+              </div>
             </div>
             
-            <div class="form-row">
-              <el-form-item label="API密钥" prop="api_key">
-                <el-input 
-                  v-model="editForm.api_key" 
-                  placeholder="请输入API密钥"
-                  type="password"
-                  show-password
-                  clearable
-                  maxlength="200"
-                  show-word-limit
+            <div class="form-item">
+              <label class="form-label">
+                <span class="label-text">提供商</span>
+                <span class="required-mark">*</span>
+              </label>
+              <div class="input-wrapper">
+                <input 
+                  v-model="editForm.provider"
+                  type="text" 
+                  placeholder="例如：OpenAI, Anthropic, 阿里云"
+                  maxlength="50"
                   class="form-input"
                 />
-              </el-form-item>
+              </div>
             </div>
+            
           </div>
           
-          <el-form-item>
-            <div class="form-actions">
-              <el-button @click="goBack" class="action-btn cancel-btn">
-                <el-icon><Close /></el-icon>
-                取消
-              </el-button>
-              <el-button 
-                type="primary" 
-                @click="handleUpdate"
-                class="action-btn primary-btn"
-              >
-                <el-icon><Check /></el-icon>
-                保存更改
-              </el-button>
+          <!-- 连接配置区域 -->
+          <div class="form-section">
+            <div class="section-header">
+              <h4>🔧 连接配置</h4>
             </div>
-          </el-form-item>
-        </el-form>
+            
+            <div class="form-item">
+              <label class="form-label">
+                <span class="label-text">基础URL</span>
+                <span class="required-mark">*</span>
+              </label>
+              <div class="input-wrapper">
+                <input 
+                  v-model="editForm.base_url"
+                  type="text" 
+                  placeholder="例如：https://api.openai.com/v1"
+                  maxlength="200"
+                  class="form-input"
+                />
+              </div>
+            </div>
+            
+            <div class="form-item">
+              <label class="form-label">
+                <span class="label-text">API密钥</span>
+                <span class="required-mark">*</span>
+              </label>
+              <div class="input-wrapper">
+                <input 
+                  v-model="editForm.api_key"
+                  type="password" 
+                  placeholder="请输入您的API密钥"
+                  maxlength="200"
+                  class="form-input"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions-wrapper">
+          <button 
+            class="dialog-btn cancel-btn" 
+            @click="goBack"
+          >
+            <span class="btn-icon">❌</span>
+            <span class="btn-text">取消</span>
+          </button>
+          <button 
+            class="dialog-btn confirm-btn" 
+            :class="{ 'disabled': !editForm.model || !editForm.api_key || !editForm.base_url || !editForm.provider }"
+            :disabled="!editForm.model || !editForm.api_key || !editForm.base_url || !editForm.provider"
+            @click="handleUpdate"
+          >
+            <span class="btn-icon">✅</span>
+            <span class="btn-text">保存更改</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -323,10 +336,10 @@ onMounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
     background: white;
     padding: 24px 32px;
-    border-radius: 16px;
+    border-radius: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(226, 232, 240, 0.6);
     
@@ -345,7 +358,7 @@ onMounted(() => {
           .breadcrumb-item {
             transition: all 0.3s ease;
             padding: 8px 12px;
-            border-radius: 8px;
+            border-radius: 100px;
             cursor: default;
             
             &.clickable {
@@ -387,7 +400,7 @@ onMounted(() => {
         width: 48px;
         height: 48px;
         background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-        border-radius: 12px;
+        border-radius: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -415,7 +428,7 @@ onMounted(() => {
     .form-container {
       background: white;
       border-radius: 20px;
-      padding: 32px;
+      padding: 24px 32px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
       border: 1px solid rgba(226, 232, 240, 0.6);
       
@@ -428,8 +441,8 @@ onMounted(() => {
         border-bottom: 2px solid #f1f5f9;
         
         .form-icon {
-          width: 56px;
-          height: 56px;
+          width: 48px;
+          height: 48px;
           background: linear-gradient(135deg, #10b981 0%, #059669 100%);
           border-radius: 16px;
           display: flex;
@@ -465,187 +478,144 @@ onMounted(() => {
           }
       }
       
-      .edit-form {
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 32px;
+        margin-bottom: 24px;
+        
         .form-section {
-          margin-bottom: 32px;
+          background: #ffffff;
+          border-radius: 20px;
+          padding: 24px;
+          border: 1px solid #f1f5f9;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
           
-          .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #334155;
-            margin: 0 0 20px 0;
+          .section-header {
+            margin-bottom: 24px;
             padding-bottom: 12px;
-            border-bottom: 1px solid #e2e8f0;
-            position: relative;
+            border-bottom: 1px solid #f1f5f9;
             
-            &::before {
-              content: '';
-              position: absolute;
-              bottom: -1px;
-              left: 0;
-              width: 40px;
-              height: 2px;
-              background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-              border-radius: 1px;
+            h4 {
+              margin: 0;
+              font-size: 18px;
+              color: #1e293b;
+              font-weight: 600;
+              display: flex;
+              align-items: center;
+              gap: 8px;
             }
           }
           
-          .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            margin-bottom: 20px;
+          .form-item {
+            margin-bottom: 24px;
             
             &:last-child {
               margin-bottom: 0;
             }
             
-            .el-form-item {
-              margin-bottom: 0;
+            .form-label {
+              display: flex;
+              align-items: center;
+              margin-bottom: 10px;
+              
+              .label-text {
+                font-size: 15px;
+                font-weight: 600;
+                color: #334155;
+              }
+              
+              .required-mark {
+                color: #ef4444;
+                margin-left: 4px;
+                font-weight: bold;
+              }
             }
-          }
-          
-          .form-input,
-          .form-select {
-            .el-input__wrapper {
-              background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-              border: 2px solid #e2e8f0;
-              border-radius: 16px;
-              padding: 16px 20px;
-              transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            
+            .input-wrapper {
               position: relative;
-              overflow: hidden;
               
-              &::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 2px;
-                background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-                transform: scaleX(0);
-                transition: transform 0.3s ease;
-              }
-              
-              &:hover {
-                border-color: #cbd5e1;
-                background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-                transform: translateY(-1px);
-              }
-              
-              &.is-focus {
-                border-color: #3b82f6;
-                background: white;
-                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1), 0 8px 24px rgba(0, 0, 0, 0.12);
-                transform: translateY(-2px);
+              .form-input {
+                width: 100%;
+                box-sizing: border-box;
+                padding: 14px 20px;
+                border: 2px solid #e2e8f0;
+                border-radius: 100px;
+                font-size: 15px;
+                color: #1e293b;
+                background: #f8fafc;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 
-                &::before {
-                  transform: scaleX(1);
+                &:focus {
+                  outline: none;
+                  border-color: #3b82f6;
+                  background: #ffffff;
+                  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+                  transform: translateY(-1px);
+                }
+                
+                &::placeholder {
+                  color: #94a3b8;
+                  font-weight: 400;
                 }
               }
             }
-            
-            .el-input__inner {
-              font-size: 15px;
-              color: #1e293b;
-              font-weight: 500;
-              
-              &::placeholder {
-                color: #94a3b8;
-                font-weight: 400;
-              }
-            }
-            
-            .el-input__count {
-              color: #64748b;
-              font-weight: 500;
-              font-size: 13px;
-            }
-          }
-          
-          .el-form-item__label {
-            font-weight: 700;
-            color: #334155;
-            font-size: 15px;
-            position: relative;
-            
-            &::before {
-              content: '*';
-              color: #ef4444;
-              margin-right: 4px;
-              font-weight: 800;
-            }
           }
         }
+      }
         
-        .form-actions {
-          display: flex;
-          justify-content: center;
+      .form-actions-wrapper {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 16px;
+        margin-top: 10px;
+        padding-top: 24px;
+        border-top: 2px solid #f1f5f9;
+        
+        .dialog-btn {
+          display: inline-flex;
           align-items: center;
-          gap: 20px;
-          margin-top: 40px;
-          padding-top: 32px;
-          border-top: 2px solid #f1f5f9;
+          justify-content: center;
+          gap: 8px;
+          padding: 12px 28px;
+          border-radius: 100px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          border: none;
           
-          .action-btn {
-            padding: 16px 32px;
-            border-radius: 16px;
-            font-weight: 700;
-            font-size: 15px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 2px solid transparent;
-            min-width: 140px;
-            position: relative;
-            overflow: hidden;
-            
-            &::before {
-              content: '';
-              position: absolute;
-              top: 0;
-              left: -100%;
-              width: 100%;
-              height: 100%;
-              background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-              transition: left 0.5s ease;
-            }
+          .btn-icon {
+            font-size: 18px;
+          }
+          
+          &.cancel-btn {
+            background: #f1f5f9;
+            color: #64748b;
             
             &:hover {
-              transform: translateY(-3px);
-              box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
-              
-              &::before {
-                left: 100%;
-              }
+              background: #e2e8f0;
+              color: #475569;
+              transform: translateY(-2px);
+            }
+          }
+          
+          &.confirm-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            
+            &:hover:not(.disabled) {
+              box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+              transform: translateY(-2px);
             }
             
-            &:active {
-              transform: translateY(-1px);
-            }
-            
-            &.cancel-btn {
-              background: white;
-              border-color: #e2e8f0;
-              color: #64748b;
-              
-              &:hover {
-                border-color: #cbd5e1;
-                background: #f8fafc;
-                color: #475569;
-              }
-            }
-            
-            &.primary-btn {
-              background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-              border-color: transparent;
-              color: white;
-              
-              &:hover {
-                background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-                box-shadow: 0 12px 28px rgba(59, 130, 246, 0.4);
-              }
+            &.disabled {
+              background: #cbd5e1;
+              box-shadow: none;
+              cursor: not-allowed;
+              opacity: 0.7;
             }
           }
         }

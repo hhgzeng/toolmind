@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { MdPreview } from "md-editor-v3"
@@ -12,18 +12,27 @@ const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
 const inputMessage = ref('')
-const showSearchSelector = ref(false)
 const selectedTools = ref<string[]>([])
-const showMcpSelector = ref(false)
 const selectedMcpServers = ref<string[]>([])
 const mcpServers = ref<any[]>([])
-const webSearchEnabled = ref(false)
-// const toolDropdownRef = ref<HTMLElement | null>(null)
-const mcpDropdownRef = ref<HTMLElement | null>(null)
+const webSearchEnabled = ref(true)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const currentSessionId = ref<string>('')  // 当前会话ID
 const chatConversationRef = ref<HTMLElement | null>(null)  // 聊天容器引用
 const isGenerating = ref(false)  // 是否正在生成回复
+
+// 自动调整 textarea 高度（2行起，最多10行）
+const autoResize = () => {
+  const textarea = textareaRef.value
+  if (!textarea) return
+  textarea.style.height = 'auto'
+  const lineHeight = 24 // 1.6 * 15px
+  const minHeight = lineHeight * 2 // 2行
+  const maxHeight = lineHeight * 10 // 10行
+  const scrollH = textarea.scrollHeight
+  textarea.style.height = Math.min(Math.max(scrollH, minHeight), maxHeight) + 'px'
+}
 
 
 
@@ -47,22 +56,6 @@ const handleAvatarError = (event: Event) => {
 //   }
 // }
 
-// 切换联网搜索
-const toggleWebSearch = () => {
-  webSearchEnabled.value = !webSearchEnabled.value
-  showSearchSelector.value = false
-}
-
-// 点击空白处关闭工具/MCP下拉
-const handleClickOutside = (e: MouseEvent) => {
-  const target = e.target as Node
-  // if (showToolSelector.value && toolDropdownRef.value && !toolDropdownRef.value.contains(target)) {
-  //   showToolSelector.value = false
-  // }
-  if (showMcpSelector.value && mcpDropdownRef.value && !mcpDropdownRef.value.contains(target)) {
-    showMcpSelector.value = false
-  }
-}
 
 // 触发文件选择
 const triggerFileInput = () => {
@@ -79,15 +72,6 @@ const onFileChange = (e: Event) => {
   if (input) input.value = ''
 }
 
-// 切换 MCP 服务器选择
-const toggleMcp = (serverId: string) => {
-  const index = selectedMcpServers.value.indexOf(serverId)
-  if (index > -1) {
-    selectedMcpServers.value.splice(index, 1)
-  } else {
-    selectedMcpServers.value.push(serverId)
-  }
-}
 
 // 生成UUID（模拟Python的uuid4().hex）
 const generateSessionId = (): string => {
@@ -119,6 +103,7 @@ const handleSend = async () => {
   
   // 立即清空输入框
   inputMessage.value = ''
+  nextTick(autoResize)
   
   router.push({
     name: 'taskGraphPage',
@@ -159,17 +144,13 @@ onMounted(async () => {
     try {
       const res = await getMCPServersAPI()
       if (res.data && res.data.status_code === 200 && Array.isArray(res.data.data)) {
-        mcpServers.value = res.data.data
+        mcpServers.value = res.data.data.filter((mcp: any) => mcp.is_active)
+        selectedMcpServers.value = mcpServers.value.map((mcp: any) => mcp.mcp_server_id)
       }
     } catch (e) {
       console.error('加载 MCP 服务器失败', e)
     }
   })
-  document.addEventListener('click', handleClickOutside)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
 })
 
 // 监听路由参数变化
@@ -194,116 +175,31 @@ watch(
     <div class="chat-container">
       <!-- 欢迎区域 -->
       <div class="welcome-section">
-        <div class="avatar-wrapper">
-          <img src="../../../assets/robot.svg" alt="ToolMind" class="avatar" />
-        </div>
+        <img src="../../../assets/toolmind.png" alt="ToolMind" class="welcome-avatar" />
         <h1 class="welcome-title">今天有什么可以帮到你？</h1>
       </div>
 
-      <!-- 输入区域（固定在底部） -->
+      <!-- 输入区域 -->
       <div class="input-section">
-        <div class="input-wrapper lingseek-glow">
+        <div class="input-wrapper">
           <textarea
+            ref="textareaRef"
             v-model="inputMessage"
             placeholder="给 ToolMind 发送消息"
             class="message-input"
-            rows="4"
+            rows="2"
             @keydown="handleKeydown"
+            @input="autoResize"
           ></textarea>
           
           <!-- 底部控制栏 -->
           <div class="input-footer">
             <div class="footer-left">
-              <!-- 联网搜索 -->
-              <div class="selector-dropdown">
-                <div 
-                  :class="['selector-item', { active: webSearchEnabled }]"
-                  @click="toggleWebSearch"
-                >
-                  <span class="selector-icon">🌐</span>
-                  <span class="selector-text">联网搜索</span>
-                  <span v-if="webSearchEnabled" class="selector-check">✓</span>
-                </div>
-              </div>
-              
-              <!-- MCP 服务器选择 -->
-              <div class="selector-dropdown" ref="mcpDropdownRef">
-                <div 
-                  class="selector-item"
-                  @click="showMcpSelector = !showMcpSelector"
-                >
-                  <img src="../../../assets/mcp.svg" alt="MCP" class="selector-icon-img" />
-                  <span class="selector-text">
-                    {{ selectedMcpServers.length > 0 ? `已选 ${selectedMcpServers.length} 个MCP` : '选择MCP' }}
-                  </span>
-                  <span class="selector-arrow">▲</span>
-                </div>
-                
-                <!-- MCP 下拉菜单 -->
-                <transition name="dropdown">
-                  <div v-if="showMcpSelector" class="dropdown-menu tool-menu">
-                    <!-- 标题 -->
-                    <div class="dropdown-header">
-                      <span class="header-title">选择MCP服务器</span>
-                      <span class="header-count">{{ mcpServers.length }} 个可用</span>
-                    </div>
-
-                    <!-- 列表 -->
-                    <div class="dropdown-list">
-                      <div v-if="mcpServers.length === 0" class="dropdown-empty">
-                        <img src="../../../assets/mcp.svg" alt="MCP" class="empty-icon-img" />
-                        <span class="empty-text">暂无可用MCP服务器</span>
-                      </div>
-                      <div
-                        v-for="mcp in mcpServers"
-                        :key="mcp.mcp_server_id"
-                        :class="['dropdown-item', { selected: selectedMcpServers.includes(mcp.mcp_server_id) }]"
-                        @click="toggleMcp(mcp.mcp_server_id)"
-                      >
-                        <div class="item-left">
-                          <div class="item-icon-wrapper">
-                            <img 
-                              v-if="mcp.logo_url" 
-                              :src="mcp.logo_url" 
-                              :alt="mcp.server_name"
-                              class="item-icon-img"
-                            />
-                            <img v-else src="../../../assets/mcp.svg" alt="MCP" class="item-icon-img" />
-                          </div>
-                          <div class="item-content">
-                            <div class="item-text">{{ mcp.server_name }}</div>
-                          </div>
-                        </div>
-                        <div 
-                          v-if="selectedMcpServers.includes(mcp.mcp_server_id)" 
-                          class="item-check-wrapper"
-                        >
-                          <span class="item-check">✓</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- 底部操作栏 -->
-                    <div v-if="selectedMcpServers.length > 0" class="dropdown-footer">
-                      <button 
-                        class="clear-btn"
-                        @click.stop="selectedMcpServers = []"
-                      >
-                        <span>清空</span>
-                      </button>
-                      <div class="selected-info">
-                        <span class="selected-count">已选 {{ selectedMcpServers.length }} 个MCP</span>
-                      </div>
-                    </div>
-                  </div>
-                </transition>
-              </div>
-            </div>
-            
-            <div class="footer-right">
               <!-- 附件按钮 -->
-              <button class="icon-btn" title="上传附件" @click="triggerFileInput">
-                <img src="../../../assets/upload.svg" alt="上传" class="upload-icon" />
+              <button class="attach-btn" title="上传附件" @click="triggerFileInput">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                </svg>
               </button>
               <input
                 type="file"
@@ -312,10 +208,19 @@ watch(
                 multiple
                 @change="onFileChange"
               />
-              
+            </div>
+            
+            <div class="footer-right">
               <!-- 发送按钮 -->
-              <button class="send-btn" :class="{ 'btn-disabled': isGenerating }" :disabled="isGenerating" @click="handleSend">
-                <span v-if="!isGenerating">➤</span>
+              <button 
+                class="send-btn" 
+                :class="{ 'btn-disabled': isGenerating, 'btn-inactive': !inputMessage.trim() && !isGenerating }" 
+                :disabled="isGenerating" 
+                @click="handleSend"
+              >
+                <svg v-if="!isGenerating" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20V4M5 11l7-7 7 7"/>
+                </svg>
                 <span v-else class="loading-spinner"></span>
               </button>
             </div>
@@ -331,7 +236,7 @@ watch(
   width: 100%;
   height: 100%;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
   padding: 0;
@@ -350,7 +255,7 @@ watch(
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 60px 20px 40px;
+  padding: 0 20px 80px;
 
   .chat-active & {
     max-width: 100%;
@@ -362,48 +267,31 @@ watch(
 }
 
 .welcome-section {
-  text-align: center;
-  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 30px;
   animation: fadeInUp 0.6s ease;
 
-  .avatar-wrapper {
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: center;
-    position: relative;
-
-    .avatar {
-      width: 120px;
-      height: 120px;
-      object-fit: contain;
-      transition: all 0.3s ease;
-      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08));
-
-      &:hover {
-        transform: scale(1.05);
-        filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.12));
-      }
-    }
+  .welcome-avatar {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.08));
+    flex-shrink: 0;
   }
 
   .welcome-title {
-    font-size: 32px;
+    font-size: 24px;
     font-weight: 700;
     background: linear-gradient(135deg, #1f2937 0%, #4b5563 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin: 0 0 12px 0;
-    letter-spacing: -0.5px;
-  }
-
-  .welcome-subtitle {
-    font-size: 15px;
-    color: #6b7280;
     margin: 0;
-    line-height: 1.7;
-    max-width: 500px;
-    margin: 0 auto;
+    letter-spacing: -0.3px;
+    white-space: nowrap;
   }
 }
 
@@ -493,38 +381,13 @@ watch(
   }
 }
 
-// 灵寻模式输入框外发光“呼吸”动画（淡蓝色，颜色不变，仅强弱变化）
-@keyframes lingseek-breath {
-  0%, 100% {
-    box-shadow:
-      0 0 0 2px rgba(102, 126, 234, 0.12),
-      0 0 24px 10px rgba(102, 126, 234, 0.14);
-  }
-  50% {
-    box-shadow:
-      0 0 0 3px rgba(102, 126, 234, 0.22),
-      0 0 44px 18px rgba(102, 126, 234, 0.22);
-  }
-}
-
-@keyframes lingseek-breath-strong {
-  0%, 100% {
-    box-shadow:
-      0 0 0 3px rgba(102, 126, 234, 0.20),
-      0 0 36px 14px rgba(102, 126, 234, 0.24);
-  }
-  50% {
-    box-shadow:
-      0 0 0 4px rgba(102, 126, 234, 0.30),
-      0 0 60px 24px rgba(102, 126, 234, 0.30);
-  }
-}
+// 输入框聚焦动画（简洁）
 
 // 移除彩虹动画（不再需要）
 
 .input-section {
   width: 100%;
-  max-width: 800px;
+  max-width: 760px;
   animation: fadeInUp 0.6s ease 0.2s both;
 
   &.input-fixed {
@@ -540,33 +403,17 @@ watch(
   }
 
   .input-wrapper {
-    background: #ffffff;
-    border: 2px solid #e5e7eb;
-    border-radius: 20px;
-    padding: 16px 20px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    background: #f4f4f4;
+    border: 1px solid transparent;
+    border-radius: 24px;
+    padding: 14px 18px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
     position: relative;
     z-index: 1;
 
-    &.lingseek-glow {
-      border-color: rgba(102, 126, 234, 0.35);
-      box-shadow:
-        0 0 0 2px rgba(102, 126, 234, 0.12),
-        0 0 16px 6px rgba(102, 126, 234, 0.14);
-      animation: lingseek-breath 2.8s ease-in-out infinite;
-
-      &:focus-within {
-        border-color: rgba(102, 126, 234, 0.55);
-        animation: lingseek-breath-strong 2.2s ease-in-out infinite;
-        transform: translateY(-2px);
-      }
-    }
-
     &:focus-within {
-      border-color: #667eea;
-      box-shadow: 0 6px 24px rgba(102, 126, 234, 0.15);
-      transform: translateY(-2px);
+      background: #f4f4f4;
     }
 
     .message-input {
@@ -574,16 +421,31 @@ watch(
       border: none;
       background: transparent;
       font-size: 15px;
-      line-height: 1.6;
+      line-height: 24px;
       color: #1f2937;
       resize: none;
       outline: none;
       font-family: inherit;
-      min-height: 45px;
-      margin-bottom: 12px;
+      min-height: 48px;
+      max-height: 240px;
+      overflow-y: auto;
+      margin-bottom: 8px;
 
       &::placeholder {
         color: #9ca3af;
+      }
+
+      &::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 2px;
       }
     }
 
@@ -603,14 +465,14 @@ watch(
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 14px;
-            background: #f8f9fa;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 20px;
             font-size: 13px;
             color: #4b5563;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             user-select: none;
 
             .selector-icon {
@@ -660,7 +522,7 @@ watch(
             }
 
             &:active {
-              transform: scale(0.98);
+              transform: scale(0.96);
             }
           }
 
@@ -955,74 +817,75 @@ watch(
         }
       }
 
-      .footer-right {
+      .footer-left {
         display: flex;
-        gap: 10px;
         align-items: center;
 
-        .icon-btn {
-          width: 36px;
-          height: 36px;
+        .attach-btn {
+          width: 32px;
+          height: 32px;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #f8f9fa;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
+          background: transparent;
+          border: none;
+          border-radius: 50%;
           cursor: pointer;
-          transition: all 0.2s ease;
-          font-size: 18px;
+          color: #374151;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
           &:hover {
-            border-color: #667eea;
-            background: #f0f4ff;
-            transform: translateY(-1px);
+            color: #111827;
+            background: rgba(0, 0, 0, 0.06);
           }
 
           &:active {
-            transform: translateY(0);
+            transform: scale(0.92);
           }
         }
 
         .hidden-file-input {
           display: none;
         }
+      }
 
-        .upload-icon {
-          width: 18px;
-          height: 18px;
-          object-fit: contain;
-          display: block;
-        }
+      .footer-right {
+        display: flex;
+        align-items: center;
 
         .send-btn {
-          width: 36px;
-          height: 36px;
+          width: 32px;
+          height: 32px;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+          background: #4d6bfe;
           border: none;
-          border-radius: 8px;
+          border-radius: 50%;
           color: white;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           font-size: 16px;
-          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
 
-          &:hover:not(.btn-disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+          &:hover:not(.btn-disabled):not(.btn-inactive) {
+            background: #3e5be0;
+            transform: scale(1.05);
           }
 
-          &:active:not(.btn-disabled) {
-            transform: translateY(0);
+          &:active:not(.btn-disabled):not(.btn-inactive) {
+            transform: scale(0.92);
+          }
+
+          &.btn-inactive {
+            background: #b1c1ff;
+            color: white;
+            cursor: default;
           }
 
           &.btn-disabled {
-            background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+            background: #e5e7eb;
             cursor: not-allowed;
-            opacity: 0.6;
+            color: #9ca3af;
           }
 
           .loading-spinner {
@@ -1165,19 +1028,13 @@ watch(
   .welcome-section {
     margin-bottom: 32px;
 
-    .avatar-wrapper {
-      .avatar {
-        width: 80px;
-        height: 80px;
-      }
+    .welcome-avatar {
+      width: 36px;
+      height: 36px;
     }
 
     .welcome-title {
-      font-size: 26px;
-    }
-
-    .welcome-subtitle {
-      font-size: 14px;
+      font-size: 20px;
     }
   }
 

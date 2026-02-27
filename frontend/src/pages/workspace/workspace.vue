@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, SwitchButton, Setting } from '@element-plus/icons-vue'
 import { useUserStore } from '../../store/user'
 import { logoutAPI, getUserInfoAPI } from '../../apis/auth'
 import { 
@@ -18,27 +17,109 @@ const selectedSession = ref('')
 const sessions = ref<any[]>([])
 const loading = ref(false)
 
-// 格式化时间
-const formatTime = (timeStr: string) => {
-  try {
-    if (!timeStr) return '未知时间'
-    
-    const date = new Date(timeStr)
-    if (isNaN(date.getTime())) {
-      return '未知时间'
-    }
-    
-    const now = new Date()
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-    
-    if (diffInHours < 1) return '刚刚'
-    if (diffInHours < 24) return `${Math.floor(diffInHours)}小时前`
-    if (diffInHours < 24 * 7) return `${Math.floor(diffInHours / 24)}天前`
-    return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
-  } catch (error) {
-    return '未知时间'
+// 操作菜单状态
+const activeMenuId = ref<string | null>(null)
+
+const toggleMenu = (sessionId: string, event: Event) => {
+  event.stopPropagation()
+  activeMenuId.value = activeMenuId.value === sessionId ? null : sessionId
+}
+
+const closeMenu = () => {
+  activeMenuId.value = null
+}
+
+// 用户菜单状态
+const showUserMenu = ref(false)
+
+const toggleUserMenu = () => {
+  showUserMenu.value = !showUserMenu.value
+}
+
+// 点击外部关闭菜单
+const handleGlobalClick = (e: Event) => {
+  activeMenuId.value = null
+  // 关闭用户菜单（除非点击在用户菜单区域内）
+  const target = e.target as HTMLElement
+  if (!target.closest('.user-profile-wrapper')) {
+    showUserMenu.value = false
   }
 }
+
+// 按时间分组的会话列表
+const groupedSessions = computed(() => {
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterdayStart = new Date(todayStart.getTime() - 86400000)
+  const threeDaysStart = new Date(todayStart.getTime() - 3 * 86400000)
+  const weekStart = new Date(todayStart.getTime() - 7 * 86400000)
+  const monthStart = new Date(todayStart.getTime() - 30 * 86400000)
+
+  // 固定分组
+  const fixedGroups: { label: string; items: any[] }[] = [
+    { label: '今天', items: [] },
+    { label: '昨天', items: [] },
+    { label: '3 天内', items: [] },
+    { label: '7 天内', items: [] },
+    { label: '30 天内', items: [] }
+  ]
+
+  // 按月份的动态分组
+  const monthGroups: Map<string, any[]> = new Map()
+
+  for (const session of sessions.value) {
+    const date = new Date(session.createTime)
+    if (isNaN(date.getTime())) {
+      // 无效日期放到最后
+      const key = '未知'
+      if (!monthGroups.has(key)) monthGroups.set(key, [])
+      monthGroups.get(key)!.push(session)
+    } else if (date >= todayStart) {
+      fixedGroups[0].items.push(session)
+    } else if (date >= yesterdayStart) {
+      fixedGroups[1].items.push(session)
+    } else if (date >= threeDaysStart) {
+      fixedGroups[2].items.push(session)
+    } else if (date >= weekStart) {
+      fixedGroups[3].items.push(session)
+    } else if (date >= monthStart) {
+      fixedGroups[4].items.push(session)
+    } else {
+      // 超过30天，按月份分组
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const key = `${year}-${month}`
+      if (!monthGroups.has(key)) monthGroups.set(key, [])
+      monthGroups.get(key)!.push(session)
+    }
+  }
+
+  // 合并结果
+  const result: { label: string; items: any[] }[] = []
+
+  // 先添加固定分组（有数据的）
+  for (const g of fixedGroups) {
+    if (g.items.length > 0) {
+      result.push(g)
+    }
+  }
+
+  // 再按时间倒序添加月份分组
+  const sortedMonthKeys = Array.from(monthGroups.keys())
+    .filter(k => k !== '未知')
+    .sort((a, b) => b.localeCompare(a))
+
+  for (const key of sortedMonthKeys) {
+    result.push({ label: key, items: monthGroups.get(key)! })
+  }
+
+  // 最后添加"未知"分组
+  if (monthGroups.has('未知')) {
+    result.push({ label: '未知', items: monthGroups.get('未知')! })
+  }
+
+  return result
+})
 
 // 获取会话列表
 const fetchSessions = async () => {
@@ -50,8 +131,8 @@ const fetchSessions = async () => {
         sessionId: session.session_id || session.id,
         title: session.title || '未命名会话',
         createTime: session.create_time || session.created_at || new Date().toISOString(),
-        agent: session.agent || 'lingseek', // 保存agent类型，默认为lingseek
-        contexts: session.contexts || [] // 保存上下文
+        agent: session.agent || 'lingseek',
+        contexts: session.contexts || []
       }))
       console.log('工作区会话列表:', sessions.value)
     } else {
@@ -88,31 +169,24 @@ const deleteSession = async (sessionId: string, event: Event) => {
   }
 }
 
-// 选择会话 - 对所有会话统一跳转到任务图页面
+// 选择会话
 const selectSession = (sessionId: string) => {
   selectedSession.value = sessionId
-  
-  // 找到对应的会话
   const session = sessions.value.find(s => s.sessionId === sessionId)
-  
   if (!session) {
     console.error('未找到会话:', sessionId)
     return
   }
-  
   console.log('选择会话:', sessionId, '类型:', session.agent)
-  
-  // 统一跳转到三列布局页面 (LingSeek模式)
   router.push({
     name: 'taskGraphPage',
-    query: {
-      session_id: sessionId
-    }
+    query: { session_id: sessionId }
   })
 }
 
-// 用户下拉菜单命令处理
+// 用户菜单命令
 const handleUserCommand = async (command: string) => {
+  showUserMenu.value = false
   switch (command) {
     case 'settings':
       router.push('/model')
@@ -151,7 +225,6 @@ const goToHomepage = () => {
 onMounted(async () => {
   userStore.initUserState()
   
-  // 如果已登录但没有头像，则尝试获取用户信息
   if (userStore.isLoggedIn && userStore.userInfo && !userStore.userInfo.avatar) {
     try {
       const response = await getUserInfoAPI(userStore.userInfo.id)
@@ -168,63 +241,35 @@ onMounted(async () => {
   }
   
   await fetchSessions()
+  document.addEventListener('click', handleGlobalClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleGlobalClick)
 })
 </script>
 
 <template>
   <div class="workspace-container">
-    <!-- 顶部导航栏 -->
-    <div class="workspace-nav">
-      <div class="nav-left">
-        <div class="logo-section">
-          <img src="../../assets/robot.svg" alt="Logo" class="logo" />
-        </div>
-        <div class="nav-links">
-          <img src="../../assets/toolmind.svg" alt="ToolMind" class="brand-logo-img" />
-        </div>
-      </div>
-      <div class="nav-right">
-        <!-- 用户信息区域 -->
-        <div class="user-info">
-          <el-dropdown @command="handleUserCommand" trigger="click">
-            <div class="user-avatar-wrapper">
-              <div class="user-avatar">
-                <img
-                  :src="userStore.userInfo?.avatar || '/src/assets/user.svg'"
-                  alt="用户头像"
-                  @error="handleAvatarError"
-                  referrerpolicy="no-referrer"
-                />
-              </div>
-            </div>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="settings" :icon="Setting">
-                  系统设置
-                </el-dropdown-item>
-                <el-dropdown-item divided command="logout" :icon="SwitchButton">
-                  退出登录
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </div>
-    </div>
-
     <!-- 工作区主内容 -->
     <div class="workspace-main">
     <!-- 左侧边栏 -->
     <div class="sidebar">
+      <!-- 侧边栏顶部 Logo -->
+      <div class="sidebar-header">
+        <img src="../../assets/toolmind.png" alt="Logo" class="sidebar-logo" />
+        <span class="sidebar-brand">ToolMind</span>
+      </div>
+
       <!-- 新对话按钮 -->
       <div class="create-section">
         <button @click="goToHomepage" class="create-btn-native">
-          <div class="btn-content">
-            <span class="icon">
-              <img src="../../assets/edit.svg" width="25px" height="25px" />
-            </span>
-            <span>新对话</span>
-          </div>
+          <svg class="btn-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor">
+            <path d="M512 85.333333c235.648 0 426.666667 191.018667 426.666667 426.666667 0 231.68-184.618667 420.181333-414.72 426.496L512 938.666667H165.077333a42.666667 42.666667 0 0 1-35.498666-66.346667l27.52-41.301333 6.528-11.648 5.333333-10.282667 2.218667-4.693333 3.541333-8.277334c3.84-10.24 4.565333-16.981333 2.048-20.181333A424.832 424.832 0 0 1 85.333333 512C85.333333 276.352 276.352 85.333333 512 85.333333z m0 85.333334a341.333333 341.333333 0 0 0-341.333333 341.333333c0 72.917333 22.826667 142.165333 64.512 199.765333l8.576 11.349334c32.768 41.557333 29.312 70.570667 4.181333 119.68L242.304 853.333333H512a341.333333 341.333333 0 0 0 341.162667-330.666666L853.333333 512a341.333333 341.333333 0 0 0-341.333333-341.333333z"></path>
+            <path d="M469.333333 298.666667m42.666667 0l0 0q42.666667 0 42.666667 42.666666l0 341.333334q0 42.666667-42.666667 42.666666l0 0q-42.666667 0-42.666667-42.666666l0-341.333334q0-42.666667 42.666667-42.666666Z"></path>
+            <path d="M725.333333 469.333333m0 42.666667l0 0q0 42.666667-42.666666 42.666667l-341.333334 0q-42.666667 0-42.666666-42.666667l0 0q0-42.666667 42.666666-42.666667l341.333334 0q42.666667 0 42.666666 42.666667Z"></path>
+          </svg>
+          <span>开启新对话</span>
         </button>
       </div>
 
@@ -232,37 +277,95 @@ onMounted(async () => {
       <div class="session-list">
         <!-- 加载状态 -->
         <div v-if="loading" class="loading-state">
-          <div class="loading-icon">⏳</div>
-          <div class="loading-text">正在加载会话列表...</div>
+          <div class="loading-spinner"></div>
+          <div class="loading-text">加载中...</div>
         </div>
 
         <!-- 空状态 -->
         <div v-else-if="sessions.length === 0" class="empty-state">
-          <img src="../../assets/workspace-session.svg" alt="暂无会话" class="empty-icon-img" />
           <div class="empty-text">暂无会话记录</div>
         </div>
 
-        <!-- 会话卡片 -->
-        <div
-          v-for="session in sessions"
-          :key="session.sessionId"
-          :class="['session-card', { active: selectedSession === session.sessionId }]"
-          @click="selectSession(session.sessionId)"
-        >
-          <div class="session-icon">
-            <img src="../../assets/workspace-session.svg" width="30px" height="30px" />
+        <!-- 按时间分组的会话列表 -->
+        <template v-else>
+          <div v-for="group in groupedSessions" :key="group.label" class="session-group">
+            <div class="group-label">{{ group.label }}</div>
+            <div
+              v-for="session in group.items"
+              :key="session.sessionId"
+              :class="['session-item', { active: selectedSession === session.sessionId }]"
+              @click="selectSession(session.sessionId)"
+            >
+              <span class="session-title">{{ session.title }}</span>
+              <button
+                class="more-btn"
+                @click="toggleMenu(session.sessionId, $event)"
+                title="更多操作"
+              >
+                ⋯
+              </button>
+              <!-- 操作菜单 -->
+              <transition name="menu-fade">
+                <div v-if="activeMenuId === session.sessionId" class="action-menu">
+                  <button class="menu-item delete" @click="deleteSession(session.sessionId, $event)">
+                    删除对话
+                  </button>
+                </div>
+              </transition>
+            </div>
           </div>
-          <div class="session-info">
-            <div class="session-title">{{ session.title }}</div>
-            <div class="session-time">{{ formatTime(session.createTime) }}</div>
+        </template>
+      </div>
+
+      <!-- 底部用户信息 -->
+      <div class="sidebar-footer">
+        <div class="user-profile-wrapper" @click.stop>
+          <!-- 用户菜单弹出层 -->
+          <transition name="user-menu-fade">
+            <div v-if="showUserMenu" class="user-popup-menu">
+              <div class="popup-user-info">
+                <img
+                  :src="userStore.userInfo?.avatar || '/src/assets/user.svg'"
+                  alt="头像"
+                  class="popup-avatar"
+                  @error="handleAvatarError"
+                  referrerpolicy="no-referrer"
+                />
+                <div class="popup-user-text">
+                  <div class="popup-username">{{ userStore.userInfo?.username || '用户' }}</div>
+                </div>
+              </div>
+              <div class="popup-divider"></div>
+              <button class="popup-menu-item" @click="handleUserCommand('settings')">
+                <svg class="popup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                系统设置
+              </button>
+              <button class="popup-menu-item" @click="handleUserCommand('logout')">
+                <svg class="popup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                退出登录
+              </button>
+            </div>
+          </transition>
+
+          <!-- 用户资料区域（可点击） -->
+          <div class="user-profile" @click="toggleUserMenu">
+            <img
+              :src="userStore.userInfo?.avatar || '/src/assets/user.svg'"
+              alt="头像"
+              class="profile-avatar"
+              @error="handleAvatarError"
+              referrerpolicy="no-referrer"
+            />
+            <span class="profile-name">{{ userStore.userInfo?.username || '用户' }}</span>
+            <span class="profile-dots">⋯</span>
           </div>
-          <button
-            class="delete-btn"
-            @click="deleteSession(session.sessionId, $event)"
-            title="删除会话"
-          >
-            ×
-          </button>
         </div>
       </div>
     </div>
@@ -277,482 +380,387 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 .workspace-container {
-@import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap');
-}
-.workspace-container {
   width: 100%;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f8f9fa;
+  background-color: #ffffff;
 }
 
-.workspace-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 64px;
-  background: linear-gradient(180deg, #e0f2fe 0%, #dbeafe 100%);
-  padding: 0 24px;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06);
-  position: relative;
-  z-index: 3000;
-
-  .nav-left {
-    display: flex;
-    align-items: center;
-
-    .logo-section {
-      margin-right: 0;
-
-      .logo {
-        width: 32px;
-        height: 32px;
-        object-fit: contain;
-        filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
-        transition: all 0.3s ease;
-      }
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      margin-left: 8px;
-      gap: 10px;
-
-        .brand-title {
-          font-family: 'Zhi Mang Xing', 'Ma Shan Zheng', 'ZCOOL KuaiLe', 'PingFang SC', 'Microsoft YaHei', 'Source Han Sans CN', 'Noto Sans CJK SC', 'Helvetica Neue', Arial, sans-serif;
-          font-size: 28px;
-          font-weight: 700;
-          letter-spacing: 0.5px;
-          background: linear-gradient(135deg, #1f2937 0%, #3b82f6 50%, #8b5cf6 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          -webkit-text-stroke: 0.4px rgba(31, 41, 55, 0.06);
-          text-shadow: 0 3px 12px rgba(59, 130, 246, 0.3);
-          user-select: none;
-        }
-
-        .brand-logo-img {
-          height: 45px;
-          width: auto;
-          display: block;
-          filter: drop-shadow(0 2px 6px rgba(59, 130, 246, 0.25));
-          user-select: none;
-        }
-
-      .nav-link {
-        background: #f8fafc;
-        color: #0f172a;
-        border: 1px solid #e5e7eb;
-        height: 40px;
-        padding: 0 14px;
-        border-radius: 14px;
-        font-size: 13px;
-        font-weight: 800;
-        letter-spacing: 0.4px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        position: relative;
-
-        &:hover {
-          background: #eef2ff;
-          transform: translateY(-1px);
-          box-shadow: 0 8px 18px rgba(2, 6, 23, 0.08);
-        }
-
-        .icon {
-          width: 20px;
-          height: 20px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-
-          img {
-            width: 20px;
-            height: 20px;
-          }
-        }
-      }
-
-      .workspace-link {
-        background: linear-gradient(135deg, rgba(59,130,246,0.18), rgba(99,102,241,0.18));
-        border-color: rgba(99,102,241,0.24);
-
-        &:hover {
-          background: linear-gradient(135deg, rgba(59,130,246,0.26), rgba(99,102,241,0.26));
-        }
-
-        &.active {
-          background: #eef2ff;
-          border-color: #c7d2fe;
-          color: #0f172a;
-          box-shadow: inset 0 0 0 1px rgba(99,102,241,0.25);
-
-          &::after {
-            content: '';
-            position: absolute;
-            left: 12px;
-            right: 12px;
-            bottom: -5px;
-            height: 2px;
-            border-radius: 2px;
-            background: rgba(99,102,241,0.6);
-          }
-        }
-      }
-
-      .appcenter-link {
-        background: linear-gradient(135deg, rgba(16,185,129,0.16), rgba(59,130,246,0.16));
-        border-color: rgba(59,130,246,0.22);
-
-        &:hover {
-          background: linear-gradient(135deg, rgba(16,185,129,0.24), rgba(59,130,246,0.24));
-        }
-
-        &.active {
-          background: #ebf5ff;
-          border-color: #bfdbfe;
-          color: #0f172a;
-          box-shadow: inset 0 0 0 1px rgba(59,130,246,0.22);
-
-          &::after {
-            content: '';
-            position: absolute;
-            left: 12px;
-            right: 12px;
-            bottom: -5px;
-            height: 2px;
-            border-radius: 2px;
-            background: rgba(59,130,246,0.55);
-          }
-        }
-      }
-
-      .app-center { position: relative; }
-
-      .mega-menu {
-        position: absolute;
-        top: 48px;
-        left: 0;
-        background: #ffffff;
-        border: 1px solid rgba(2, 6, 23, 0.08);
-        border-radius: 14px;
-        box-shadow: 0 20px 40px rgba(2, 6, 23, 0.18);
-        padding: 18px;
-        min-width: 560px;
-        z-index: 4000;
-        color: #0f172a;
-
-        .menu-header {
-          font-size: 13px;
-        font-weight: 600;
-          color: #64748b;
-          margin-bottom: 8px;
-        }
-
-        .menu-columns {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 14px;
-        }
-
-        .menu-column {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-
-        .menu-item {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 10px 12px;
-          border-radius: 10px;
-          color: #1f2937;
-          text-decoration: none;
-          transition: all 0.2s ease;
-
-          &:hover {
-            background: linear-gradient(180deg, #f8fbff, #f3f6fb);
-            box-shadow: inset 0 0 0 1px #e5e7eb;
-          }
-
-          .icon {
-            width: 30px;
-            height: 30px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 9px;
-            background: #eef4ff;
-            border: 1px solid rgba(99, 102, 241, 0.12);
-
-            img {
-              width: 19px;
-              height: 19px;
-            }
-          }
-
-          .text {
-            font-size: 14px;
-            font-weight: 700;
-          }
-        }
-      }
-    }
-  }
-
-  .nav-right {
-    .user-info {
-      .user-avatar-wrapper {
-        display: flex;
-        align-items: center;
-        padding: 4px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(10px);
-        cursor: pointer;
-        transition: all 0.3s ease;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.25);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-        }
-
-        .user-avatar {
-          img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            object-fit: cover;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-
-            &:hover {
-              border-color: rgba(255, 255, 255, 0.8);
-              transform: scale(1.05);
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
+/* ===== 侧边栏 - DeepSeek 白色风格 ===== */
 .workspace-main {
   display: flex;
   flex: 1;
-  height: calc(100vh - 64px);
+  height: 100vh;
   background-color: #ffffff;
 
   .sidebar {
     height: 100%;
-    width: 280px;
-    background-color: #ffffff;
-    border-right: 1px solid #e9ecef;
+    width: 260px;
+    min-width: 260px;
+    background: #f7f8fa;
     display: flex;
     flex-direction: column;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    border-right: 1px solid #ebebeb;
+    box-shadow: none;
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 18px 18px 4px;
+      user-select: none;
+
+      .sidebar-logo {
+        width: 26px;
+        height: 26px;
+        object-fit: contain;
+      }
+
+      .sidebar-brand {
+        font-size: 18px;
+        font-weight: 700;
+        color: #4D6BFE;
+        letter-spacing: -0.3px;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
+      }
+    }
 
     .create-section {
-      padding: 20px 16px;
+      padding: 16px 14px 8px;
 
       .create-btn-native {
         width: 100%;
-        height: 48px;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        background: white;
-        color: #3b82f6;
-        border: 2px solid #3b82f6;
+        height: 42px;
+        border-radius: 21px;
+        font-weight: 500;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        background: #ffffff;
+        color: #333333;
+        border: 1px solid #d9d9d9;
         cursor: pointer;
-        font-size: 15px;
-        font-family: 'PingFang SC', 'Microsoft YaHei UI', 'Source Han Sans CN', 'Noto Sans CJK SC', sans-serif;
-        letter-spacing: 1px;
+        font-size: 14px;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
+        letter-spacing: 0.3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+
+        .btn-icon {
+          font-size: 15px;
+          font-weight: 400;
+          color: #666;
+        }
 
         &:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-          background: #eff6ff;
+          background: #fafafa;
+          border-color: #c0c0c0;
         }
 
         &:active {
-          transform: translateY(0);
-        }
-
-        .btn-content {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-
-          .icon {
-            font-size: 20px;
-          }
+          transform: scale(0.97);
+          background: #f5f5f5;
         }
       }
     }
 
     .session-list {
       flex: 1;
-      padding: 8px;
+      padding: 4px 8px 8px;
       overflow-y: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      &::-webkit-scrollbar { display: none; }
 
       .loading-state {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        height: 200px;
-        color: #3b82f6;
+        height: 120px;
+        gap: 12px;
 
-        .loading-icon {
-          font-size: 48px;
-          margin-bottom: 16px;
-          animation: spin 1s linear infinite;
+        .loading-spinner {
+          width: 20px;
+          height: 20px;
+          border: 2px solid #e5e5e5;
+          border-top-color: #999;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
         }
 
         .loading-text {
-          font-size: 14px;
-          color: #6b7280;
+          font-size: 13px;
+          color: #999;
         }
       }
 
       .empty-state {
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        height: 200px;
-        color: #9ca3af;
-
-        .empty-icon {
-          font-size: 48px;
-          margin-bottom: 16px;
-        }
-
-        .empty-icon-img {
-          width: 60px;
-          height: 60px;
-          margin-bottom: 16px;
-          object-fit: contain;
-          opacity: 0.9;
-        }
+        height: 120px;
 
         .empty-text {
-          font-size: 16px;
-          font-weight: 600;
-          color: #6b7280;
-          letter-spacing: 0.2px;
-          margin-bottom: 8px;
-        }
-
-        .empty-hint {
-          font-size: 12px;
-          color: #d1d5db;
+          font-size: 13px;
+          color: #bbb;
         }
       }
 
-      .session-card {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 16px;
-        margin-bottom: 8px;
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        position: relative;
+      .session-group {
+        margin-bottom: 2px;
 
-        &:hover {
-          border-color: #667eea;
-          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-          transform: translateY(-2px);
-
-          .delete-btn {
-            opacity: 1;
-          }
+        .group-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #8e8e93;
+          padding: 14px 10px 6px;
+          letter-spacing: 0.3px;
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
         }
 
-        &.active {
-          border-color: #667eea;
-          background-color: #eff6ff;
-        }
-
-        .session-icon {
-          width: 28px;
-          height: 28px;
+        .session-item {
           display: flex;
           align-items: center;
-          justify-content: center;
-          background: #eef4ff;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          flex-shrink: 0;
-
-          img {
-            width: 18px;
-            height: 18px;
-          }
-        }
-
-        .session-info {
-          flex: 1;
-          min-width: 0;
+          padding: 10px 10px;
+          border-radius: 10px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          position: relative;
+          margin-bottom: 1px;
 
           .session-title {
+            flex: 1;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 400;
             color: #1f2937;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            margin-bottom: 4px;
+            line-height: 1.4;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
           }
 
-          .session-time {
-            font-size: 11px;
-            color: #9ca3af;
+          .more-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            color: #999;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            opacity: 0;
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+            letter-spacing: 2px;
+
+            &:hover {
+              background: rgba(0, 0, 0, 0.06);
+              color: #666;
+            }
+          }
+
+          .action-menu {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 4px);
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            border-radius: 10px;
+            padding: 4px;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+            min-width: 120px;
+
+            .menu-item {
+              display: block;
+              width: 100%;
+              padding: 8px 14px;
+              background: transparent;
+              border: none;
+              color: #333;
+              font-size: 13px;
+              cursor: pointer;
+              border-radius: 6px;
+              text-align: left;
+              transition: background 0.15s ease;
+              font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
+
+              &:hover {
+                background: #f5f5f5;
+              }
+
+              &.delete {
+                color: #ff3b30;
+
+                &:hover {
+                  background: #fff0f0;
+                }
+              }
+            }
+          }
+
+          &:hover {
+            background: rgba(0, 0, 0, 0.04);
+
+            .more-btn {
+              opacity: 1;
+            }
+          }
+
+          &.active {
+            background: #e8e8ed;
+
+            .session-title {
+              color: #1a1a1a;
+              font-weight: 500;
+            }
+
+            .more-btn {
+              opacity: 1;
+            }
+          }
+        }
+      }
+    }
+
+    .sidebar-footer {
+      padding: 12px 14px;
+      border-top: 1px solid #ebebeb;
+
+      .user-profile-wrapper {
+        position: relative;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 8px;
+        border-radius: 10px;
+        transition: background 0.15s ease;
+        cursor: pointer;
+        user-select: none;
+
+        &:hover {
+          background: rgba(0, 0, 0, 0.04);
+
+          .profile-dots {
+            opacity: 1;
           }
         }
 
-        .delete-btn {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          width: 24px;
-          height: 24px;
-          padding: 0;
-          background: rgba(255, 255, 255, 0.9);
-          border: 1px solid #e5e7eb;
-          cursor: pointer;
-          border-radius: 4px;
-          transition: all 0.2s ease;
-          font-size: 18px;
+        .profile-avatar {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          object-fit: cover;
+          flex-shrink: 0;
+        }
+
+        .profile-name {
+          flex: 1;
+          font-size: 14px;
+          font-weight: 500;
+          color: #1f2937;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
+        }
+
+        .profile-dots {
+          font-size: 16px;
+          color: #999;
           opacity: 0;
+          transition: opacity 0.15s ease;
+          flex-shrink: 0;
+          width: 28px;
+          text-align: center;
+        }
+      }
+
+      /* ChatGPT 风格弹出菜单 */
+      .user-popup-menu {
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 0;
+        right: 0;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.06);
+        z-index: 2000;
+        overflow: hidden;
+        padding: 4px;
+
+        .popup-user-info {
           display: flex;
           align-items: center;
-          justify-content: center;
-          color: #6b7280;
+          gap: 10px;
+          padding: 12px 12px;
+          border-radius: 12px;
 
-          &:hover {
-            background: #fee2e2;
-            color: #dc2626;
-            border-color: #dc2626;
+          .popup-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
           }
 
-          &:active {
-            transform: scale(0.95);
+          .popup-user-text {
+            flex: 1;
+            min-width: 0;
+
+            .popup-username {
+              font-size: 14px;
+              font-weight: 600;
+              color: #1a1a1a;
+              line-height: 1.3;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
+            }
+          }
+        }
+
+        .popup-divider {
+          height: 1px;
+          background: #f0f0f0;
+          margin: 2px 8px;
+        }
+
+        .popup-menu-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 10px 12px;
+          background: transparent;
+          border: none;
+          color: #1f2937;
+          font-size: 14px;
+          cursor: pointer;
+          border-radius: 12px;
+          text-align: left;
+          transition: background 0.15s ease;
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
+
+          .popup-icon {
+            width: 18px;
+            height: 18px;
+            color: #666;
+            flex-shrink: 0;
+          }
+
+          &:hover {
+            background: #f5f5f5;
           }
         }
       }
@@ -765,9 +773,30 @@ onMounted(async () => {
     border-radius: 0;
     margin: 0;
     box-shadow: none;
-    border-left: 1px solid #e9ecef;
     overflow: hidden;
   }
+}
+
+// 菜单动画
+.menu-fade-enter-active,
+.menu-fade-leave-active {
+  transition: all 0.15s ease;
+}
+.menu-fade-enter-from,
+.menu-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.95);
+}
+
+// 用户菜单动画
+.user-menu-fade-enter-active,
+.user-menu-fade-leave-active {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.user-menu-fade-enter-from,
+.user-menu-fade-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(0.95);
 }
 
 // 动画
@@ -780,40 +809,8 @@ onMounted(async () => {
   }
 }
 
-// 下拉菜单样式
-:deep(.el-dropdown-menu) {
-  border: none;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  border-radius: 8px;
-  overflow: hidden;
-  
-  .el-dropdown-menu__item {
-    padding: 12px 16px;
-    font-size: 14px;
-    
-    &:hover {
-      background-color: #f5f7fa;
-      color: #409eff;
-    }
-    
-    .el-icon {
-      margin-right: 8px;
-    }
-  }
-}
-
 // 响应式设计
 @media (max-width: 768px) {
-  .workspace-nav {
-    .nav-left {
-      .logo-section {
-        .brand-name {
-          display: none;
-        }
-      }
-    }
-  }
-
   .workspace-main {
     .sidebar {
       width: 240px;
@@ -826,10 +823,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 480px) {
-  .workspace-nav {
-    padding: 0 12px;
-  }
-
   .workspace-main {
     flex-direction: column;
 
@@ -846,4 +839,3 @@ onMounted(async () => {
   }
 }
 </style>
-

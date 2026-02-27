@@ -2,6 +2,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { User, Lock } from '@element-plus/icons-vue'
 import { registerAPI } from '../../apis/auth'
 import type { RegisterForm } from '../../apis/auth'
 
@@ -114,53 +115,36 @@ const goToLogin = () => {
 
         <!-- 注册表单 -->
         <div class="register-form">
-          <div class="form-group">
-            <label class="form-label">用户名</label>
-            <el-input
-              v-model="registerForm.user_name"
-              placeholder="请输入用户名（最多20个字符）"
-              size="large"
-              class="register-input"
-              @keyup.enter="handleRegister"
-            />
-          </div>
+          <el-input
+            v-model="registerForm.user_name"
+            placeholder="请输入用户名（最多20个字符）"
+            size="large"
+            class="register-input"
+            :prefix-icon="User"
+            @keyup.enter="handleRegister"
+          />
 
-          <!-- <div class="form-group">
-            <label class="form-label">邮箱（可选）</label>
-            <el-input
-              v-model="registerForm.user_email"
-              placeholder="请输入邮箱地址"
-              size="large"
-              class="register-input"
-              @keyup.enter="handleRegister"
-            />
-          </div> -->
+          <el-input
+            v-model="registerForm.user_password"
+            type="password"
+            placeholder="请输入密码（至少6个字符）"
+            size="large"
+            class="register-input"
+            :prefix-icon="Lock"
+            show-password
+            @keyup.enter="handleRegister"
+          />
 
-          <div class="form-group">
-            <label class="form-label">密码</label>
-            <el-input
-              v-model="registerForm.user_password"
-              type="password"
-              placeholder="请输入密码（至少6个字符）"
-              size="large"
-              class="register-input"
-              show-password
-              @keyup.enter="handleRegister"
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">确认密码</label>
-            <el-input
-              v-model="confirmPassword"
-              type="password"
-              placeholder="请再次输入密码"
-              size="large"
-              class="register-input"
-              show-password
-              @keyup.enter="handleRegister"
-            />
-          </div>
+          <el-input
+            v-model="confirmPassword"
+            type="password"
+            placeholder="请再次输入密码"
+            size="large"
+            class="register-input"
+            :prefix-icon="Lock"
+            show-password
+            @keyup.enter="handleRegister"
+          />
 
           <div class="form-actions">
             <div class="login-link">
@@ -278,13 +262,13 @@ const goToLogin = () => {
           display: inline-block;
           background: linear-gradient(45deg, #4f81ff, #3b66db);
           color: white;
-          padding: 12px 24px;
-          border-radius: 8px;
-          font-size: 20px;
+          padding: 14px 36px;
+          border-radius: 999px;
+          font-size: 24px;
           font-weight: 700;
           letter-spacing: 2px;
           font-family: 'SF Pro Display', 'Helvetica Neue', 'Arial', sans-serif;
-          box-shadow: 0 4px 12px rgba(79, 129, 255, 0.3);
+          box-shadow: 0 8px 24px rgba(79, 129, 255, 0.25);
         }
       }
 
@@ -299,47 +283,41 @@ const goToLogin = () => {
     }
 
     .register-form {
-      .form-group {
-        margin-bottom: 20px;
+      .register-input {
+        margin-bottom: 16px;
 
-        .form-label {
-          display: block;
-          font-size: 16px;
-          font-weight: 600;
-          color: #2c3e50;
-          margin-bottom: 10px;
-          font-family: 'PingFang SC', 'Helvetica Neue', 'Arial', sans-serif;
-          letter-spacing: 0.5px;
-        }
+        :deep(.el-input__wrapper) {
+          background: #f8f9fc;
+          border: 1px solid #e1e5e9;
+          border-radius: 999px;
+          padding: 8px 18px;
+          box-shadow: none;
 
-        .register-input {
-          :deep(.el-input__wrapper) {
-            background: #f8f9fc;
-            border: 1px solid #e1e5e9;
-            border-radius: 8px;
-            padding: 12px 16px;
-            box-shadow: none;
-
-            &:hover {
-              border-color: #4f81ff;
-            }
-
-            &.is-focus {
-              border-color: #4f81ff;
-              box-shadow: 0 0 0 3px rgba(79, 129, 255, 0.1);
-            }
+          &:hover {
+            border-color: #4f81ff;
           }
 
-          :deep(.el-input__inner) {
-            color: #2c3e50;
-            font-size: 16px;
-            font-family: 'PingFang SC', 'Helvetica Neue', 'Arial', sans-serif;
-            font-weight: 400;
+          &.is-focus {
+            border-color: #4f81ff;
+            box-shadow: 0 0 0 3px rgba(79, 129, 255, 0.1);
+          }
+        }
 
-            &::placeholder {
-              color: #a0a0a0;
-              font-size: 15px;
-            }
+        :deep(.el-input__prefix) {
+          font-size: 18px;
+          color: #8a94a6;
+          margin-right: 6px;
+        }
+
+        :deep(.el-input__inner) {
+          color: #2c3e50;
+          font-size: 15px;
+          font-family: 'PingFang SC', 'Helvetica Neue', 'Arial', sans-serif;
+          font-weight: 400;
+
+          &::placeholder {
+            color: #a0a0a0;
+            font-size: 14px;
           }
         }
       }
@@ -374,7 +352,7 @@ const goToLogin = () => {
         height: 52px;
         background: linear-gradient(45deg, #4f81ff, #3b66db);
         border: none;
-        border-radius: 10px;
+        border-radius: 999px;
         font-size: 18px;
         font-weight: 600;
         font-family: 'PingFang SC', 'Helvetica Neue', 'Arial', sans-serif;

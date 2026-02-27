@@ -5,7 +5,11 @@ from typing import List
 from langchain_core.messages import ToolCall
 from openai.types.chat import ChatCompletionMessageToolCall
 from pydantic import create_model
-from agentchat.schema.mcp import MCPSSEConfig, MCPWebsocketConfig, MCPStreamableHttpConfig
+from agentchat.schema.mcp import (
+    MCPSSEConfig,
+    MCPWebsocketConfig,
+    MCPStreamableHttpConfig,
+)
 
 
 def convert_langchain_tool_calls(tool_calls: List[ChatCompletionMessageToolCall]):
@@ -15,32 +19,45 @@ def convert_langchain_tool_calls(tool_calls: List[ChatCompletionMessageToolCall]
     langchain_tool_calls: List[ToolCall] = []
     for tool_call in tool_calls:
         langchain_tool_calls.append(
-            ToolCall(id=tool_call.id, args=json.loads(tool_call.function.arguments), name=tool_call.function.name))
+            ToolCall(
+                id=tool_call.id,
+                args=json.loads(tool_call.function.arguments),
+                name=tool_call.function.name,
+            )
+        )
 
     return langchain_tool_calls
+
 
 def convert_mcp_config(servers_info: dict | list):
 
     def convert_single_mcp(server_info):
         if isinstance(server_info, dict):
-            if server_info.get("type") == "sse":
+            # 'remote' or 'sse'
+            if server_info.get("type") in ["sse", "remote"]:
                 return MCPSSEConfig(
-                    url=server_info.get("url"),
-                    server_name=server_info.get("server_name")
+                    url=server_info.get("url", ""),
+                    server_name=server_info.get("server_name"),
                 )
             elif server_info.get("type") == "websocket":
                 return MCPWebsocketConfig(
-                    url=server_info.get("url"),
-                    server_name=server_info.get("server_name")
+                    url=server_info.get("url", ""),
+                    server_name=server_info.get("server_name"),
                 )
             elif server_info.get("type") == "streamable_http":
                 return MCPStreamableHttpConfig(
-                    url=server_info.get("url"),
-                    server_name=server_info.get("server_name")
+                    url=server_info.get("url", ""),
+                    server_name=server_info.get("server_name"),
                 )
-            else:
-                # Stdio
-                pass
+            elif server_info.get("type") in ["stdio", "studio"]:
+                from agentchat.schema.mcp import MCPStdioConfig
+
+                return MCPStdioConfig(
+                    command=server_info.get("command", ""),
+                    args=server_info.get("args", []),
+                    env=server_info.get("env", None),
+                    server_name=server_info.get("server_name"),
+                )
 
     if isinstance(servers_info, dict):
         return convert_single_mcp(servers_info)
@@ -54,9 +71,10 @@ def mcp_tool_to_args_schema(name, description, args_schema) -> dict:
         "function": {
             "name": name,
             "description": description,
-            "parameters": args_schema
-        }
+            "parameters": args_schema,
+        },
     }
+
 
 def function_to_args_schema(func) -> dict:
     """

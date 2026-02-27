@@ -1,85 +1,54 @@
 <template>
   <div class="dashboard-container">
-    <div class="dashboard-header">
-      <div class="title-wrap">
-        <h2>数据看板</h2>
-      </div>
-      <p class="sub">根据模型与时间范围查看调用与 Token 用量趋势</p>
-    </div>
-
-    <div class="filters-container">
-      <div class="filter-group">
-        <label>模型</label>
-        <el-select
-          v-model="filters.model"
-          placeholder="全部模型"
-          clearable
-          filterable
-          size="default"
-          popper-class="dashboard-select-popper"
-          class="filter-select"
-          @change="handleFilterChange"
-          style="width: 250px"
-        >
-          <el-option label="全部" value="" />
-          <el-option
-            v-for="model in modelsList"
-            :key="model"
-            :label="model"
-            :value="model"
-          />
-        </el-select>
+    <div class="page-header">
+      <div class="header-titles">
+        <h2>
+          <el-icon class="dashboard-icon" color="#409eff"><DataAnalysis /></el-icon>
+          数据看板
+        </h2>
       </div>
 
-      <!-- <div class="filter-group">
-        <label>智能体</label>
-        <el-select
-          v-model="filters.agent"
-          placeholder="全部智能体"
-          clearable
-          filterable
-          size="default"
-          popper-class="dashboard-select-popper"
-          class="filter-select"
-          @change="handleFilterChange"
-          style="width: 250px"
-        >
-          <el-option label="全部" value="" />
-          <el-option
-            v-for="agent in agentsList"
-            :key="agent"
-            :label="agent"
-            :value="agent"
-          />
-        </el-select>
-      </div> -->
+      <div class="header-actions">
+        <div class="filter-group">
+          <label>模型</label>
+          <el-select
+            v-model="filters.model"
+            placeholder="全部模型"
+            clearable
+            filterable
+            size="large"
+            popper-class="dashboard-select-popper"
+            class="filter-select"
+            @change="handleFilterChange"
+            style="width: 250px"
+          >
+            <el-option label="全部" value="" />
+            <el-option
+              v-for="model in modelsList"
+              :key="model"
+              :label="model"
+              :value="model"
+            />
+          </el-select>
+        </div>
 
-      <div class="filter-group">
-        <label>时间范围</label>
-        <el-select
-          v-model="filters.delta_days"
-          size="default"
-          popper-class="dashboard-select-popper"
-          class="filter-select"
-          @change="handleFilterChange"
-          style="width: 220px"
-        >
-          <el-option label="周内" :value="7" />
-          <el-option label="月内" :value="30" />
-          <el-option label="年内" :value="365" />
-          <el-option label="全部" :value="10000" />
-        </el-select>
+        <div class="filter-group">
+          <label>时间范围</label>
+          <el-select
+            v-model="filters.delta_days"
+            size="large"
+            popper-class="dashboard-select-popper"
+            class="filter-select"
+            @change="handleFilterChange"
+            style="width: 220px"
+          >
+            <el-option label="周内" :value="7" />
+            <el-option label="月内" :value="30" />
+            <el-option label="年内" :value="365" />
+            <el-option label="全部" :value="10000" />
+          </el-select>
+        </div>
       </div>
-
-      <el-button
-        type="primary"
-        class="filter-action"
-        :icon="RefreshRight"
-        @click="handleRefresh"
-        :loading="loading"
-      >
-        刷新数据
-      </el-button>
     </div>
 
     <div class="kpi-container">
@@ -122,7 +91,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { RefreshRight } from '@element-plus/icons-vue'
+import { DataAnalysis } from '@element-plus/icons-vue'
 // 按需引入 ECharts，避免打包体积和解析问题
 import * as echarts from 'echarts/core'
 import type { ECharts as EChartsInstance } from 'echarts/core'
@@ -219,14 +188,16 @@ const initCallCountChart = () => {
     },
     legend: {
       data: [],
-      top: 10,
+      top: 0,
+      type: 'scroll',
+      padding: [10, 20],
       textStyle: { color: '#606266' }
     },
     grid: {
       left: '3%',
-      right: '3%',
+      right: '4%',
       bottom: 40,
-      top: 50,
+      top: 65,
       containLabel: true
     },
     xAxis: {
@@ -239,7 +210,7 @@ const initCallCountChart = () => {
     yAxis: {
       type: 'value',
       name: '调用次数',
-      nameTextStyle: { color: '#606266' },
+      nameTextStyle: { color: '#606266', padding: [0, 0, 0, 20] },
       splitLine: { lineStyle: { color: '#eee' } },
       axisLabel: { color: '#606266' }
     },
@@ -278,14 +249,16 @@ const initTokenUsageChart = () => {
     },
     legend: {
       data: ['输入Token', '输出Token'],
-      top: 10,
+      top: 0,
+      type: 'scroll',
+      padding: [10, 20],
       textStyle: { color: '#606266' }
     },
     grid: {
       left: '3%',
-      right: '3%',
+      right: '4%',
       bottom: 40,
-      top: 50,
+      top: 65,
       containLabel: true
     },
     xAxis: {
@@ -297,7 +270,7 @@ const initTokenUsageChart = () => {
     yAxis: {
       type: 'value',
       name: 'Token数量',
-      nameTextStyle: { color: '#606266' },
+      nameTextStyle: { color: '#606266', padding: [0, 0, 0, 20] },
       splitLine: { lineStyle: { color: '#eee' } },
       axisLabel: { color: '#606266' }
     },
@@ -476,8 +449,6 @@ const fetchUsageData = async () => {
       }
       totalTokens.value = tokens
     }
-    
-    ElMessage.success('数据刷新成功')
   } catch (error) {
     console.error('获取使用统计数据失败:', error)
     ElMessage.error('获取数据失败')
@@ -488,11 +459,6 @@ const fetchUsageData = async () => {
 
 // 筛选条件变化
 const handleFilterChange = () => {
-  fetchUsageData()
-}
-
-// 刷新数据
-const handleRefresh = () => {
   fetchUsageData()
 }
 
@@ -541,55 +507,51 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .dashboard-container {
-  padding: 24px;
+  padding: 30px;
   background-color: #f5f7fa;
   min-height: calc(100vh - 60px);
 }
 
-.dashboard-header {
-  margin-bottom: 24px;
-  .title-wrap {
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  background: linear-gradient(to right, #ffffff, #f8fafc);
+  padding: 28px;
+  border-radius: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+
+  h2 {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    background: linear-gradient(90deg, #409eff, #3a7be2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    
+    .dashboard-icon {
+      font-size: 30px;
+      color: #409eff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
   }
-  .badge {
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: #eef2ff;
-    color: #4f46e5;
-    border: 1px solid #c7d2fe;
-  }
-  .sub {
-    margin-top: 6px;
-    color: #7a8395;
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: .2px;
-    -webkit-font-smoothing: antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Source Han Sans CN', sans-serif;
-  }
-  
-  h2 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #303133;
-    margin: 0;
-  }
-}
 
-.filters-container {
-  display: flex;
-  align-items: flex-end;
-  gap: 16px;
-  padding: 16px 20px;
-  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
-  border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
-  margin-bottom: 28px;
-  flex-wrap: wrap;
-  border: 1px solid #e4e8f1;
+  .header-actions {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
 }
 
 .filter-group {
@@ -611,131 +573,136 @@ onBeforeUnmount(() => {
   }
 }
 
-/* Select 美化 */
-.filter-select :deep(.el-input__wrapper) {
-  border-radius: 12px;
-  box-shadow: 0 0 0 1px #dbe1ed inset;
-  transition: all .2s ease;
-  background: #fff;
-  padding: 2px 14px;
+/* Select 美化 (适用 Element Plus 2.6+) */
+.filter-select :deep(.el-select__wrapper) {
+  border-radius: 100px !important;
+  box-shadow: 0 0 0 1px #dcdfe6 inset !important;
+  transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #ffffff;
+  padding: 8px 18px !important;
+  min-height: 42px;
 }
-.filter-select :deep(.el-input__inner::placeholder) {
-  color: #a0a6b5;
+.filter-select :deep(.el-select__placeholder),
+.filter-select :deep(.el-select__selected-item) {
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.2;
 }
-.filter-select :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #9eb6ff inset;
+.filter-select :deep(.el-select__wrapper.is-hovering),
+.filter-select :deep(.el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px #a8abb2 inset !important;
 }
-.filter-select :deep(.is-focus .el-input__wrapper),
-.filter-select :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 2px #9aa8ff inset, 0 8px 18px rgba(99,102,241,.16);
+.filter-select :deep(.el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1.5px #409eff inset, 0 0 0 3px rgba(64, 158, 255, 0.15) !important;
 }
 .filter-select :deep(.el-select__caret) {
-  color: #6975ff;
-}
-.filter-select :deep(.el-input__suffix-inner) {
-  transition: transform .2s ease;
-}
-.filter-select :deep(.is-focus .el-input__suffix-inner) {
-  transform: rotate(-180deg);
+  color: #94a3b8;
+  font-size: 16px;
 }
 
 /* 下拉项美化 */
 .dashboard-select-popper {
-  border-radius: 12px !important;
+  border-radius: 16px !important;
   box-shadow: 0 12px 32px rgba(0,0,0,.08) !important;
   border: 1px solid #eef0f4 !important;
+  padding: 6px !important;
 }
 .dashboard-select-popper :deep(.el-select-dropdown__item) {
-  padding: 8px 12px;
-  border-radius: 8px;
-  margin: 4px 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin: 2px 4px;
+  font-weight: 500;
+  color: #475569;
 }
-.dashboard-select-popper :deep(.el-select-dropdown__item.hover) {
-  background: #f5f7ff;
+.dashboard-select-popper :deep(.el-select-dropdown__item.hover),
+.dashboard-select-popper :deep(.el-select-dropdown__item:hover) {
+  background: #f1f5f9;
+  color: #1e293b;
 }
 .dashboard-select-popper :deep(.el-select-dropdown__item.selected) {
-  background: linear-gradient(180deg, #eef2ff, #f5f7ff);
-  color: #4f46e5;
+  background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
+  color: #2563eb;
   font-weight: 600;
-}
-
-.filter-action {
-  align-self: center;
-  margin-left: auto;
-  padding: 0 20px;
-  border-radius: 12px;
-  font-weight: 600;
-  letter-spacing: .3px;
-  box-shadow: 0 8px 20px rgba(99,102,241,0.2);
-}
-.filter-action :deep(.el-icon) {
-  font-size: 16px;
-}
-.filter-action:hover:not(.is-disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(99,102,241,0.25);
-}
-.filter-action:active:not(.is-disabled) {
-  transform: translateY(0);
-  box-shadow: 0 6px 18px rgba(99,102,241,0.22);
 }
 
 .kpi-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 28px;
 }
 
 .kpi-card {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid #eef0f4;
-  border-radius: 12px;
-  padding: 16px 18px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
   position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  }
 
   .kpi-title {
-    font-size: 12px;
-    color: #909399;
+    font-size: 14px;
+    font-weight: 600;
+    color: #64748b;
     margin-bottom: 6px;
   }
   .kpi-value {
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 700;
-    color: #303133;
+    color: #1e293b;
     line-height: 1.2;
+    letter-spacing: -0.02em;
   }
   .kpi-desc {
     margin-top: 8px;
-    font-size: 12px;
-    color: #a0a3ad;
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 500;
   }
   .kpi-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
   }
   .kpi-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    border-radius: 16px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: #eef2ff;
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
     color: #4f46e5;
+    font-size: 20px;
     font-weight: 800;
-    box-shadow: inset 0 0 0 1px #c7d2fe;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
   }
 }
 
 .kpi-card--primary {
-  background: linear-gradient(180deg, #ffffff 0%, #f6f9ff 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%);
+  border-color: #e0f2fe;
+  .kpi-icon {
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+    color: #0284c7;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+  }
 }
 .kpi-card--warning {
-  background: linear-gradient(180deg, #ffffff 0%, #fff9f3 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #fff7ed 100%);
+  border-color: #ffedd5;
+  .kpi-icon {
+    background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
+    color: #ea580c;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);
+  }
 }
 
 .charts-container {
@@ -745,21 +712,27 @@ onBeforeUnmount(() => {
 }
 
 .chart-wrapper {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
-  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+  padding: 24px;
   min-height: 400px;
   position: relative;
+  border: 1px solid #eef0f4;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  }
 }
 
 .chart-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #ebeef5;
+  color: #1e293b;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed #e2e8f0;
 }
 
 .chart-content {

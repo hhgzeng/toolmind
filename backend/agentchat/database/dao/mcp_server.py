@@ -7,33 +7,72 @@ from agentchat.database.models.mcp_server import MCPServerStdioTable, MCPServerT
 
 class MCPServerDao:
     @classmethod
-    async def create_mcp_server(cls, server_name: str, user_id: str, user_name: str, mcp_as_tool_name: str, description: str,
-                                url: str, type: str, config: dict, tools: list, params: dict, config_enabled: bool, logo_url):
+    async def create_mcp_server(
+        cls,
+        server_name: str,
+        user_id: str,
+        user_name: str,
+        mcp_as_tool_name: str,
+        description: str,
+        url: str,
+        type: str,
+        config: dict,
+        tools: list,
+        params: dict,
+        is_active: bool,
+        logo_url: str,
+    ):
         with session_getter() as session:
-            mcp_server = MCPServerTable(server_name=server_name, user_id=user_id, logo_url=logo_url,
-                                        user_name=user_name, url=url, type=type, config=config,
-                                        tools=tools, params=params, config_enabled=config_enabled,
-                                        mcp_as_tool_name=mcp_as_tool_name, description=description)
+            mcp_server = MCPServerTable(
+                server_name=server_name,
+                user_id=user_id,
+                logo_url=logo_url,
+                user_name=user_name,
+                url=url,
+                type=type,
+                config=config,
+                tools=tools,
+                params=params,
+                is_active=is_active,
+                mcp_as_tool_name=mcp_as_tool_name,
+                description=description,
+            )
             session.add(mcp_server)
             session.commit()
 
     @classmethod
     async def get_mcp_server_from_id(cls, mcp_server_id):
         with session_getter() as session:
-            sql = select(MCPServerTable).where(MCPServerTable.mcp_server_id == mcp_server_id)
+            sql = select(MCPServerTable).where(
+                MCPServerTable.mcp_server_id == mcp_server_id
+            )
             results = session.exec(sql).first()
             return results
 
     @classmethod
     async def delete_mcp_server(cls, mcp_server_id):
         with session_getter() as session:
-            sql = delete(MCPServerTable).where(MCPServerTable.mcp_server_id == mcp_server_id)
+            sql = delete(MCPServerTable).where(
+                MCPServerTable.mcp_server_id == mcp_server_id
+            )
             session.exec(sql)
             session.commit()
 
     @classmethod
-    async def update_mcp_server(cls, mcp_server_id: str, server_name: str, mcp_as_tool_name: str, description: str,
-                                url: str, type: str, config: dict, tools: list, params: dict, logo_url: str):
+    async def update_mcp_server(
+        cls,
+        mcp_server_id: str,
+        server_name: str,
+        mcp_as_tool_name: str,
+        description: str,
+        url: str,
+        type: str,
+        config: dict,
+        tools: list,
+        params: dict = None,
+        logo_url: str = None,
+        is_active: bool = None,
+    ):
         with session_getter() as session:
             update_values = {}
             if server_name:
@@ -50,12 +89,18 @@ class MCPServerDao:
                 update_values["params"] = params
             if logo_url:
                 update_values["logo_url"] = logo_url
-            if mcp_as_tool_name:
+            if mcp_as_tool_name is not None:
                 update_values["mcp_as_tool_name"] = mcp_as_tool_name
-            if description:
+            if description is not None:
                 update_values["description"] = description
+            if is_active is not None:
+                update_values["is_active"] = is_active
 
-            sql = update(MCPServerTable).where(MCPServerTable.mcp_server_id == mcp_server_id).values(**update_values)
+            sql = (
+                update(MCPServerTable)
+                .where(MCPServerTable.mcp_server_id == mcp_server_id)
+                .values(**update_values)
+            )
             session.exec(sql)
             session.commit()
 
@@ -70,7 +115,9 @@ class MCPServerDao:
     @classmethod
     async def get_server_from_tool_name(cls, tool_name):
         with session_getter() as session:
-            sql = select(MCPServerTable).where(func.json_contains(MCPServerTable.tools, func.json_array(tool_name)))
+            sql = select(MCPServerTable).where(
+                func.json_contains(MCPServerTable.tools, func.json_array(tool_name))
+            )
             results = session.exec(sql).first()
             return results
 
@@ -91,7 +138,11 @@ class MCPServerDao:
     @classmethod
     async def get_mcp_server_ids_from_name(cls, mcp_servers_name, user_id):
         with session_getter() as session:
-            sql = select(MCPServerTable).where(and_(MCPServerTable.server_name.in_(mcp_servers_name),
-                                                    MCPServerTable.user_id == user_id))
+            sql = select(MCPServerTable).where(
+                and_(
+                    MCPServerTable.server_name.in_(mcp_servers_name),
+                    MCPServerTable.user_id == user_id,
+                )
+            )
             result = session.exec(sql)
             return result.all()
