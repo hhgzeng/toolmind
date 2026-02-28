@@ -34,12 +34,6 @@ watch(
   <div class="ai-body">
     <div class="ai-main">
       <div class="sidebar">
-        <!-- 侧边栏顶部 Logo -->
-        <!-- <div class="sidebar-header">
-          <img src="../assets/robot.svg" alt="Logo" class="sidebar-logo" />
-          <span class="sidebar-brand">toolmind</span>
-        </div> -->
-
         <!-- 导航菜单 -->
         <div class="sidebar-nav">
           <el-menu
@@ -76,7 +70,6 @@ watch(
           </el-menu>
         </div>
       </div>
-
       <div class="content">
         <router-view></router-view>
       </div>
@@ -105,28 +98,6 @@ watch(
       border: 1px solid #ebebeb;
       border-radius: 24px;
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
-
-      .sidebar-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 18px 18px 4px;
-        user-select: none;
-
-        .sidebar-logo {
-          width: 26px;
-          height: 26px;
-          object-fit: contain;
-        }
-
-        .sidebar-brand {
-          font-size: 18px;
-          font-weight: 700;
-          color: #4285f4;
-          letter-spacing: -0.3px;
-          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
-        }
-      }
 
       .sidebar-nav {
         flex: 1;

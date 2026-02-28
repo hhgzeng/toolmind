@@ -150,7 +150,7 @@ ToolMind 是一个现代化的智能对话系统，基于大语言模型构建�
 <summary><b>🔍 点击展开完整项目结构</b></summary>
 
 ```
-AgentChat/                          # 🏠 项目根目录
+ToolMind/                          # 🏠 项目根目录
 ├── 📄 README.md                   # 📖 项目说明文档
 ├── 📄 LICENSE                     # ⚖️ 开源许可证
 ├── 📄 .gitignore                  # 🚫 Git忽略文件配置
@@ -172,7 +172,7 @@ AgentChat/                          # 🏠 项目根目录
 └── 📁 src/                        # 💻 源代码目录
     ├── 📁 backend/                # 🔧 后端服务
     │   ├── 📁 chroma_db/          # 🗄️ ChromaDB向量数据库
-    │   └── 📁 agentchat/          # 🤖 核心后端应用
+    │   └── 📁 toolmind/          # 🤖 核心后端应用
     │       ├── 📄 __init__.py     # 🐍 Python包初始化文件
     │       ├── 📄 main.py         # 🚀 FastAPI应用入口
     │       ├── 📄 settings.py     # ⚙️ 应用配置设置
@@ -388,14 +388,14 @@ pip install -r requirements.txt
 
 #### ⚙️ **配置文件设置**
 
-创建并编辑配置文件 `src/backend/agentchat/config.yaml`:
+创建并编辑配置文件 `src/backend/toolmind/config.yaml`:
 
 #### 🚀 **启动服务**
 
 ```bash
 # 后端服务
 cd src/backend
-uvicorn agentchat.main:app --port 7860 --host 0.0.0.0
+uvicorn toolmind.main:app --port 7860 --host 0.0.0.0
 
 # 新终端 - 前端服务
 cd src/frontend
@@ -433,7 +433,7 @@ npm run dev
 ## 📖 文档
 
 ### 📚 API文档
-- [AgentChat Document](docs/agentchat.md) - agentchat具体文档
+- [ToolMind Document](docs/toolmind.md) - toolmind具体文档
 - [API Documentation v3.0](docs/api.md) - 最新API文档
 
 ### 🔧 开发文档
@@ -453,7 +453,7 @@ npm run dev
 
 ## 🤝 贡献指南
 
-> 💪 **共建AI未来** - 每一个贡献都让AgentChat变得更好
+> 💪 **共建AI未来** - 每一个贡献都让ToolMind变得更好
 
 <div align="center">
 

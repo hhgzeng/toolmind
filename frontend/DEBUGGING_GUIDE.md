@@ -8,8 +8,8 @@ GET `/api/v1/agent` 接口无法获取到智能体数据
 ### 1. 检查后端服务
 ```bash
 # 确保后端服务正在运行
-cd src/backend
-python -m agentchat.main
+cd backend
+python -m toolmind.main
 # 或者根据你的启动方式
 ```
 
@@ -17,7 +17,7 @@ python -m agentchat.main
 
 ### 2. 检查前端开发服务器
 ```bash
-cd src/frontend
+cd frontend
 npm run dev
 ```
 

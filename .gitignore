@@ -15,4 +15,4 @@ vector_db/
 
 node_modules/
 
-backend/agentchat/config.yaml
+backend/toolmind/config.yaml

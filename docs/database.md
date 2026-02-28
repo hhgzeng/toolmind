@@ -2,13 +2,13 @@
 
 ## 概述
 
-本文档详细描述了 AgentChat 系统的数据库表结构设计。系统采用 MySQL 数据库，使用 SQLModel 作为 ORM 框架，支持用户管理、智能体配置、对话管理、知识库管理等核心功能。
+本文档详细描述了 ToolMind 系统的数据库表结构设计。系统采用 MySQL 数据库，使用 SQLModel 作为 ORM 框架，支持用户管理、智能体配置、对话管理、知识库管理等核心功能。
 
 ## 数据库配置
 
-- **数据库名称**: `agentchat`
-- **默认用户**: `agentchat_user`
-- **连接地址**: `mysql://agentchat_user:123456@mysql:3306/agentchat`
+- **数据库名称**: `toolmind`
+- **默认用户**: `toolmind_user`
+- **连接地址**: `mysql://toolmind_user:123456@mysql:3306/toolmind`
 
 ## 表结构详细说明
 
@@ -355,4 +355,4 @@
 
 *文档版本: 1.0*  
 *最后更新: 2024年11月*  
-*维护者: AgentChat 开发团队*
+*维护者: ToolMind 开发团队*
