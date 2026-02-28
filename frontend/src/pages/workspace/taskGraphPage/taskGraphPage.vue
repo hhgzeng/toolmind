@@ -98,7 +98,6 @@ const startReceivingResults = () => {
   if (!showTaskResult.value) {
     showTaskResult.value = true
   }
-  // ElMessage.success('开始接收任务结果')
   console.log('✅ [startReceivingResults] 状态已更新，准备启动排空')
   // 启动排空
   startDrain()
@@ -131,7 +130,6 @@ const startDrain = () => {
       }
       isDraining.value = false
       isReceivingResult.value = false
-      //ElMessage.success('任务执行完成')
       return
     }
     const chunk = resultBuffer.value.slice(0, drainChunkSize)
@@ -588,13 +586,11 @@ const startTask = async () => {
         })
         
         showGraph.value = true
-        ElMessage.success('任务图生成成功，开始执行任务')
       },
       (stepData) => {
         // 处理步骤执行结果
         console.log('✅ 收到步骤结果:', stepData)
         updateNodeStatus(stepData.title, 'completed', stepData.message)
-        ElMessage.success(`节点「${stepData.title}」执行完成`)
       },
       (messageChunk) => {
         // 统一写入缓冲。若尚未开始接收（通常为首个 task_result 到达），立即启动接收与排空

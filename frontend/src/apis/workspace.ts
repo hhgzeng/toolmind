@@ -47,3 +47,12 @@ export const deleteWorkspaceSessionAPI = async (sessionId: string) => {
   })
 }
 
+// 更新工作区会话 (例如重命名)
+export const updateWorkspaceSessionAPI = async (sessionId: string, data: { title?: string, is_pinned?: boolean }) => {
+  return request({
+    url: `/api/v1/workspace/session/${sessionId}`,
+    method: 'patch',
+    data
+  })
+}
+

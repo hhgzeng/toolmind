@@ -261,7 +261,7 @@ const handleToggleActive = async (server: MCPServer, val: boolean) => {
       is_active: val
     })
     if (response.data.status_code === 200) {
-      ElMessage.success('状态已切换')
+      // ElMessage.success('状态已切换')
     } else {
       server.is_active = !val // revert
       ElMessage.error(response.data.status_message || '状态切换失败')
@@ -398,11 +398,8 @@ onUnmounted(() => {
         <div class="empty-icon">
           <i class="empty-icon-symbol">📡</i>
         </div>
-        <h3>暂无MCP服务</h3>
-        <p>添加MCP服务器以增强智能体的能力</p>
-        <el-button type="primary" @click="handleCreate()" class="create-btn">
-          添加服务器
-        </el-button>
+        <h3>暂无 MCP 服务器</h3>
+        <p>添加 MCP 服务器以增强智能体的能力</p>
       </div>
     </div>
 
@@ -1449,11 +1446,20 @@ onUnmounted(() => {
       text-align: center;
       padding: 80px 20px;
 
+      h3 {
+        font-size: 22px;
+        font-weight: 600;
+        color: #303133;
+        margin-bottom: 16px;
+      }
+
       p {
-        margin-top: 24px;
         font-size: 16px;
-        color: #6b7280;
-        font-weight: 500;
+        color: #606266;
+        margin-bottom: 32px;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
       }
     }
   }
@@ -1835,10 +1841,7 @@ onUnmounted(() => {
     max-width: 300px;
   }
   
-  .create-btn {
-    padding: 12px 24px;
-    font-size: 16px;
-  }
+
 }
 
 /* 确认对话框样式 */

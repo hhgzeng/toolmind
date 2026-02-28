@@ -26,6 +26,10 @@ class WorkSpaceSessionService:
         return await WorkSpaceSessionDao.update_workspace_session_contexts(session_id, session_context)
 
     @classmethod
+    async def update_workspace_session(cls, session_id, user_id, title=None, is_pinned=None):
+        return await WorkSpaceSessionDao.update_workspace_session(session_id, user_id, title, is_pinned)
+
+    @classmethod
     async def clear_workspace_session_contexts(cls, session_id):
         return await WorkSpaceSessionDao.clear_workspace_session_contexts(session_id)
 

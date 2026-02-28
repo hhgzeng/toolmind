@@ -1,19 +1,29 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '../../store/user'
 import { logoutAPI, getUserInfoAPI } from '../../apis/auth'
 import { 
   getWorkspaceSessionsAPI, 
-  deleteWorkspaceSessionAPI 
+  deleteWorkspaceSessionAPI,
+  updateWorkspaceSessionAPI
 } from '../../apis/workspace'
 
 const router = useRouter()
-import { useRoute } from 'vue-router'
 const route = useRoute()
 const userStore = useUserStore()
 const selectedSession = ref('')
+
+// 重命名相关状态
+const sessionToRename = ref<any>(null)
+const newTitle = ref('')
+const renameInput = ref<HTMLInputElement | null>(null)
+
+watch(() => route.query.session_id, (newSessionId) => {
+  selectedSession.value = (newSessionId as string) || ''
+}, { immediate: true })
+
 const sessions = ref<any[]>([])
 const loading = ref(false)
 
@@ -167,7 +177,6 @@ const executeDelete = async () => {
   try {
     const response = await deleteWorkspaceSessionAPI(sessionId)
     if (response.data.status_code === 200) {
-      ElMessage.success('会话删除成功')
       await fetchSessions()
       
       if (selectedSession.value === sessionId) {
@@ -182,6 +191,61 @@ const executeDelete = async () => {
     ElMessage.error('删除会话失败')
   } finally {
     sessionToDelete.value = null
+  }
+}
+
+// 置顶会话
+const handlePinSession = (session: any, event: Event) => {
+  event.stopPropagation()
+  activeMenuId.value = null
+  ElMessage.success('置顶功能已触发')
+  // 这里可以连接后端 pin 接口
+}
+
+// 开始重命名
+const startRename = (session: any, event: Event) => {
+  event.stopPropagation()
+  sessionToRename.value = session
+  newTitle.value = session.title
+  activeMenuId.value = null
+  nextTick(() => {
+    if (Array.isArray(renameInput.value)) {
+      renameInput.value[0]?.focus()
+    } else {
+      renameInput.value?.focus()
+    }
+  })
+}
+
+const cancelRename = () => {
+  sessionToRename.value = null
+  newTitle.value = ''
+}
+
+// 执行重命名
+const executeRename = async () => {
+  if (!sessionToRename.value || !newTitle.value.trim()) return
+  const sessionId = sessionToRename.value.sessionId
+  const title = newTitle.value.trim()
+  
+  if (title === sessionToRename.value.title) {
+    sessionToRename.value = null
+    return
+  }
+
+  try {
+    const response = await updateWorkspaceSessionAPI(sessionId, { title })
+    if (response.data.status_code === 200) {
+      await fetchSessions()
+      ElMessage.success('重命名成功')
+    } else {
+      ElMessage.error('重命名失败')
+    }
+  } catch (error) {
+    console.error('重命名出错:', error)
+    ElMessage.error('重命名失败')
+  } finally {
+    sessionToRename.value = null
   }
 }
 
@@ -221,7 +285,6 @@ const handleLogout = async () => {
     console.error('调用登出接口失败:', error)
   }
   userStore.logout()
-  ElMessage.success('已退出登录')
   router.push('/login')
 }
 
@@ -235,6 +298,7 @@ const handleAvatarError = (event: Event) => {
 
 // 开启新对话
 const goToHomepage = () => {
+  selectedSession.value = ''
   router.push('/workspace')
 }
 
@@ -309,32 +373,61 @@ onBeforeUnmount(() => {
             <div
               v-for="session in group.items"
               :key="session.sessionId"
-              :class="['session-item', { active: selectedSession === session.sessionId }]"
+              :class="['session-item', { active: selectedSession === session.sessionId, 'is-renaming': sessionToRename?.sessionId === session.sessionId }]"
               @click="selectSession(session.sessionId)"
             >
-              <span class="session-title">{{ session.title }}</span>
-              <button
-                class="more-btn"
-                @click="toggleMenu(session.sessionId, $event)"
-                title="更多操作"
-              >
-                ⋯
-              </button>
-              <!-- 操作菜单 -->
-              <transition name="menu-fade">
-                <div v-if="activeMenuId === session.sessionId" class="action-menu">
-                  <button class="menu-item delete" @click="confirmDeleteSession(session.sessionId, $event)">
-                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M3 6h18"></path>
-                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                      <line x1="10" y1="11" x2="10" y2="17"></line>
-                      <line x1="14" y1="11" x2="14" y2="17"></line>
-                    </svg>
-                    删除
-                  </button>
-                </div>
-              </transition>
+              <template v-if="sessionToRename?.sessionId === session.sessionId">
+                <input 
+                  ref="renameInput"
+                  v-model="newTitle" 
+                  class="inline-rename-input" 
+                  @keyup.enter="executeRename"
+                  @keyup.esc="cancelRename"
+                  @blur="executeRename"
+                  @click.stop
+                />
+              </template>
+              <template v-else>
+                <span class="session-title">{{ session.title }}</span>
+                <button
+                  class="more-btn"
+                  @click="toggleMenu(session.sessionId, $event)"
+                  title="更多操作"
+                >
+                  ⋯
+                </button>
+                <!-- 操作菜单 -->
+                <transition name="menu-fade">
+                  <div v-if="activeMenuId === session.sessionId" class="action-menu">
+                    <button class="menu-item" @click="handlePinSession(session, $event)">
+                      <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <g transform="rotate(45 12 12)">
+                          <path d="M12 17v5"></path>
+                          <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"></path>
+                        </g>
+                      </svg>
+                      置顶
+                    </button>
+                    <button class="menu-item" @click="startRename(session, $event)">
+                      <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                      重命名
+                    </button>
+                    <button class="menu-item delete" @click="confirmDeleteSession(session.sessionId, $event)">
+                      <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                      </svg>
+                      删除
+                    </button>
+                  </div>
+                </transition>
+              </template>
             </div>
           </div>
         </template>
@@ -565,7 +658,6 @@ onBeforeUnmount(() => {
           padding: 10px 10px;
           border-radius: 16px;
           cursor: pointer;
-          transition: all 0.15s ease;
           position: relative;
           margin-bottom: 1px;
 
@@ -670,6 +762,31 @@ onBeforeUnmount(() => {
 
             .more-btn {
               opacity: 1;
+            }
+          }
+
+          &.is-renaming {
+            background: #ffffff;
+            padding: 0; /* Clear padding to let input fill exactly */
+            transition: none; /* Remove any transition animation when entering renaming state */
+            /* Add correct border matching Figure 1's clicking state, remove box shadow */
+            border: 1.5px solid #4D6BFE;
+            border-radius: 16px;
+            
+            .inline-rename-input {
+               width: 100%;
+               height: 100%;
+               min-height: 42px; /* adjust match to correct active button height with 1.5px border subtracted */
+               padding: 8px 12px; /* adjusted padding for pill-shaped input */
+               box-sizing: border-box;
+               border: none;
+               background: transparent;
+               outline: none;
+               font-size: 14px;
+               color: #1a1a1a;
+               line-height: 1.4;
+               font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
+               border-radius: 16px;
             }
           }
         }

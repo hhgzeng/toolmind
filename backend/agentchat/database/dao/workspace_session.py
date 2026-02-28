@@ -48,6 +48,25 @@ class WorkSpaceSessionDao:
         return workspace_session
 
     @classmethod
+    async def update_workspace_session(cls, session_id, user_id, title=None, is_pinned=None):
+        async with async_session_getter() as session:
+            statement = select(WorkSpaceSession).where(and_(WorkSpaceSession.session_id == session_id,
+                                                            WorkSpaceSession.user_id == user_id))
+            result = await session.exec(statement)
+            workspace_session = result.first()
+            if not workspace_session:
+                return None
+
+            if title is not None:
+                workspace_session.title = title
+            # if is_pinned is not None:
+            #     workspace_session.is_pinned = is_pinned
+
+            await session.commit()
+            await session.refresh(workspace_session)
+        return workspace_session
+
+    @classmethod
     async def get_workspace_session_from_id(cls, session_id):
         async with async_session_getter() as session:
             workspace_session = await session.get(WorkSpaceSession, session_id)

@@ -404,16 +404,9 @@ onMounted(() => {
         <div class="empty-icon">
           <span class="empty-emoji">🤖</span>
         </div>
-        <h3>🎉 暂无模型</h3>
-        <p>🌟 点击下方按钮创建您的第一个AI模型吧！</p>
-        <el-button 
-          type="primary" 
-          :icon="Plus"
-          @click="openCreateDialog"
-          size="large"
-        >
-          🚀 立即创建
-        </el-button>
+        <h3>暂无模型</h3>
+        <p>点击添加按钮创建您的第一个 AI 模型吧</p>
+
       </div>
     </div>
 
@@ -436,6 +429,7 @@ onMounted(() => {
             placeholder="请选择会话模型" 
             class="model-select"
             clearable
+            no-data-text="无模型"
             @change="saveLingseekConfig"
           >
             <el-option
@@ -458,6 +452,7 @@ onMounted(() => {
             placeholder="请选择工具模型" 
             class="model-select"
             clearable
+            no-data-text="无模型"
             @change="saveLingseekConfig"
           >
             <el-option
@@ -480,6 +475,7 @@ onMounted(() => {
             placeholder="请选择评估模型" 
             class="model-select"
             clearable
+            no-data-text="无模型"
             @change="saveLingseekConfig"
           >
             <el-option
@@ -936,22 +932,7 @@ onMounted(() => {
         margin-right: auto;
       }
       
-      .el-button {
-        padding: 12px 24px;
-        font-size: 16px;
-        font-weight: 500;
-        border-radius: 100px;
-        background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
-        border: none;
-        box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
-        transition: all 0.3s;
-        
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(64, 158, 255, 0.3);
-          background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
-        }
-      }
+
     }
   }
 }

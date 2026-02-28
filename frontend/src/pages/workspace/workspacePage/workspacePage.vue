@@ -297,7 +297,6 @@ const startGenerateGuidePrompt = async () => {
         console.log('✅ 流式传输结束')
         isStreaming.value = false
         isEditable.value = true
-        ElMessage.success('指导手册生成完成，您可以进行修改')
       }
     )
   } catch (error) {
@@ -370,7 +369,6 @@ const handleConfirmRegenerate = async () => {
         console.log('✅ 重新生成完成')
         isStreaming.value = false
         isEditable.value = true
-        ElMessage.success('重新生成完成')
       }
     )
   } catch (error) {

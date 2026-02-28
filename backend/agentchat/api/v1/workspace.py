@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from agentchat.api.services.workspace_session import WorkSpaceSessionService
 from agentchat.schema.schemas import resp_200
 from agentchat.api.services.user import UserPayload, get_login_user
@@ -34,11 +34,25 @@ async def workspace_session_info(session_id: str,
         raise HTTPException(status_code=500, detail=str(err))
 
 @router.delete("/session", summary="删除工作台的会话")
-async def create_workspace_session(session_id: str,
+async def delete_workspace_session(session_id: str,
                                    login_user: UserPayload = Depends(get_login_user)):
     try:
         await WorkSpaceSessionService.delete_workspace_session([session_id], login_user.user_id)
         return resp_200()
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=str(err))
+
+@router.patch("/session/{session_id}", summary="更新工作台会话")
+async def update_workspace_session(session_id: str,
+                                   data: dict = Body(...),
+                                   login_user: UserPayload = Depends(get_login_user)):
+    try:
+        title = data.get("title")
+        is_pinned = data.get("is_pinned")
+        result = await WorkSpaceSessionService.update_workspace_session(session_id, login_user.user_id, title, is_pinned)
+        if not result:
+            raise HTTPException(status_code=404, detail="Session not found")
+        return resp_200(data=result.to_dict())
     except Exception as err:
         raise HTTPException(status_code=500, detail=str(err))
 
