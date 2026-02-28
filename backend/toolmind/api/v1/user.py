@@ -22,10 +22,6 @@ router = APIRouter(tags=["User"])
 async def register(user_name: str = Body(description='用户名'),
                    user_email: Optional[str] = Body(description='用户邮箱'),
                    user_password: str = Body(description='用户密码')):
-    # 验证码校验
-    # if userConfig.USE_CAPTCHA:
-    #     if not user.captcha_key or not await verify_captcha(user.captcha, user.captcha_key):
-    #         raise HTTPException(status_code=500, detail='验证码错误')
 
     exist_user = UserDao.get_user_by_username(user_name)
     if exist_user:
@@ -52,10 +48,6 @@ async def register(user_name: str = Body(description='用户名'),
 async def login(user_name: str = Body(description='用户名'),
                 user_password: str = Body(description='用户密码'),
                 Authorize: AuthJWT = Depends()):
-    # 验证码校验
-    # if userConfig.USE_CAPTCHA:
-    #     if not user.captcha_key or not await verify_captcha(user.captcha, user.captcha_key):
-    #         raise HTTPException(status_code=500, detail='验证码错误')
 
     db_user = UserDao.get_user_by_username(user_name)
     # 检查密码

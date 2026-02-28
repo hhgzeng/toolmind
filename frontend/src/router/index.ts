@@ -7,7 +7,6 @@ import { Register } from '../pages/login'
 import McpServer from '../pages/mcp-server'
 import Model from '../pages/model'
 import Workspace from '../pages/workspace/workspace.vue'
-import WorkspacePage from '../pages/workspace/workspacePage/workspacePage.vue'
 import WorkspaceDefaultPage from '../pages/workspace/defaultPage/defaultPage.vue'
 import TaskGraphPage from '../pages/workspace/taskGraphPage/taskGraphPage.vue'
 import Dashboard from '../pages/dashboard'
@@ -42,11 +41,6 @@ const routes: RouteRecordRaw[] = [
         path: '',
         name: 'workspaceDefaultPage',
         component: WorkspaceDefaultPage,
-      },
-      {
-        path: 'workspacePage',
-        name: 'workspacePage',
-        component: WorkspacePage,
       },
       {
         path: 'taskGraph',

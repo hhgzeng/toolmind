@@ -1,25 +1,17 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { MdPreview } from "md-editor-v3"
-import "md-editor-v3/lib/style.css"
-import { getWorkspacePluginsAPI } from '../../../apis/workspace'
-import { useUserStore } from '../../../store/user'
-
-const userStore = useUserStore()
 
 const router = useRouter()
 const route = useRoute()
 const inputMessage = ref('')
-const selectedTools = ref<string[]>([])
 const selectedMcpServers = ref<string[]>([])
 const mcpServers = ref<any[]>([])
 const webSearchEnabled = ref(true)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const currentSessionId = ref<string>('')  // 当前会话ID
-const chatConversationRef = ref<HTMLElement | null>(null)  // 聊天容器引用
 const isGenerating = ref(false)  // 是否正在生成回复
 
 // 自动调整 textarea 高度（2行起，最多10行）
@@ -33,30 +25,6 @@ const autoResize = () => {
   const scrollH = textarea.scrollHeight
   textarea.style.height = Math.min(Math.max(scrollH, minHeight), maxHeight) + 'px'
 }
-
-
-
-// 头像加载错误处理
-const handleAvatarError = (event: Event) => {
-  const target = event.target as HTMLImageElement
-  if (target) {
-    target.src = '/src/assets/user.svg'
-  }
-}
-
-
-
-// 切换工具选择
-// const toggleTool = (toolId: string) => {
-//   const index = selectedTools.value.indexOf(toolId)
-//   if (index > -1) {
-//     selectedTools.value.splice(index, 1)
-//   } else {
-//     selectedTools.value.push(toolId)
-//   }
-// }
-
-
 // 触发文件选择
 const triggerFileInput = () => {
   fileInputRef.value?.click()
@@ -72,14 +40,11 @@ const onFileChange = (e: Event) => {
   if (input) input.value = ''
 }
 
-
 // 生成UUID（模拟Python的uuid4().hex）
 const generateSessionId = (): string => {
   // 使用crypto.randomUUID()生成UUID，然后移除横杠
   return crypto.randomUUID().replace(/-/g, '')
 }
-
-
 
 // 发送消息
 const handleSend = async () => {
@@ -1018,11 +983,6 @@ watch(
 .dropdown-leave-to {
   opacity: 0;
   transform: translateY(4px);
-}
-
-// Override MdPreview background
-:deep(.md-editor-preview-wrapper) {
-    background-color: transparent !important;
 }
 
 @media (max-width: 768px) {

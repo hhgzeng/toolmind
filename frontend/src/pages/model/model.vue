@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Edit, Delete, Connection, Cpu, Search, Refresh, Calendar, ChatDotRound, RefreshRight, Star, Link, Timer } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { Plus, Edit, Delete, Connection, Cpu, Search, ChatDotRound } from '@element-plus/icons-vue'
 import { 
   getVisibleLLMsAPI, 
   createLLMAPI, 
@@ -16,13 +15,10 @@ import {
   type LingseekModelConfig
 } from '../../apis/llm'
 
-const router = useRouter()
-
 // 响应式数据
 const models = ref<LLMResponse[]>([])
 const loading = ref(false)
 const searchKeyword = ref('')
-const llmTypes = ref<string[]>(['LLM', 'Embedding', 'Rerank'])
 
 // Lingseek 配置数据
 const lingseekConfig = ref<LingseekModelConfig>({
@@ -245,30 +241,6 @@ const cancelDelete = () => {
   deleteDialogVisible.value = false
   modelToDelete.value = null
 }
-
-
-
-// 测试模型连接
-const testModel = async (model: LLMResponse) => {
-  ElMessage.info(`正在测试 ${model.model} 连接...`)
-  // 这里可以添加实际的测试逻辑
-  setTimeout(() => {
-  }, 2000)
-}
-
-// 获取提供商颜色
-const getProviderColor = (provider: string) => {
-  const colors: Record<string, string> = {
-    'OpenAI': 'primary',
-    'Anthropic': 'success',
-    '阿里云': 'warning',
-    '百度': 'info',
-    'Google': 'danger'
-  }
-  return colors[provider] || 'info'
-}
-
-
 
 // 截断URL函数
 const truncateUrl = (url: string, maxLength: number): string => {
@@ -767,14 +739,6 @@ onMounted(() => {
             transform: translateY(-2px);
           }
           
-          &.refresh-btn {
-            &:hover {
-              background-color: #67c23a;
-              border-color: #67c23a;
-              color: white;
-            }
-          }
-          
           &.add-btn {
             background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
             border: none;
@@ -1041,15 +1005,6 @@ onMounted(() => {
 
 }
 
-/* 添加URL工具提示样式 */
-:deep(.url-tooltip) {
-  max-width: 400px;
-  word-break: break-all;
-  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-  font-size: 12px;
-  padding: 10px 14px;
-}
-
 // 响应式调整
 @media (max-width: 768px) {
   .model-page {
@@ -1081,9 +1036,6 @@ onMounted(() => {
       }
     }
     
-    .model-list .model-grid {
-      grid-template-columns: 1fr;
-    }
   }
 }
 
@@ -1228,15 +1180,6 @@ onMounted(() => {
   cursor: not-allowed;
   border-color: #a0cfff;
   color: #a0cfff;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* 对话框响应式设计 */
