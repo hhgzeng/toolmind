@@ -1,5 +1,5 @@
 // axios的封装处理
-import axios from 'axios'
+import axios, { AxiosHeaders } from 'axios'
 // 1.根域名配置
 // 2.超时时间
 // 3.请求拦截器,响应拦截器
@@ -14,9 +14,10 @@ request.interceptors.request.use(function (config) {
   // 添加token到请求头
   const token = localStorage.getItem('token');
   if (token) {
-    // 确保headers对象存在
-    config.headers = config.headers || {};
-    config.headers['Authorization'] = `Bearer ${token}`;
+    if (!config.headers) {
+      config.headers = new AxiosHeaders();
+    }
+    config.headers.set('Authorization', `Bearer ${token}`);
     
     // 调试用
     // console.log('已添加Authorization头:', `Bearer ${token.substring(0, 10)}...`)
