@@ -15,7 +15,7 @@ class MCPAgentTable(SQLModelSerializable, table=True):
     mcp_server_id: str = Field(default=[], sa_column=Column(JSON), description='MCPAgent绑定的工具列表')
     name: str = Field(default="", description="MCP Agent的名称")
     description: str = Field(default='')
-    logo_url: str = Field(default='img/mcp_openai/mcp_agent.png')
+    logo_url: str = Field(default='img/mcp/mcp_server.png')
     user_id: Optional[str] = Field(index=True)
 
     # 修改时间，默认为当前时间戳，自动更新

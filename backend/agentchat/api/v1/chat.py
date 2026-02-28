@@ -11,7 +11,7 @@ from agentchat.api.services.dialog import DialogService
 from agentchat.api.services.user import UserPayload, get_login_user
 from agentchat.prompts.chat import SYSTEM_PROMPT
 from agentchat.schema.chat import ConversationReq
-from agentchat.services.memory.client import memory_client
+# from agentchat.services.memory.client import memory_client
 from agentchat.utils.contexts import set_user_id_context, set_agent_name_context
 from fastapi.responses import StreamingResponse
 
@@ -77,14 +77,10 @@ async def chat(*,
 
     # 构建对话消息列表，首先添加系统提示词作为基础指令
     messages: List[BaseMessage] = [SystemMessage(content=SYSTEM_PROMPT if agent_config.system_prompt.strip() == "" else agent_config.system_prompt)]
-    if agent_config.enable_memory:
-        # 启用向量化记忆模式：通过语义搜索获取相关历史上下文
-        history_messages = await memory_client.search(query=original_user_input, run_id=conversation_req.dialog_id)
-        messages[0].content = SYSTEM_PROMPT.format(history=f"<chat_history>\n {'\n'.join(msg.get('memory', '') for msg in history_messages.get('results'))} </chat_history>")
-    else:
-        # 传统历史记录模式：从数据库获取完整对话历史并融入系统提示词
-        history_messages = await HistoryService.select_history(conversation_req.dialog_id)
-        messages[0].content = SYSTEM_PROMPT.format(history=combine_history_messages(history_messages))
+    # RAG 记忆功能已移除，默认使用传统历史记录
+    # 传统历史记录模式：从数据库获取完整对话历史并融入系统提示词
+    history_messages = await HistoryService.select_history(conversation_req.dialog_id)
+    messages[0].content = SYSTEM_PROMPT.format(history=combine_history_messages(history_messages))
     # 添加当前用户输入作为人类消息
     messages.append(HumanMessage(content=conversation_req.user_input))
 
@@ -109,8 +105,8 @@ async def chat(*,
                     events.append(event)
                     yield f'data: {json.dumps(event)}\n\n'
         finally:
-            if agent_config.enable_memory: # 将完整的助手回复保存到记忆系统，在流式输出完，不影响响应时间
-                await memory_client.add([{"role": "user", "content": original_user_input}, {"role": "assistant", "content": response_content}], run_id=conversation_req.dialog_id)
+            # if agent_config.enable_memory: # 将完整的助手回复保存到记忆系统
+            #     await memory_client.add([{"role": "user", "content": original_user_input}, {"role": "assistant", "content": response_content}], run_id=conversation_req.dialog_id)
             # 将助手回复及相关事件持久化到数据库
             await HistoryService.save_chat_history("assistant", response_content, events, conversation_req.dialog_id, agent_config.enable_memory)
 

@@ -27,25 +27,3 @@ async def init_database():
     except Exception as err:
         logger.error(f"Create MySQL Table Error: {err}")
 
-
-# 初始化默认工具
-# async def init_default_agent():
-#     try:
-#         # if redis_client.setNx('init_default_agent', '1'):
-#         result = await AgentService.get_agent()
-#         if len(result) == 0:
-#             logger.info("Begin Init Agent In Mysql")
-
-#             await insert_tools_to_mysql()  # 初始化工具
-#             await insert_llm_to_mysql()  # 初始化LLM
-#             await insert_agent_to_mysql()  # 初始化Agent
-#         else:
-#             logger.info("Init Agent Already")
-#     except Exception as err:
-#         logger.error(f"Init Default Agent Error: {err}")
-
-
-async def load_default_tool():
-    with open("./agentchat/config/tool.json", "r", encoding="utf-8") as f:
-        result = json.load(f)
-    return result

@@ -14,7 +14,8 @@ from agentchat.prompts.template import GuidePromptTemplate
 from agentchat.schema.workspace import WorkSpaceAgents
 from agentchat.schema.usage_stats import UsageStatsAgentType
 from agentchat.core.agents.mcp_agent import MCPConfig
-from agentchat.tools import LingSeekPlugins, tavily_search as web_search
+from agentchat.services.web_search.google_search.action import google_search
+from agentchat.services.web_search.tavily_search.action import tavily_search as web_search
 # from agentchat.api.services.tool import ToolService
 from agentchat.core.models.manager import ModelManager
 from agentchat.utils.convert import mcp_tool_to_args_schema, convert_mcp_config
@@ -346,6 +347,13 @@ class LingSeekAgent:
             tool_args.update(mcp_config)
             text_content, no_text_content = await tool.coroutine(**tool_args)
         else:
+            from agentchat.services.web_search.tavily_search.action import tavily_search
+            from agentchat.services.web_search.google_search.action import google_search
+            LingSeekPlugins = {
+                "tavily_search": tavily_search,
+                "web_search": tavily_search,
+                "google_search": google_search,
+            }
             text_content = LingSeekPlugins[tool_name].invoke(tool_args)
         return text_content
 

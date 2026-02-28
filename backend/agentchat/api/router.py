@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from agentchat.api.v1 import (chat, dialog, message, history, mcp_stdio_server, mcp_chat,
+from agentchat.api.v1 import (chat, dialog, message, history, mcp_stdio_server,
                               user, llm, mcp_server, mcp_user_config,
                               workspace, lingseek, usage_stats, upload, model_config)
 
@@ -13,7 +13,6 @@ router.include_router(user.router)
 router.include_router(llm.router)
 router.include_router(mcp_server.router)
 router.include_router(mcp_stdio_server.router)
-router.include_router(mcp_chat.router)
 router.include_router(mcp_user_config.router)
 router.include_router(workspace.router)
 router.include_router(lingseek.router)

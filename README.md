@@ -1,36 +1,3 @@
-
-<div align='center'>
-    <img src="https://github.com/user-attachments/assets/eb9b3b09-e2bf-4c9d-95a0-5c2d9712723d" alt="alt text" width="70%">
-</div>
-
-<div align="center">
-
-<p align="center">
-  <img src="https://img.shields.io/badge/python-3.12+-blue.svg?style=for-the-badge&logo=python&logoColor=white" alt="Python Version" />
-  <img src="https://img.shields.io/badge/vue-3.4+-4FC08D.svg?style=for-the-badge&logo=vue.js&logoColor=white" alt="Vue Version" />
-  <img src="https://img.shields.io/badge/fastapi-0.115+-009688.svg?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge" alt="License" />
-</p>
-
-<p align="center">
-  <b>🌟 一个基于大语言模型的现代化智能对话系统 🌟</b>
-</p>
-
-<p align="center">
-  支持多Agent协作 • 知识库检索 • 工具调用 • MCP服务器集成 • 实时对话
-</p>
-
-<p align="center">
-  <a href="https://shy2593666979.github.io/agentchat-docs/%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8.html">🚀 快速开始</a> •
-  <a href="https://shy2593666979.github.io/agentchat-docs/%E5%BC%80%E5%8F%91%E6%8C%87%E5%8D%97/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA.html">📦 部署</a> •
-  <a href="https://shy2593666979.github.io/agentchat-docs/">📖 在线文档</a> •
-  <a href="https://agentchat.cloud">💻 在线体验</a>
-</p>
-
-</div>
-
----
-
 ## 📋 目录
 
 - [🎯 项目简介](#-项目简介)
@@ -48,14 +15,12 @@
 
 ## 🎯 项目简介
 
-AgentChat 是一个现代化的智能对话系统，基于大语言模型构建，提供了丰富的AI对话功能。系统采用前后端分离架构，支持多种AI模型、知识库检索、工具调用、MCP服务器集成等高级功能。
+ToolMind 是一个现代化的智能对话系统，基于大语言模型构建，提供了丰富的AI对话功能。系统采用前后端分离架构，支持多种AI模型、知识库检索、工具调用、MCP服务器集成等高级功能。
 
 ### 🌟 核心亮点
 
 - 🤖 **多模型支持**: 集成OpenAI、DeepSeek、Qwen等主流大语言模型
 - 🧠 **智能Agent**: 支持多Agent协作，具备推理和决策能力
-- 📚 **知识库检索**: RAG技术实现精准知识检索和问答
-- 🔧 **工具生态**: 内置多种实用工具，支持自定义扩展
 - 🌐 **MCP集成**: 支持Model Context Protocol服务器
 - 💬 **实时对话**: 流式响应，提供流畅的对话体验
 - 🎨 **现代界面**: 基于Vue 3和Element Plus的美观UI
@@ -64,160 +29,15 @@ AgentChat 是一个现代化的智能对话系统，基于大语言模型构建�
 
 ## ✨ 功能展示
 
-> 🎨 **界面预览** - 体验现代化的智能对话系统
-
-<div align="center">
-
-### 🖥️新增工作区
-*新增工作区，工作区和应用中心可随意切换*
-<img width="800" height="450" alt="c453afd6-84ed-4bb7-b268-407fb531a1c9" src="https://github.com/user-attachments/assets/766c7628-2256-4c8b-a838-c400eaa78d6b" />
-
-
-### ✨灵寻任务规划
-*实时的任务流程图，更加直观的感受*
-<img width="800" height="450" alt="cc59faad-4112-48cd-b9b1-6f89d3cbdb39" src="https://github.com/user-attachments/assets/53f7fe9f-d70d-4cc2-bf7e-b47a712a6d7a" />
-
-### 📊数据看板
-*能够根据Agent、模型、时间范围进行筛选调用次数和Token使用量* 
-<img width="800" height="450" alt="5e90c531-0a10-4457-962d-984b0568f25d" src="https://github.com/user-attachments/assets/2811a276-a2e3-4b10-8764-605bcbc80254" />
-
-
-### 🏠 智言平台首页
-*简洁现代的主界面，提供直观的功能导航*
-
-<img width="800" height="450" alt="5a6ee271-7c81-4032-aeca-57496634a64f" src="https://github.com/user-attachments/assets/0295e9ea-6f15-484c-b223-82000bc9d33c" />
-
-
-
-### 🔐 智言平台登录页
-*安全便捷的用户认证系统*
-
-<img width="800" height="450" alt="d67ba546-b3bd-40e0-b09c-9b1615afda29" src="https://github.com/user-attachments/assets/87b6e15c-a4aa-47c5-b588-0bc977599311" />
-
-
-### 🤖 智能体管理页面
-*强大的Agent配置和管理中心*
-
-<img width="800" height="450" alt="智能体页面" src="https://github.com/user-attachments/assets/e58f120e-2e53-4041-b3f8-2243083dccf3" />
-
-</div>
 
 ### 🌟 智能Agent功能演示
 
-<table>
-<tr>
-<td width="50%">
-
-#### 🌤️ 天气查询Agent
-*实时天气信息查询和预报*
-
-<img width="400" height="240" alt="天气查询Agent" src="https://github.com/user-attachments/assets/91a95c2b-f194-4c25-ba0f-f8cb393cba50" />
-
-</td>
-<td width="50%">
-
-#### 🎨 文生图Agent
-*AI驱动的图像生成服务*
-
-<img width="400" height="240" alt="文生图Agent" src="https://github.com/user-attachments/assets/58194798-5c3e-4d7d-895c-944b6665e5a6" />
-
-
-</td>
-</tr>
-</table>
-
-<div align="center">
-
-<div align="center">
-
 ### 🔁智能体工具多轮调用
 
-平台中智能体支持工具多轮调用（指的是根据工具C依赖工具B结果，执行工具B依赖工具A结果，所以调用工具的顺序是 A --> B --> C）
-<img width="800" height="450" alt="dc426a1b220af20a06b068a4ffc2bb10" src="https://github.com/user-attachments/assets/029c70ce-e5fa-4f2c-926a-a5dfd719e237" />
-
-<div align="center">
-
-### 🔌 MCP服务器集成
-*支持Model Context Protocol，可上传自定义MCP服务*
-
-<img width="800" height="450" alt="MCP集成" src="https://github.com/user-attachments/assets/7a9f4588-1098-4388-85d9-78a1a4130ec3" />
-
-### 📚 知识库管理系统
-*智能知识管理，为Agent提供丰富的外部知识支持*
-
-<img width="800" height="450" alt="知识库管理" src="https://github.com/user-attachments/assets/471ad0d3-e99b-4da0-9338-4fae41eaad68" />
-
-### 📄 文档解析引擎
-*支持PDF、Markdown、Docx、Txt等多种格式的智能解析*
-
-<img width="800" height="450" alt="文档解析" src="https://github.com/user-attachments/assets/0d030916-b6e2-482c-b828-b760fc574cae" />
-
-### 🛠️ 工具管理中心
-*丰富的内置工具集，持续扩展中*
-
-<img width="800" height="450" alt="工具管理" src="https://github.com/user-attachments/assets/70fe68ce-56e0-44be-b78a-817ed32d4708" />
-
-### 🧠 AI模型管理
-*多模型支持，灵活配置不同AI服务*
-
-<img width="800" height="450" alt="模型管理" src="https://github.com/user-attachments/assets/41a49873-f758-49f2-86a4-1a1a57677018" />
-
-### 📰 生成AI日报
-*获取最新的AI咨询，支持生成图片类型的日报*
-
-<img width="500" height="1500" alt="image" src="https://github.com/user-attachments/assets/a4f4489a-19bf-4516-96db-77ff2525beb8" />
-
-
-</div>
-
-
-## 🚨 重要版本说明
-
-> **⚠️ 从 AgentChat v2.2.0 版本开始，LangChain 已升级至 1.0 版本，代码改动较大！**
-
-<div align="center">
-
-| 🔄 **版本** | 📦 **LangChain版本** | 🔧 **兼容性** | 📝 **说明** |
-|:---:|:---:|:---:|:---|
-| **v2.1.x 及以下** | 0.x | ⚠️ 旧版本 | 使用旧版LangChain API |
-| **v2.2.0+** | 1.0+ | ✅ 最新版本 | **重大更新**，API变化较大 |
-
-</div>
-
-**升级注意事项：**
-- 🔄 LangChain 1.0 引入了重大API变更
-- 📚 部分工具和Agent配置方式已更新
-- 🛠️ 建议查看[迁移指南](docs/migration.md)了解详细变更
-- 💡 新用户建议直接使用最新版本
-
----
 
 ## 💡 功能特性
 
-> ⭐ **全方位的AI智能服务** - 从对话到工具，从知识到决策
-
-<div align="center">
-
 ### 🎯 核心功能模块
-
-</div>
-
-<table>
-<tr>
-<td width="50%">
-
-#### 🤖 **AI对话引擎**
-> *智能、自然、高效的对话体验*
-
-- ✨ **多模型生态**: 支持OpenAI、Anthropic、通义千问等主流LLM
-- 🌊 **流式响应**: 实时显示生成内容，无需等待
-- 🧠 **上下文记忆**: 支持长对话，智能理解对话历史
-- 🔍 **思考可视化**: 深度思考面板，展示AI推理过程
-- 📝 **对话管理**: 完整的对话历史存储和检索
-- 🎛️ **参数调优**: 温度、Top-p等参数精细控制
-
-</td>
-<td width="50%">
 
 #### 🧠 **智能Agent系统**
 > *多智能体协作，自动化任务执行*
@@ -229,44 +49,8 @@ AgentChat 是一个现代化的智能对话系统，基于大语言模型构建�
 - 📊 **执行监控**: 实时监控Agent执行状态
 - 🎯 **目标导向**: 基于目标的智能决策和行动
 
-</td>
-</tr>
-</table>
-
-<table>
-<tr>
-<td width="50%">
-
-#### 📚 **知识库系统**
-> *企业级知识管理，RAG技术加持*
-
-- 📎 **多格式支持**: PDF、Word、Excel、Markdown、TXT等
-- 🧩 **智能分块**: 语义级别的文档分割和处理
-- 🔍 **向量检索**: 基于语义的精准知识检索
-- 💡 **RAG问答**: 检索增强生成，提高回答准确性
-- 🗂️ **知识组织**: 分类管理，标签系统
-- 📈 **使用统计**: 知识库使用情况分析
-
-</td>
-<td width="50%">
 
 #### 🛠️ **丰富工具生态**
-> *10+内置工具，无限扩展可能*
-
-- 📧 **通信工具**: 邮件发送、消息推送
-- 🔍 **信息检索**: Google搜索、学术论文搜索
-- 🌤️ **生活服务**: 天气查询、快递追踪
-- 📄 **文档处理**: 格式转换、内容提取
-- 🎨 **多媒体**: 文生图、图像识别、OCR
-- 📊 **数据分析**: Excel处理、数据可视化
-- 🤖 **自动化**: 简历优化、内容重写
-- 🕷️ **网络工具**: 网页爬取、内容抓取
-
-</td>
-</tr>
-</table>
-
-<div align="center">
 
 ### 🔧 **高级特性**
 
@@ -281,7 +65,6 @@ AgentChat 是一个现代化的智能对话系统，基于大语言模型构建�
 
 - 🔌 **协议支持**: 完整MCP协议实现
 - 🏗️ **自定义服务**: 支持用户自定义MCP服务器
-- 📦 **内置服务**: 天气、ArXiv等预构建服务
 - 🔄 **动态加载**: 运行时动态加载MCP服务
 - ⚡ **高性能**: 异步处理，快速响应
 
@@ -332,14 +115,14 @@ AgentChat 是一个现代化的智能对话系统，基于大语言模型构建�
 ## 🛠 技术栈
 
 ### 后端技术
-- **框架**: FastAPI (Python 3.12+)
+- **框架**: FastAPI (Python 3.13+)
 - **AI集成**: LangChain, OpenAI, Anthropic
 - **数据库**: MySQL 8.0, Redis 7.0
 - **向量数据库**: ChromaDB, Milvus
 - **搜索引擎**: Elasticsearch
 - **文档处理**: PyMuPDF, Unstructured
 - **异步任务**: Celery
-- **部署**: Docker, Gunicorn, Uvicorn
+- **部署**: Gunicorn, Uvicorn
 
 ### 前端技术
 - **框架**: Vue 3.4+ (Composition API)
@@ -444,7 +227,6 @@ AgentChat/                          # 🏠 项目根目录
     │       │   ├── 📁 rag_data/        # 📊 RAG数据处理工具
     │       │   └── 📁 crawl_web/       # 🕷️ 网页爬虫工具
     │       │
-    │       ├── 📁 mcp_servers/    # 🖥️ MCP服务器集合
     │       ├── 📁 prompts/        # 💬 提示词模板库
     │       ├── 📁 config/         # ⚙️ 配置文件目录
     │       ├── 📁 schema/         # 📋 数据模式定义
@@ -578,7 +360,7 @@ AgentChat/                          # 🏠 项目根目录
 
 | 🛠️ **组件** | 🔢 **版本要求** | 📝 **说明** |
 |:---:|:---:|:---|
-| **Python** | 3.12+ | 后端运行环境 |
+| **Python** | 3.13+ | 后端运行环境 |
 | **Node.js** | 18+ | 前端构建环境 |
 | **MySQL** | 8.0+ | 主数据库 |
 | **Redis** | 7.0+ | 缓存和会话存储 |
@@ -586,39 +368,6 @@ AgentChat/                          # 🏠 项目根目录
 
 </div>
 
-### 🎉 **方式一：Docker一键部署（推荐）**
-
-<details>
-<summary><b>💫 点击展开Docker部署步骤</b></summary>
-
-#### 🔥 **超简单三步部署**
-
-```bash
-# 1️⃣ 克隆项目
-git clone https://github.com/Shy2593666979/AgentChat.git
-cd AgentChat
-
-# 2️⃣ 配置API密钥
-cp src/backend/agentchat/config.yaml.example src/backend/agentchat/config.yaml
-# 编辑配置文件，填入你的API密钥
-
-# 3️⃣ 一键启动
-cd docker
-docker-compose up --build -d
-```
-
-#### ✅ **验证部署**
-```bash
-# 查看服务状态
-docker-compose ps
-
-# 查看日志
-docker-compose logs -f app
-```
-
-🎊 **完成！** 访问 [http://localhost:8090](http://localhost:8090) 开始使用！
-
-</details>
 
 ### 🛠️ **方式二：本地开发环境**
 
@@ -629,8 +378,8 @@ docker-compose logs -f app
 
 ```bash
 # 1️⃣ 克隆项目
-git clone https://github.com/Shy2593666979/AgentChat.git
-cd AgentChat
+git clone https://github.com/hhgzeng/toolmind.git
+cd toolmind
 
 # 使用pip安装依赖
 pip install -r requirements.txt
@@ -697,126 +446,10 @@ npm run dev
 - **Milvus**: [安装指南](https://milvus.io/docs/zh/install_standalone-windows.md)
 - **ChromaDB**: 项目中已集成，无需额外配置
 
-#### 模型服务配置
-- **Rerank模型**: [阿里云模型服务](https://help.aliyun.com/zh/model-studio/text-rerank-api)
-- **Embedding模型**: [OpenAI兼容接口](https://help.aliyun.com/zh/model-studio/embedding-interfaces-compatible-with-openai)
-
 #### 搜索引擎配置
 - **Elasticsearch**: [IK分词器](https://release.infinilabs.com/analysis-ik/stable/)
 
 ---
-
-## 🔧 开发指南
-
-### ⚠️ 重要提示 (目前已单独放到与agentchat并列，不需要再额外处理)
-
-由于 `fastapi-jwt-auth` 库使用较旧版本的 Pydantic，而项目中的 LangChain、MCP 等组件需要 Pydantic >= 2，需要手动修改库文件：
-
-找到你的虚拟环境中的文件：
-```
-/path/to/your/env/lib/python3.12/site-packages/fastapi_jwt_auth/config.py
-```
-
-替换为以下内容：
-
-<details>
-<summary>点击展开配置代码</summary>
-
-```python
-from datetime import timedelta
-from typing import Optional, Union, Sequence, List
-from pydantic import (
-    BaseModel,
-    validator,
-    StrictBool,
-    StrictInt,
-    StrictStr
-)
-
-class LoadConfig(BaseModel):
-    authjwt_token_location: Optional[List[StrictStr]] = ['headers']
-    authjwt_secret_key: Optional[StrictStr] = None
-    authjwt_public_key: Optional[StrictStr] = None
-    authjwt_private_key: Optional[StrictStr] = None
-    authjwt_algorithm: Optional[StrictStr] = "HS256"
-    authjwt_decode_algorithms: Optional[List[StrictStr]] = None
-    authjwt_decode_leeway: Optional[Union[StrictInt,timedelta]] = 0
-    authjwt_encode_issuer: Optional[StrictStr] = None
-    authjwt_decode_issuer: Optional[StrictStr] = None
-    authjwt_decode_audience: Optional[Union[StrictStr,Sequence[StrictStr]]] = None
-    authjwt_denylist_enabled: Optional[StrictBool] = False
-    authjwt_denylist_token_checks: Optional[List[StrictStr]] = ['access','refresh']
-    authjwt_header_name: Optional[StrictStr] = "Authorization"
-    authjwt_header_type: Optional[StrictStr] = "Bearer"
-    authjwt_access_token_expires: Optional[Union[StrictBool,StrictInt,timedelta]] = timedelta(minutes=15)
-    authjwt_refresh_token_expires: Optional[Union[StrictBool,StrictInt,timedelta]] = timedelta(days=30)
-    # # option for create cookies
-    authjwt_access_cookie_key: Optional[StrictStr] = "access_token_cookie"
-    authjwt_refresh_cookie_key: Optional[StrictStr] = "refresh_token_cookie"
-    authjwt_access_cookie_path: Optional[StrictStr] = "/"
-    authjwt_refresh_cookie_path: Optional[StrictStr] = "/"
-    authjwt_cookie_max_age: Optional[StrictInt] = None
-    authjwt_cookie_domain: Optional[StrictStr] = None
-    authjwt_cookie_secure: Optional[StrictBool] = False
-    authjwt_cookie_samesite: Optional[StrictStr] = None
-    # # option for double submit csrf protection
-    authjwt_cookie_csrf_protect: Optional[StrictBool] = True
-    authjwt_access_csrf_cookie_key: Optional[StrictStr] = "csrf_access_token"
-    authjwt_refresh_csrf_cookie_key: Optional[StrictStr] = "csrf_refresh_token"
-    authjwt_access_csrf_cookie_path: Optional[StrictStr] = "/"
-    authjwt_refresh_csrf_cookie_path: Optional[StrictStr] = "/"
-    authjwt_access_csrf_header_name: Optional[StrictStr] = "X-CSRF-Token"
-    authjwt_refresh_csrf_header_name: Optional[StrictStr] = "X-CSRF-Token"
-    authjwt_csrf_methods: Optional[List[StrictStr]] = ['POST','PUT','PATCH','DELETE']
-
-    @validator('authjwt_access_token_expires')
-    def validate_access_token_expires(cls, v):
-        if v is True:
-            raise ValueError("The 'authjwt_access_token_expires' only accept value False (bool)")
-        return v
-
-    @validator('authjwt_refresh_token_expires')
-    def validate_refresh_token_expires(cls, v):
-        if v is True:
-            raise ValueError("The 'authjwt_refresh_token_expires' only accept value False (bool)")
-        return v
-
-    @validator('authjwt_denylist_token_checks', each_item=True)
-    def validate_denylist_token_checks(cls, v):
-        if v not in ['access','refresh']:
-            raise ValueError("The 'authjwt_denylist_token_checks' must be between 'access' or 'refresh'")
-        return v
-
-    @validator('authjwt_token_location', each_item=True)
-    def validate_token_location(cls, v):
-        if v not in ['headers','cookies']:
-            raise ValueError("The 'authjwt_token_location' must be between 'headers' or 'cookies'")
-        return v
-
-    @validator('authjwt_cookie_samesite')
-    def validate_cookie_samesite(cls, v):
-        if v not in ['strict','lax','none']:
-            raise ValueError("The 'authjwt_cookie_samesite' must be between 'strict', 'lax', 'none'")
-        return v
-
-    @validator('authjwt_csrf_methods', each_item=True)
-    def validate_csrf_methods(cls, v):
-        if v.upper() not in ["GET", "HEAD", "POST", "PUT", "DELETE", "PATCH"]:
-            raise ValueError("The 'authjwt_csrf_methods' must be between http request methods")
-        return v.upper()
-
-    class Config:
-        str_min_length = 1
-        str_strip_whitespace = True
-```
-
-</details>
-
-其实找起来挺麻烦的，所以提供了一个直接修改源代码的脚本
-```python
-python scripts/fix_fastapi_jwt_auth.py # 进行脚本修复(前提是需要将依赖包安装完整)
-```
-
 
 ## 🤝 贡献指南
 
@@ -894,33 +527,3 @@ python scripts/fix_fastapi_jwt_auth.py # 进行脚本修复(前提是需要将�
 ---
 
 <div align="center">
-
-## 🌟 **感谢支持 AgentChat！**
-
-### 如果这个项目对你有帮助，请给我们一个 ⭐️
-
-*让更多的人发现这个项目，一起构建AI的未来！*
-
-*Made with ❤ by the AgentChat Author MingGuang Tian*
-
-
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="
-      https://api.star-history.com/svg?repos=Shy2593666979/AgentChat&type=Date&theme=dark
-    "
-  />
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="
-      https://api.star-history.com/svg?repos=Shy2593666979/AgentChat&type=Date
-    "
-  />
-  <img
-    alt="Star History Chart"
-    src="https://api.star-history.com/svg?repos=Shy2593666979/AgentChat&type=Date"
-  />
-</picture>
-
-</div>

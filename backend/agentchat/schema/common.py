@@ -51,10 +51,8 @@ class Tools(BaseModel):
     class Config:
         extra = "allow"
 
-    weather: dict = Field(default_factory=dict)
     tavily: dict = Field(default_factory=dict)
     google: dict = Field(default_factory=dict)
-    delivery: dict = Field(default_factory=dict)
 
 
 class Rag(BaseModel):
