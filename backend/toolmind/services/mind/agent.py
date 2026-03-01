@@ -15,9 +15,7 @@ from toolmind.prompts.template import GuidePromptTemplate
 from toolmind.schema.workspace import WorkSpaceAgents
 from toolmind.schema.usage_stats import UsageStatsAgentType
 from toolmind.core.agents.mcp_agent import MCPConfig
-from toolmind.services.web_search.google_search.action import google_search
-from toolmind.services.web_search.tavily_search.action import tavily_search as web_search
-# from toolmind.api.services.tool import ToolService
+from toolmind.services.web_search.action import tavily_search as web_search
 from toolmind.core.models.manager import ModelManager
 from toolmind.utils.convert import mcp_tool_to_args_schema, convert_mcp_config
 from toolmind.utils.date_utils import get_beijing_time
@@ -351,25 +349,19 @@ class MindAgent:
             except Exception as e:
                 text_content = f"[工具执行失败] {tool_name}: {type(e).__name__} - {e}"
         else:
-            from toolmind.services.web_search.tavily_search.action import tavily_search
-            from toolmind.services.web_search.google_search.action import google_search
+            from toolmind.services.web_search.action import tavily_search
             MindPlugins = {
-                "tavily_search": tavily_search,
                 "web_search": tavily_search,
-                "google_search": google_search,
             }
             text_content = MindPlugins[tool_name].invoke(tool_args)
         return text_content
 
     async def _obtain_mind_tools(self, plugins, mcp_servers, enable_web_search=False):
-        # plugins_name = await ToolService.get_tool_name_by_id(plugins)
-        # plugins_func = [MindPlugins.get(name) for name in plugins_name]
-        # tools = [convert_to_openai_tool(func) for func in plugins_func]
-
-        # if enable_web_search and web_search not in plugins_func:
-        #     plugins_func.append(web_search)
-        #     tools.append(convert_to_openai_tool(web_search))
         tools = []
+
+        # 内置搜索工具：按开关决定是否暴露给模型作为可选工具
+        if enable_web_search:
+            tools.append(convert_to_openai_tool(web_search))
 
         async def get_mcp_tools():
             if self.mcp_tools:

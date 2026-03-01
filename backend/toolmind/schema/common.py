@@ -52,6 +52,5 @@ class Tools(BaseModel):
         extra = "allow"
 
     tavily: dict = Field(default_factory=dict)
-    google: dict = Field(default_factory=dict)
 
 

@@ -16,7 +16,7 @@ from langchain_core.messages import BaseMessage, SystemMessage, ToolMessage, Hum
 from langchain.agents.middleware import LLMToolSelectorMiddleware, ModelRequest, ModelResponse, AgentMiddleware
 
 from toolmind.core.callbacks import usage_metadata_callback
-from toolmind.services.web_search.tavily_search.action import tavily_search
+from toolmind.services.web_search.action import tavily_search
 from toolmind.api.services.llm import LLMService
 from toolmind.core.models.manager import ModelManager
 from toolmind.core.agents.mcp_agent import MCPAgent, MCPConfig

@@ -1,529 +1,300 @@
-## 📋 目录
+## ToolMind 智能 Agent 平台
 
-- [🎯 项目简介](#-项目简介)
-- [✨ 功能展示](#-功能展示)
-- [🚨 重要版本说明](#-重要版本说明)
-- [💡 功能特性](#-功能特性)
-- [🛠 技术栈](#-技术栈)
-- [📁 项目结构](#-项目结构)
-- [🚀 快速开始](#-快速开始)
-- [📦 部署](#-高级部署指南)
-- [📖 文档](#-文档)
-- [📄 许可证](#-许可证)
+ToolMind 是一个面向「工具调用 + MCP + 多模型管理」场景打造的智能 Agent 平台。  
+它以 FastAPI 为后端、Vue3 为前端，集成大语言模型、外部工具、MCP 服务器和多种知识处理能力，支持复杂任务分解、自动规划和流式对话。
 
 ---
 
-## 🎯 项目简介
+## 目录
 
-ToolMind 是一个现代化的智能对话系统，基于大语言模型构建，提供了丰富的AI对话功能。系统采用前后端分离架构，支持多种AI模型、知识库检索、工具调用、MCP服务器集成等高级功能。
-
-### 🌟 核心亮点
-
-- 🤖 **多模型支持**: 集成OpenAI、DeepSeek、Qwen等主流大语言模型
-- 🧠 **智能Agent**: 支持多Agent协作，具备推理和决策能力
-- 🌐 **MCP集成**: 支持Model Context Protocol服务器
-- 💬 **实时对话**: 流式响应，提供流畅的对话体验
-- 🎨 **现代界面**: 基于Vue 3和Element Plus的美观UI
-
----
-
-## ✨ 功能展示
-
-
-### 🌟 智能Agent功能演示
-
-### 🔁智能体工具多轮调用
-
-
-## 💡 功能特性
-
-### 🎯 核心功能模块
-
-#### 🧠 **智能Agent系统**
-> *多智能体协作，自动化任务执行*
-
-- 🤝 **多Agent协作**: 智能体间任务分工与协调
-- 🔧 **任务自动化**: 智能分解复杂任务，自动执行
-- ⚙️ **能力配置**: 灵活的Agent能力定义和管理
-- 🔄 **工作流编排**: 可视化工作流设计和执行
-- 📊 **执行监控**: 实时监控Agent执行状态
-- 🎯 **目标导向**: 基于目标的智能决策和行动
-
-
-#### 🛠️ **丰富工具生态**
-
-### 🔧 **高级特性**
-
-</div>
-
-<table>
-<tr>
-<td width="33%">
-
-#### 🌐 **MCP服务器**
-*Model Context Protocol集成*
-
-- 🔌 **协议支持**: 完整MCP协议实现
-- 🏗️ **自定义服务**: 支持用户自定义MCP服务器
-- 🔄 **动态加载**: 运行时动态加载MCP服务
-- ⚡ **高性能**: 异步处理，快速响应
-
-</td>
-<td width="33%">
-
-#### 👤 **用户管理**
-*安全的身份认证与权限控制*
-
-- 🔐 **安全认证**: JWT令牌，安全可靠
-- 👥 **用户系统**: 注册、登录、个人资料
-- 🛡️ **权限控制**: 细粒度权限管理
-- ⚙️ **个性配置**: 个人偏好设置
-- 📊 **使用统计**: 用户行为分析
-
-</td>
-<td width="33%">
-
-#### 🏗️ **系统架构**
-*现代化的技术架构*
-
-- 🔄 **前后端分离**: Vue3 + FastAPI
-- 📡 **实时通信**: WebSocket支持
-- 💾 **多数据库**: MySQL、Redis、ChromaDB
-- 🐳 **容器化**: Docker部署，易于扩展
-- 📈 **可监控**: 完整的日志和监控体系
-
-</td>
-</tr>
-</table>
-
-### 🎨 **技术亮点**
-
-<div align="center">
-
-| 🌟 **特性** | 📝 **描述** | 🔧 **技术** |
-|:---:|:---|:---|
-| **流式响应** | 实时生成内容，提升用户体验 | Server-Sent Events |
-| **向量检索** | 语义级别的知识检索 | ChromaDB + Embedding |
-| **异步处理** | 高并发任务处理 | FastAPI + AsyncIO |
-| **模块化设计** | 松耦合架构，易于扩展 | 微服务架构 |
-| **智能缓存** | Redis缓存，提升响应速度 | Redis + 智能缓存策略 |
-
-</div>
+- [项目简介](#项目简介)
+- [核心功能与特性](#核心功能与特性)
+- [系统架构与项目结构](#系统架构与项目结构)
+- [快速开始](#快速开始)
+- [核心概念说明](#核心概念说明)
+- [联网搜索与外部工具](#联网搜索与外部工具)
+- [部署与运维建议](#部署与运维建议)
+- [文档与 API](#文档与-api)
+- [贡献指南](#贡献指南)
+- [许可证](#许可证)
 
 ---
 
-## 🛠 技术栈
+## 项目简介
 
-### 后端技术
-- **框架**: FastAPI (Python 3.13+)
-- **AI集成**: LangChain, OpenAI, Anthropic
-- **数据库**: MySQL 8.0, Redis 7.0
-- **向量数据库**: ChromaDB, Milvus
-- **搜索引擎**: Elasticsearch
-- **文档处理**: PyMuPDF, Unstructured
-- **异步任务**: Celery
-- **部署**: Gunicorn, Uvicorn
+**ToolMind** 旨在为开发者和团队提供一个可扩展的「智能体工作台」：
 
-### 前端技术
-- **框架**: Vue 3.4+ (Composition API)
-- **UI组件**: Element Plus
-- **状态管理**: Pinia
-- **路由**: Vue Router 4
-- **构建工具**: Vite 5
-- **开发语言**: TypeScript
-- **样式**: SCSS
-- **Markdown**: md-editor-v3
-
-### 开发工具
-- **包管理**: Poetry (后端), npm (前端)
-- **代码格式**: Black, Prettier
-- **类型检查**: mypy, TypeScript
-- **容器化**: Docker, Docker Compose
+- **统一接入多种大模型**：自建模型管理能力，支持自行配置模型名称、API Key、Base URL、提供商等。
+- **多种智能体形态**：
+  - 面向对话和工具调用的 **StreamingAgent**（流式对话 Agent）
+  - 面向复杂任务分解与执行编排的 **MindAgent**（任务规划 Agent）
+- **强大的工具生态**：内置联网搜索工具，支持将 MCP 服务器暴露为工具，形成统一的工具调用面板。
+- **现代化前端控制台**：通过 Web 界面管理模型、Agent、MCP 服务器、工具与会话。
 
 ---
 
-## 📁 项目结构
+## 核心功能与特性
 
-> 🏗️ **完整的项目架构** - 模块化设计，清晰的职责分离
+### 智能体系统（Agents）
 
-<details>
-<summary><b>🔍 点击展开完整项目结构</b></summary>
+- **StreamingAgent**（`backend/toolmind/services/mind/agent.py`）
+  - 基于 LangGraph / LangChain 构建的 ReAct 风格 Agent。
+  - 支持流式输出，对话过程可以持续推送增量内容。
+  - 通过中间件自动选择工具（LLMToolSelectorMiddleware），减少手工配置负担。
+  - 集成使用统计回调，可记录 Token 用量等元数据。
+
+- **MindAgent**（`backend/toolmind/services/mind/agent.py`）
+  - 支持从自然语言问题出发，自动生成 **任务图（Task Graph）**：
+    - 拆分为多个步骤（`MindTaskStep`），构建前后依赖关系。
+    - 每一步可绑定不同工具（包括 MCP 工具和内置工具）。
+  - 执行过程中：
+    - 逐步调用工具，实时产出中间结果事件（便于前端实时展示步骤进度）。
+    - 最后对整体结果进行自我评估（评分 + 原因），不满足阈值时可自动重跑若干次。
+  - 将问题、任务图、步骤结果和最终回答写入工作区会话，便于后续回顾与追踪。
+
+### 工具与插件体系
+
+- **统一工具抽象**
+  - 内置工具（如 `web_search`）通过 `langchain.tools.tool` 进行封装。
+  - MCP 工具通过 `MCPManager` 动态加载并适配为统一的工具描述。
+  - 所有工具都可被模型以「函数调用」方式自动触发。
+
+- **工具发现与选择**
+  - 当工具数量较多时，可先通过「搜索工具」这种元工具（`search_available_tools`）搜索相关工具，再按需激活，减少上下文负担。
+  - MindAgent 会根据任务步骤自动选择合适工具并注入执行参数。
+
+### MCP 集成能力
+
+- 支持通过 MCP 协议接入外部服务：
+  - 在配置中维护 MCP 服务器列表。
+  - 通过 `MCPManager` 统一管理连接、工具枚举等。
+  - 将 MCP 工具转换为标准的「可调用工具」，用于 MindAgent 的任务执行。
+- 每个 MCP 工具与其所属 MCP 服务器之间建立映射关系，便于在调用时附加用户级配置（API Key 等）。
+
+### 多模型管理与调用策略
+
+- **多模型配置**（`backend/toolmind/schema/common.py` 中的 `MultiModels`）
+  - 支持对不同用途的模型进行拆分配置，例如：
+    - `conversation_model`：对话与内容生成
+    - `tool_call_model`：工具调用与意图识别
+    - `reasoning_model`：复杂推理
+    - `embedding` / `rerank` 等
+  - 同时保留扩展字段能力（`extra="allow"`），便于后续扩展其他模型角色。
+
+- **运行时模型选择**
+  - 通过 `ModelManager` 封装：
+    - 按用户 ID 选择对话模型 / 意图识别模型。
+    - MindAgent、StreamingAgent 根据场景选择不同模型实例。
+  - 某些流程绑定 `response_format={"type": "json_object"}` 来强约束输出结构，配合 JSON 修复逻辑提升鲁棒性。
+
+### 前端控制台与交互体验
+
+- 使用 Vue3 + TypeScript + Vite + Element Plus 构建。
+- 提供：
+  - Agent 管理、MCP 服务器管理、模型配置、会话记录等页面。
+  - 对话界面支持展示流式内容、步骤执行结果、任务图等。
+
+---
+
+## 系统架构与项目结构
+
+### 整体架构
+
+- **前端应用**（`frontend/`）：管理界面与对话界面。
+- **后端服务**（`backend/toolmind/`）：
+  - `api/`：FastAPI 路由与接口层。
+  - `core/`：模型管理、Agent 核心实现等。
+  - `services/`：业务服务，包括：
+    - `mind/`：MindAgent、StreamingAgent 等智能体服务。
+    - `web_search/`：统一联网搜索工具实现。
+    - 其他如 `rag/`、`deepsearch/`、`transform_paper/`、`rewrite/` 等扩展服务。
+  - `schema/`：Pydantic 数据模型（请求/响应、内部结构）。
+  - `prompts/`：提示词模板（如任务生成、结果评估等）。
+- **配置与部署**：
+  - `backend/toolmind/config.yaml`：服务端主要运行配置。
+  - `requirements.txt`：后端依赖。
+  - 前端 `package.json` / `vite.config.ts` 等构建配置。
+
+### 目录示意（简化）
 
 ```
-ToolMind/                          # 🏠 项目根目录
-├── 📄 README.md                   # 📖 项目说明文档
-├── 📄 LICENSE                     # ⚖️ 开源许可证
-├── 📄 .gitignore                  # 🚫 Git忽略文件配置
-├── 📄 pyproject.toml              # 🐍 Python项目配置
-├── 📄 requirements.txt            # 📦 Python依赖包列表
-│
-├── 📁 .vscode/                    # 🔧 VSCode编辑器配置
-├── 📁 .idea/                      # 💡 JetBrains IDE配置
-│
-├── 📁 docs/                       # 📚 项目文档目录
-│   ├── 📄 API_Documentation_v3.0.md  # 🔄 最新API文档
-│   ├── 📄 API_Documentation_v2.0.md  # 📋 v2.0 API文档
-│   └── 📄 API_Documentation_v1.0.md  # 📝 v1.0 API文档
-│
-├── 📁 docker/                     # 🐳 容器化配置
-│   ├── 📄 Dockerfile              # 🐳 Docker镜像构建文件
-│   └── 📄 docker-compose.yml      # 🔧 Docker编排配置
-│
-└── 📁 src/                        # 💻 源代码目录
-    ├── 📁 backend/                # 🔧 后端服务
-    │   ├── 📁 chroma_db/          # 🗄️ ChromaDB向量数据库
-    │   └── 📁 toolmind/          # 🤖 核心后端应用
-    │       ├── 📄 __init__.py     # 🐍 Python包初始化文件
-    │       ├── 📄 main.py         # 🚀 FastAPI应用入口
-    │       ├── 📄 settings.py     # ⚙️ 应用配置设置
-    │       ├── 📄 config.yaml     # 📋 YAML配置文件
-    │       │
-    │       ├── 📁 api/            # 🌐 API路由层
-    │       │   ├── 📄 __init__.py
-    │       │   ├── 📄 router.py   # 🔀 主路由配置
-    │       │   ├── 📄 JWT.py      # 🔐 JWT认证处理
-    │       │   ├── 📁 v1/         # 📊 v1版本API接口
-    │       │   ├── 📁 services/   # 🔧 服务层API
-    │       │   └── 📁 errcode/    # ❌ 错误码定义
-    │       │
-    │       ├── 📁 core/           # 🏗️ 核心功能模块
-    │       │   ├── 📄 __init__.py
-    │       │   └── 📁 models/     # 🧠 AI模型管理
-    │       │
-    │       ├── 📁 database/       # 🗃️ 数据库层
-    │       │   ├── 📄 __init__.py # 🔗 数据库连接配置
-    │       │   ├── 📄 init_data.py # 🏗️ 数据库初始化脚本
-    │       │   ├── 📁 models/     # 📊 数据模型定义
-    │       │   └── 📁 dao/        # 💾 数据访问对象
-    │       │
-    │       ├── 📁 services/       # 🎯 业务服务层
-    │       │   ├── 📄 __init__.py
-    │       │   ├── 📄 retrieval.py      # 🔍 信息检索服务
-    │       │   ├── 📄 rag_handler.py    # 📚 RAG处理服务
-    │       │   ├── 📄 aliyun_oss.py     # ☁️ 阿里云OSS服务
-    │       │   ├── 📄 redis.py          # 💾 Redis缓存服务
-    │       │   ├── 📁 rag/              # 📖 RAG检索增强生成
-    │       │   ├── 📁 mars/             # 🚀 Mars智能体服务
-    │       │   ├── 📁 mcp/              # 🔌 MCP协议服务
-    │       │   ├── 📁 mcp_agent/        # 🤖 MCP Agent服务
-    │       │   ├── 📁 mcp_openai/       # 🧠 MCP OpenAI集成
-    │       │   ├── 📁 deepsearch/       # 🕵️ 深度搜索服务
-    │       │   ├── 📁 transform_paper/  # 📄 论文转换服务
-    │       │   ├── 📁 autobuild/        # 🏗️ 自动构建服务
-    │       │   └── 📁 rewrite/          # ✏️ 内容重写服务
-    │       │
-    │       ├── 📁 tools/          # 🛠️ 工具集成
-    │       │   ├── 📄 __init__.py # 🧰 工具注册和管理
-    │       │   ├── 📁 arxiv/      # 📚 ArXiv论文工具
-    │       │   ├── 📁 delivery/   # 📦 快递查询工具
-    │       │   ├── 📁 web_search/ # 🔍 网络搜索工具
-    │       │   ├── 📁 get_weather/     # 🌤️ 天气查询工具
-    │       │   ├── 📁 send_email/      # 📧 邮件发送工具
-    │       │   ├── 📁 text2image/      # 🎨 文本转图片工具
-    │       │   ├── 📁 image2text/      # 👁️ 图片转文本工具
-    │       │   ├── 📁 convert_to_pdf/  # 📄 PDF转换工具
-    │       │   ├── 📁 convert_to_docx/ # 📝 Word转换工具
-    │       │   ├── 📁 resume_optimizer/# 📋 简历优化工具
-    │       │   ├── 📁 rag_data/        # 📊 RAG数据处理工具
-    │       │   └── 📁 crawl_web/       # 🕷️ 网页爬虫工具
-    │       │
-    │       ├── 📁 prompts/        # 💬 提示词模板库
-    │       ├── 📁 config/         # ⚙️ 配置文件目录
-    │       ├── 📁 schema/         # 📋 数据模式定义
-    │       ├── 📁 data/           # 💾 数据存储目录
-    │       ├── 📁 utils/          # 🧰 通用工具函数
-    │       └── 📁 test/           # 🧪 测试代码目录
-    │
-    └── 📁 frontend/               # 🎨 前端应用
-        ├── 📄 package.json       # 📦 Node.js项目配置
-        ├── 📄 package-lock.json  # 🔒 依赖版本锁定
-        ├── 📄 tsconfig.json      # 🔧 TypeScript配置
-        ├── 📄 tsconfig.app.json  # 📱 应用TypeScript配置
-        ├── 📄 tsconfig.node.json # 🔧 Node环境TypeScript配置
-        ├── 📄 vite.config.ts     # ⚡ Vite构建配置
-        ├── 📄 index.html         # 🌐 HTML入口文件
-        ├── 📄 .gitignore         # 🚫 前端Git忽略配置
-        ├── 📄 README.md          # 📖 前端说明文档
-        ├── 📄 DEBUGGING_GUIDE.md # 🐛 调试指南
-        ├── 📄 auto-imports.d.ts  # 🔄 自动导入类型声明
-        ├── 📄 components.d.ts    # 🧩 组件类型声明
-        │
-        ├── 📁 public/            # 🌍 静态资源目录
-        │
-        └── 📁 src/               # 💻 前端源代码
-            ├── 📄 main.ts        # 🚀 Vue应用入口
-            ├── 📄 App.vue        # 🏠 根组件
-            ├── 📄 style.css      # 🎨 全局样式
-            ├── 📄 type.ts        # 📋 TypeScript类型定义
-            ├── 📄 vite-env.d.ts  # 🔧 Vite环境类型声明
-            │
-            ├── 📁 components/    # 🧩 可复用组件库
-            │   ├── 📁 agentCard/      # 🤖 Agent卡片组件
-            │   ├── 📁 commonCard/     # 🃏 通用卡片组件
-            │   ├── 📁 dialog/         # 💬 对话框组件
-            │   ├── 📁 drawer/         # 📜 抽屉组件
-            │   └── 📁 historyCard/    # 📜 历史记录卡片
-            │
-            ├── 📁 pages/         # 📄 页面组件
-            │   ├── 📄 index.vue       # 🏠 首页
-            │   ├── 📁 agent/          # 🤖 Agent管理页面
-            │   ├── 📁 configuration/ # ⚙️ 配置页面
-            │   ├── 📁 construct/      # 🏗️ 构建页面
-            │   ├── 📁 conversation/   # 💬 对话页面
-            │   ├── 📁 homepage/       # 🏠 主页模块
-            │   ├── 📁 knowledge/      # 📚 知识库页面
-            │   ├── 📁 login/          # 🔐 登录页面
-            │   ├── 📁 mars/           # 🚀 Mars对话页面
-            │   ├── 📁 mcp-server/     # 🖥️ MCP服务器页面
-            │   ├── 📁 model/          # 🧠 模型管理页面
-            │   ├── 📁 notFound/       # ❓ 404页面
-            │   ├── 📁 profile/        # 👤 用户资料页面
-            │   └── 📁 tool/           # 🛠️ 工具管理页面
-            │
-            ├── 📁 router/        # 🛣️ 路由配置
-            ├── 📁 store/         # 🗄️ 状态管理(Pinia)
-            ├── 📁 apis/          # 🌐 API接口定义
-            ├── 📁 utils/         # 🧰 工具函数库
-            └── 📁 assets/        # 🖼️ 静态资源(图片、字体等)
+toolmind/
+├── README.md
+├── requirements.txt
+├── backend/
+│   └── toolmind/
+│       ├── main.py                  # FastAPI 入口
+│       ├── config.yaml              # 服务与模型等配置
+│       ├── api/                     # API 层
+│       ├── core/                    # 核心模型与 Agent 能力
+│       ├── services/
+│       │   ├── mind/                # MindAgent、StreamingAgent
+│       │   ├── web_search/         # Tavily 联网搜索工具
+│       │   └── ...                  # 其他业务服务
+│       ├── schema/                  # Pydantic 模型
+│       ├── prompts/                 # 提示词模板
+│       └── utils/                   # 工具函数
+└── frontend/                        # 前端应用
+    ├── src/
+    │   ├── pages/                   # 页面组件（对话、Agent、配置等）
+    │   ├── components/
+    │   ├── router/
+    │   └── store/
+    └── vite.config.ts
 ```
-
-</details>
-
-### 📊 项目统计
-
-<div align="center">
-
-| 📂 **类别** | 📈 **数量** | 📝 **说明** |
-|:---:|:---:|:---|
-| **后端模块** | 15+ | API、服务、工具、数据库等核心模块 |
-| **前端页面** | 12+ | 完整的用户界面和交互页面 |
-| **内置工具** | 10+ | 涵盖搜索、文档、图像、通信等功能 |
-| **AI模型** | 5+ | 支持主流大语言模型和嵌入模型 |
-| **MCP服务** | 多个 | 可扩展的MCP协议服务器 |
-
-</div>
-
-### 📊 代码量统计
-
-<div align="center">
-
-*📝 基于文件扩展名的详细代码统计*
-
-| 🔍 **文件类型** | 📁 **文件数量** | 📄 **总行数** | 📉 **最少行数** | 📈 **最多行数** | 📊 **平均行数** |
-|:---:|:---:|:---:|:---:|:---:|:---:|
-| **🐍 Python** | 247 | 19,599 | 0 | 1,039 | 79 |
-| **🎨 Vue** | 31 | 21,907 | 12 | 2,588 | 706 |
-| **📰 Markdown** | 8 | 3,475 | 5 | 1,079 | 434 |
-| **⚡ TypeScript** | 46 | 2,103 | 1 | 212 | 45 |
-| **📋 TXT** | 1 | 539 | 539 | 539 | 539 |
-| **📦 JSON** | 11 | 348 | 7 | 110 | 31 |
-| **⚙️ TOML** | 1 | 328 | 328 | 328 | 328 |
-| **🎨 CSS** | 1 | 176 | 176 | 176 | 176 |
-| **🔧 YML** | 2 | 177 | 52 | 125 | 88 |
-| **📋 YAML** | 2 | 152 | 35 | 117 | 76 |
-| **⚙️ CONF** | 1 | 101 | 101 | 101 | 101 |
-| **🚀 Shell** | 2 | 87 | 35 | 52 | 43 |
-| **🚦 PROD** | 1 | 41 | 41 | 41 | 41 |
-| **🚫 GitIgnore** | 1 | 24 | 24 | 24 | 24 |
-| **🌐 HTML** | 1 | 13 | 13 | 13 | 13 |
-| **🐳 DockerIgnore** | 1 | 10 | 10 | 10 | 10 |
-
-**📊 总计**: **356** 个文件，**48,560** 行代码
-
-</div>
-
-### 🏆 技术栈占比
-
-<div align="center">
-
-| 🎯 **技术栈** | 📈 **占比** | 🔥 **特点** |
-|:---:|:---:|:---|
-| **🎨 前端 (Vue+TS)** | 45.1% | 现代化响应式界面，TypeScript强类型支持 |
-| **🐍 后端 (Python)** | 40.4% | 高性能异步服务，丰富的AI集成 |
-| **📚 文档 (MD)** | 7.2% | 完整的项目文档和API说明 |
-| **⚙️ 配置 (JSON/YAML)** | 7.3% | 灵活的配置管理和部署支持 |
-
-*💡 项目采用前后端分离架构，代码结构清晰，文档完善*
-
-</div>
-
 
 ---
 
-## 🚀 快速开始
+## 快速开始
 
-> 🎯 **三种部署方式任你选择** - Docker一键部署 | 本地开发 | 生产环境
+### 环境要求
 
-<div align="center">
+- **Python**：推荐 3.10 及以上
+- **Node.js**：推荐 18 及以上
+- **数据库**：MySQL / Redis（如需持久化和缓存）
+- **可选组件**：
+  - 向量数据库（ChromaDB / Milvus）
+  - Elasticsearch（如需全文检索）
+  - Docker / Docker Compose（用于容器化部署）
 
-### 📋 系统要求
-
-| 🛠️ **组件** | 🔢 **版本要求** | 📝 **说明** |
-|:---:|:---:|:---|
-| **Python** | 3.13+ | 后端运行环境 |
-| **Node.js** | 18+ | 前端构建环境 |
-| **MySQL** | 8.0+ | 主数据库 |
-| **Redis** | 7.0+ | 缓存和会话存储 |
-| **Docker** | 20.10+ | 容器化部署（推荐） |
-
-</div>
-
-
-### 🛠️ **方式二：本地开发环境**
-
-<details>
-<summary><b>👨‍💻 点击展开本地开发步骤</b></summary>
-
-#### 🔧 **后端环境搭建**
+### 1. 克隆仓库并安装依赖
 
 ```bash
-# 1️⃣ 克隆项目
+# 克隆项目
 git clone https://github.com/hhgzeng/toolmind.git
 cd toolmind
 
-# 使用pip安装依赖
+# 安装后端依赖
 pip install -r requirements.txt
 ```
 
-
-#### ⚙️ **配置文件设置**
-
-创建并编辑配置文件 `src/backend/toolmind/config.yaml`:
-
-#### 🚀 **启动服务**
+前端依赖安装：
 
 ```bash
-# 后端服务
-cd src/backend
-uvicorn toolmind.main:app --port 7860 --host 0.0.0.0
-
-# 新终端 - 前端服务
-cd src/frontend
+cd frontend
 npm install
+```
+
+### 2. 配置后端（`backend/toolmind/config.yaml`）
+
+根据实际环境修改配置文件，主要包括：
+
+- **服务基本信息**（`server`）：`host` / `port` / `project_name`
+- **数据库配置**（`mysql`）：`endpoint`、`async_endpoint`
+- **Redis 配置**（`redis`）：`endpoint`
+- **多模型配置**（`multi_models`）：`conversation_model`、`tool_call_model` 等
+- **工具配置**（`tools`）：如 Tavily API Key（用于 `web_search` 工具）
+- **对象存储 / 资源配置**（`aliyun_oss` / `default_config`）：按需配置
+
+> 生产环境请务必通过环境变量或安全配置方式注入敏感信息，不要直接提交到版本库。
+
+### 3. 启动后端服务
+
+```bash
+cd backend
+python -m toolmind.main
+```
+
+默认访问地址（以配置为准）：
+
+- API 服务：`http://127.0.0.1:7860`
+- API 文档（Swagger）：`http://127.0.0.1:7860/docs`
+
+### 4. 启动前端开发服务器
+
+```bash
+cd frontend
 npm run dev
 ```
 
-#### 🌐 **访问地址**
+默认前端访问地址：
 
-| 🎯 **服务** | 🔗 **地址** | 📝 **说明** |
-|:---:|:---:|:---|
-| **前端界面** | [localhost:8090](http://localhost:8090) | 用户界面 |
-| **后端API** | [localhost:7860](http://localhost:7860) | API服务 |
-| **API文档** | [localhost:7860/docs](http://localhost:7860/docs) | Swagger文档 |
-
-</details>
-
+- 前端界面：`http://localhost:8090`
 
 ---
 
-## 📦 高级部署指南
+## 核心概念说明
 
-> 🎯 **灵活的部署选择** - 从开发测试到生产环境的完整方案
+### 模型配置（MultiModels）
 
-### 🌐 **部署架构选择**
+对应 `backend/toolmind/schema/common.py`：
 
-<table>
-<tr>
-  
-<td width="33%">
+- **`ModelConfig`**：`model_name`、`api_key`、`base_url`
+- **`MultiModels`**：预定义了多种角色模型字段（如 `conversation_model`、`tool_call_model` 等），支持 `extra="allow"` 扩展。
 
+后端在运行时通过 `ModelManager` 读取这些配置并实例化对应模型对象。
 
----
+### Mind 智能体（MindAgent）
 
-## 📖 文档
+核心数据结构位于 `backend/toolmind/schema/mind.py`：
 
-### 📚 API文档
-- [ToolMind Document](docs/toolmind.md) - toolmind具体文档
-- [API Documentation v3.0](docs/api.md) - 最新API文档
+- **`MindGuidePrompt` / `MindGuidePromptFeedBack`**：用于生成引导提示词，支持反馈迭代。
+- **`MindTask`**：描述一个完整任务（`query`、`guide_prompt`、`web_search`、`plugins`、`mcp_servers`）。
+- **`MindTaskStep`**：单个任务步骤（`step_id`、`title`、`target`、`workflow`、`input`、`result` 等）。
 
-### 🔧 开发文档
-- **在线API文档**: 启动后端服务后访问 `/docs`
-- **前端调试指南**: [src/frontend/DEBUGGING_GUIDE.md](src/frontend/DEBUGGING_GUIDE.md)
+执行流程由 `MindAgent.submit_mind_task` 负责：生成任务图 → 按步骤调用工具 → 汇总结果 → 自我评估 → 可选重跑 → 写入工作区会话。
 
-### 📋 配置指南
+### StreamingAgent 与工具中间件
 
-#### 向量数据库配置
-- **Milvus**: [安装指南](https://milvus.io/docs/zh/install_standalone-windows.md)
-- **ChromaDB**: 项目中已集成，无需额外配置
+`backend/toolmind/services/mind/agent.py` 中的 `StreamingAgent`：
 
-#### 搜索引擎配置
-- **Elasticsearch**: [IK分词器](https://release.infinilabs.com/analysis-ik/stable/)
+- 初始化过程：加载 MCP 工具、本地工具（如 `tavily_search`）、对话模型与工具调用模型，创建 ReAct Agent。
+- 中间件（`EmitEventAgentMiddleware`）：在工具调用前后抛出自定义事件（`START` / `END` / `ERROR`），便于前端展示工具执行状态。
+- 流式接口（`astream`）：通过 LangGraph 的 `astream` 实现 token 级别流式输出，并推送工具执行事件与模型回复片段。
 
----
+### 工具收集与暴露（_obtain_mind_tools）
 
-## 🤝 贡献指南
+`MindAgent._obtain_mind_tools` 负责综合可用工具：
 
-> 💪 **共建AI未来** - 每一个贡献都让ToolMind变得更好
-
-<div align="center">
-
-### 🌟 **我们欢迎所有形式的贡献！**
-
-</div>
-
-<table>
-<tr>
-<td width="25%">
-
-#### 🐛 **Bug修复**
-*发现问题，解决问题*
-
-1. 🔍 搜索已有Issues
-2. 📝 创建详细Bug报告
-3. 🧪 提供复现步骤
-4. 💡 提交修复方案
-
-</td>
-<td width="25%">
-
-#### ✨ **功能开发**
-*新想法，新功能*
-
-1. 💭 创建Feature Request
-2. 📋 详细描述需求场景
-3. 🎨 设计实现方案
-4. 🚀 开发并测试
-
-</td>
-<td width="25%">
-
-#### 📚 **文档完善**
-*知识共享，助力他人*
-
-1. 📖 补充API文档
-2. ✍️ 编写使用教程
-3. 🌍 多语言翻译
-4. 🎥 制作视频教程
-
-</td>
-<td width="25%">
-
-#### 🧪 **社区支持**
-*帮助他人，分享经验*
-
-1. ❓ 回答社区问题
-2. 💬 参与技术讨论
-3. 🎤 分享使用心得
-4. 🤝 推广项目
-
-</td>
-</tr>
-</table>
-
-
-
-
-
-## 📄 **许可证**
-
-<div align="center">
-
-本项目采用 **[MIT License](LICENSE)** 开源许可证
-
-*这意味着你可以自由使用、修改和分发本项目 🎉*
-
-</div>
+- 当 `enable_web_search` 为 True 时，将 `web_search` 工具作为 OpenAI 风格工具暴露。
+- 从 MCP 服务器中加载工具，为每个 MCP 工具构造统一的参数 Schema，并记录工具与 MCP 服务器 ID 的映射。
 
 ---
 
-<div align="center">
+## 联网搜索与外部工具
+
+### Tavily 联网搜索（web_search）
+
+`backend/toolmind/services/web_search/action.py` 中定义了统一的联网搜索工具：
+
+- 工具名称：`web_search`
+- 封装库：`tavily-python`
+- 主要参数：`query`、`topic`、`max_results`、`time_range`
+
+Agent 在需要外部信息时会自动调用该工具，并将搜索结果拼接成可阅读文本返回给模型。
+
+> 使用前请在 `config.yaml` 中配置 Tavily 的 API Key。
+
+---
+
+## 部署与运维建议
+
+- **配置管理**：建议使用环境变量或独立配置中心注入敏感信息；`config.yaml` 可作为默认模板。
+- **日志与监控**：后端基于 `loguru` 输出日志，可接入集中式日志系统；可在 Agent 中增加 Callbacks 收集 Token 用量、错误情况等。
+- **容器化部署**：建议为后端和前端分别构建镜像，通过 Docker Compose 或 K8s 编排；数据库与 Redis 建议使用托管服务或独立容器。
+
+---
+
+## 文档与 API
+
+- **在线 API 文档**：启动后端服务后访问 `/docs`（Swagger UI）
+- **项目内部文档**：如存在 `docs/toolmind.md`、`docs/api.md` 等，可参考获取更详细的接口说明
+- **前端调试指南**：`frontend/DEBUGGING_GUIDE.md`
+
+---
+
+## 贡献指南
+
+欢迎提交 Issue、Pull Request 或任何形式的反馈与改进建议：
+
+- **Bug 修复**：提交尽可能详细的复现步骤与期望行为
+- **新功能**：先通过 Issue 或讨论区描述需求场景与设计思路
+- **文档完善**：补充使用示例、配置说明、多语言文档等
+- **生态扩展**：新增 MCP 服务器适配、新工具、新 Agent 模式等
+
+---
+
+## 许可证
+
+本项目采用 **MIT License** 开源许可证。  
+你可以自由地使用、修改和分发本项目，但需要保留原始版权和许可声明。
