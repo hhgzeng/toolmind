@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlmodel import Session, select, update, desc, delete, or_, func, and_
 from toolmind.database.session import session_getter
-from toolmind.database.models.mcp_server import MCPServerStdioTable, MCPServerTable
+from toolmind.database.models.mcp_server import MCPServerTable
 
 
 class MCPServerDao:

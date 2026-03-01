@@ -47,13 +47,3 @@ async def get_usage_models(login_user: UserPayload = Depends(get_login_user)):
         )
     except Exception as err:
         return HTTPException(status_code=500, detail=str(err))
-
-@router.get("/usage/agents_list", summary="获取用量统计的智能体列表")
-async def get_usage_agents(login_user: UserPayload = Depends(get_login_user)):
-    try:
-        agents = await UsageStatsService.get_usage_agents(login_user.user_id)
-        return resp_200(
-            data=agents
-        )
-    except Exception as err:
-        return HTTPException(status_code=500, detail=str(err))

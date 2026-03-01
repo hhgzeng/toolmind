@@ -2,6 +2,7 @@ import json
 from typing import List, Union, Optional
 
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage, BaseMessage, AIMessageChunk
+from langchain_core.tools.base import ToolException
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
 from toolmind.api.services.mcp_server import MCPService
@@ -35,10 +36,10 @@ class MindAgent:
         self.tool_mcp_server_dict = {}
 
         self.user_id = user_id
-        
+
     async def get_conversation_model(self):
         return await ModelManager.get_conversation_model(user_id=self.user_id)
-        
+
     async def get_tool_call_model(self):
         return await ModelManager.get_mind_intent_model(user_id=self.user_id)
 
@@ -156,39 +157,38 @@ class MindAgent:
                 }
             }
 
-
     async def _evaluate_result(self, query: str, answer: str) -> dict:
         """
         Evaluate the generated result using tool_call_model and web_search tool.
         """
         eval_prompt = EvaluateResultPrompt.format(query=query, answer=answer)
         messages: List[BaseMessage] = [SystemMessage(content="你是一个专业的结果评判助手。"), HumanMessage(content=eval_prompt)]
-        
+
         tools = [convert_to_openai_tool(web_search)]
         model = await self.get_tool_call_model()
         eval_model = model.bind_tools(tools)
-        
+
         try:
             while True:
                 response = await eval_model.ainvoke(input=messages, config={"callbacks": [usage_metadata_callback]})
                 messages.append(response)
-                
+
                 if response.tool_calls:
                     tool_messages = await self._parse_function_call_response(response)
                     messages.extend(tool_messages)
                 else:
                     break
-                    
+
             content = response.content.strip()
             print(f"[DEBUG _evaluate_result] Raw LLM response: {content}")
-            
+
             import re
             json_match = re.search(r'\{.*\}', content, re.DOTALL)
             if json_match:
                 json_str = json_match.group(0)
             else:
                 json_str = content
-                
+
             parsed_json = json.loads(json_str)
             print(f"[DEBUG _evaluate_result] Parsed JSON data: {parsed_json}")
             return parsed_json
@@ -198,7 +198,7 @@ class MindAgent:
             if isinstance(err, openai.RateLimitError) or 'insufficient_quota' in str(err) or '429' in str(err):
                 print(f"[DEBUG _evaluate_result] Returning 80 due to RateLimit API issue.")
                 return {"score": 80, "reasoning": "评判模型触发限流或余额不足 (RateLimitError/Insufficient Quota)，默认算作通过。"}
-            
+
             try:
                 # 尝试修复一般的 JSON 格式错误或者报错，注意应传入原本的 content
                 json_content_to_fix = locals().get('content', '')
@@ -206,11 +206,11 @@ class MindAgent:
                 model = await self.get_conversation_model()
                 fix_response = await model.ainvoke(input=fix_message, config={"callbacks": [usage_metadata_callback]})
                 fix_content = fix_response.content.strip()
-                
+
                 json_match = re.search(r'\{.*\}', fix_content, re.DOTALL)
                 if json_match:
                     fix_content = json_match.group(0)
-                    
+
                 return json.loads(fix_content)
             except Exception as e:
                 return {"score": 100, "reasoning": f"评判执行异常: {str(e)}，默认放行。"}
@@ -253,7 +253,6 @@ class MindAgent:
                 "event": "generate_tasks",
                 "data": {"graph": tasks_show}
             }
-
 
             tools = await self._obtain_mind_tools(mind_task.plugins, mind_task.mcp_servers, mind_task.web_search)
             model = await self.get_tool_call_model()
@@ -315,7 +314,7 @@ class MindAgent:
                     "data": {"message": pass_msg}
                 }
                 final_response += pass_msg
-                
+
                 await self._add_workspace_session(
                     mind_task.query,
                     WorkSpaceSessionContext(
@@ -345,7 +344,12 @@ class MindAgent:
             mcp_config = await MCPUserConfigService.get_mcp_user_config(self.user_id,
                                                                         self.tool_mcp_server_dict[tool_name])
             tool_args.update(mcp_config)
-            text_content, no_text_content = await tool.coroutine(**tool_args)
+            try:
+                text_content, no_text_content = await tool.coroutine(**tool_args)
+            except ToolException as e:
+                text_content = f"[工具执行失败] {tool_name}: {e}"
+            except Exception as e:
+                text_content = f"[工具执行失败] {tool_name}: {type(e).__name__} - {e}"
         else:
             from toolmind.services.web_search.tavily_search.action import tavily_search
             from toolmind.services.web_search.google_search.action import google_search

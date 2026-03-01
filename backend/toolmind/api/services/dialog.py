@@ -1,7 +1,6 @@
-# from toolmind.api.services.agent import AgentService
+from toolmind.database.dao.agent import AgentDao
 from toolmind.database.dao.dialog import DialogDao
 from toolmind.database.dao.history import HistoryDao
-from loguru import logger
 
 from toolmind.database.models.user import AdminUser
 
@@ -32,13 +31,20 @@ class DialogService:
         except Exception as err:
             raise ValueError(f"Get List Dialog Appear Error: {err}")
 
-    # @classmethod
-    # async def get_agent_by_dialog_id(cls, dialog_id: str):
-    #     try:
-    #         dialog = await DialogDao.get_agent_by_dialog_id(dialog_id)
-    #         return await AgentService.select_agent_by_id(dialog.agent_id)
-    #     except Exception as err:
-    #         raise ValueError(f"Select Dialog Appear Error: {err}")
+    @classmethod
+    async def get_agent_by_dialog_id(cls, dialog_id: str):
+        try:
+            dialog = await DialogDao.get_agent_by_dialog_id(dialog_id)
+            if not dialog:
+                raise ValueError(f"Dialog not found: {dialog_id}")
+            agent = await AgentDao.get_agent_by_id(dialog.agent_id)
+            if not agent:
+                raise ValueError(f"Agent not found: {dialog.agent_id}")
+            return agent.to_dict()
+        except ValueError:
+            raise
+        except Exception as err:
+            raise ValueError(f"Select Dialog Appear Error: {err}")
 
     @classmethod
     async def update_dialog_time(cls, dialog_id: str):

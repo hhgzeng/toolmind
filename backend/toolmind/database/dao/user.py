@@ -1,7 +1,7 @@
 
 from toolmind.database.models.user import UserTable
 from typing import List
-from sqlmodel import Session, select, func, update
+from sqlmodel import Session, select, func
 from toolmind.database.session import session_getter
 
 class UserDao:
@@ -105,15 +105,3 @@ class UserDao:
         with session_getter() as session:
             statement = select(UserTable)
             return session.exec(statement).all()
-
-    @classmethod
-    def update_user_info(cls, user_id, user_avatar, user_description):
-        with session_getter() as session:
-            update_values = {}
-            if user_avatar:
-                update_values["user_avatar"] = user_avatar
-            if user_description:
-                update_values["user_description"] = user_description
-            statement = update(UserTable).where(UserTable.user_id == user_id).values(**update_values)
-            session.exec(statement)
-            session.commit()

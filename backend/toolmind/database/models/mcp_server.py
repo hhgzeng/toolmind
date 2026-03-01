@@ -8,26 +8,6 @@ from sqlalchemy import Column, VARCHAR, JSON, text, DateTime
 from toolmind.database.models.base import SQLModelSerializable
 
 
-# 目前暂时用不上
-class MCPServerStdioTable(SQLModelSerializable, table=True):
-    __tablename__ = "mcp_stdio_server"
-    
-    mcp_server_id: str = Field(default_factory=lambda: uuid4().hex, primary_key=True)
-    mcp_server_path: str = Field(description="MCP Server脚本所在位置")
-    mcp_server_command: str = Field(
-        description="MCP Server脚本执行命令, python or npx ..."
-    )
-    mcp_server_env: str = Field(description="MCP Server脚本环境变量")
-    user_id: str = Field(description="MCP Server对应的创建用户")
-    name: str = Field(default="MCP Server", description="MCP Server名称")
-    create_time: Optional[datetime] = Field(
-        sa_column=Column(
-            DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
-        ),
-        description="创建时间",
-    )
-
-
 class MCPServerTable(SQLModelSerializable, table=True):
     __tablename__ = "mcp_server"
 

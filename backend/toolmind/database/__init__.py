@@ -5,12 +5,10 @@ from toolmind.database.models.history import HistoryTable
 from toolmind.database.models.user import SystemUser
 from toolmind.database.models.tool import ToolTable
 from toolmind.database.models.dialog import DialogTable
-from toolmind.database.models.mcp_server import MCPServerTable, MCPServerStdioTable
+from toolmind.database.models.mcp_server import MCPServerTable
 from toolmind.database.models.mcp_user_config import MCPUserConfigTable
-from toolmind.database.models.mcp_agent import MCPAgentTable
 from toolmind.database.models.user_role import UserRole
 from toolmind.database.models.llm import LLMTable
-from toolmind.database.models.message import MessageDownTable, MessageLikeTable
 from toolmind.database.models.role import Role
 from toolmind.database.models.workspace_session import WorkSpaceSession
 from toolmind.database.models.usage_stats import UsageStats

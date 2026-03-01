@@ -8,13 +8,8 @@ class UsageStatsRequest(BaseModel):
     delta_days: int = 10000
 
 class UsageStatsAgentType(str, Enum):
-    mars_agent = "Mars-Agent"
     mind_agent = "Mind-Agent"
-    simple_agent = "Simple-Agent"
-    wechat_agent = "WeChat-Agent"
-
 
 class UsageStatsModelType(str, Enum):
     tool_call_model = "tool_call_model"
     conversation_model = "conversation_model"
-

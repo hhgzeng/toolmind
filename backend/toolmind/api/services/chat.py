@@ -16,10 +16,9 @@ from langchain_core.messages import BaseMessage, SystemMessage, ToolMessage, Hum
 from langchain.agents.middleware import LLMToolSelectorMiddleware, ModelRequest, ModelResponse, AgentMiddleware
 
 from toolmind.core.callbacks import usage_metadata_callback
-# from toolmind.services.web_search import AgentToolsWithName
+from toolmind.services.web_search.tavily_search.action import tavily_search
 from toolmind.api.services.llm import LLMService
 from toolmind.core.models.manager import ModelManager
-# from toolmind.api.services.tool import ToolService
 from toolmind.core.agents.mcp_agent import MCPAgent, MCPConfig
 from toolmind.api.services.mcp_server import MCPService
 
@@ -166,7 +165,6 @@ class StreamingAgent:
         return create_agent(
             model=self.conversation_model,
             tools=self.tools + self.mcp_agent_as_tools,
-            #tools=[self.search_tool] if len(self.tools + self.mcp_agent_as_tools) >= MAX_TOOLS_SIZE else self.tools + self.mcp_agent_as_tools,
             middleware=self.middlewares,
             state_schema=StreamAgentState
         )
@@ -212,15 +210,9 @@ class StreamingAgent:
             return Command(update={"available_tools": found_tools, "messages": [tool_msg]})
         return search_available_tools
 
-
-    # async def setup_tools(self) -> List[BaseTool]:
-    #     tools = []
-    #     tools_name = await ToolService.get_tool_name_by_id(self.agent_config.tool_ids)
-    #     for name in tools_name:
-    #         agent_tool = AgentToolsWithName.get(name)
-    #         if agent_tool:
-    #             tools.append(agent_tool)
-    #     return tools
+    async def setup_tools(self) -> List[BaseTool]:
+        """仅保留 services 目录下的 web_search（tavily_search）工具。"""
+        return [tavily_search]
 
     async def setup_mcp_agent_as_tools(self):
         mcp_agent_as_tools = []

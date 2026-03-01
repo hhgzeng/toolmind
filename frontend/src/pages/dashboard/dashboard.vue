@@ -99,7 +99,6 @@ import {
   getUsageStatsAPI,
   getUsageCountAPI,
   getUsageModelsAPI,
-  getUsageAgentsAPI,
   type UsageStatsRequest,
   type UsageDataByDate,
   type UsageCountByDate
@@ -114,7 +113,6 @@ const filters = ref<UsageStatsRequest>({
 
 // 数据列表
 const modelsList = ref<string[]>([])
-const agentsList = ref<string[]>([])
 
 // 加载状态
 const loading = ref(false)
@@ -149,18 +147,6 @@ const fetchModelsList = async () => {
     }
   } catch (error) {
     console.error('获取模型列表失败:', error)
-  }
-}
-
-// 获取智能体列表
-const fetchAgentsList = async () => {
-  try {
-    const res = await getUsageAgentsAPI()
-    if (res.data.status_code === 200) {
-      agentsList.value = res.data.data || []
-    }
-  } catch (error) {
-    console.error('获取智能体列表失败:', error)
   }
 }
 
@@ -468,10 +454,7 @@ onMounted(async () => {
   await nextTick()
   
   // 获取筛选列表
-  await Promise.all([
-    fetchModelsList(),
-    fetchAgentsList()
-  ])
+  await fetchModelsList()
   
   // 初始化图表
   initCallCountChart()

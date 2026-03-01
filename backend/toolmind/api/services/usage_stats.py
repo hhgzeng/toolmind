@@ -31,11 +31,6 @@ class UsageStatsService:
         UsageStatsDao.sync_create_usage_stats(usage_stats)
 
     @classmethod
-    async def get_usage_agents(cls, user_id) -> List[str]:
-        agents = await UsageStatsDao.get_usage_agents(user_id)
-        return agents
-
-    @classmethod
     async def get_usage_models(cls, user_id) -> List[str]:
         models = await UsageStatsDao.get_usage_models(user_id)
         return models

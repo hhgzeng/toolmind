@@ -138,16 +138,6 @@ class UsageStatsDao:
             return result.all()
 
     @classmethod
-    async def get_usage_agents(cls, user_id):
-        async with async_session_getter() as session:
-            statement = select(UsageStats.agent).where(
-                UsageStats.user_id == user_id
-            ).distinct()
-
-            result = await session.exec(statement)
-            return result.all()
-
-    @classmethod
     async def get_usage_models(cls, user_id):
         async with async_session_getter() as session:
             statement = select(UsageStats.model).where(

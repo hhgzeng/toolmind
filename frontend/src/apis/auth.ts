@@ -31,18 +31,6 @@ export interface LoginResponse {
   }
 }
 
-export interface UserIconsResponse {
-  status_code: number
-  status_message: string
-  data: string[]
-}
-
-export interface UpdateUserResponse {
-  status_code: number
-  status_message: string
-  data: any
-}
-
 // 登录接口
 export const loginAPI = (data: LoginForm) => {
   return request<LoginResponse>({
@@ -76,27 +64,6 @@ export const logoutAPI = () => {
 export const getUserInfoAPI = (userId: string) => {
   return request({
     url: `/api/v1/user/info?user_id=${userId}`,
-    method: 'GET'
-  })
-}
-
-// 更新用户信息接口
-export const updateUserInfoAPI = (userId: string, userAvatar?: string, userDescription?: string) => {
-  return request<UpdateUserResponse>({
-    url: '/api/v1/user/update',
-    method: 'PUT',
-    data: {
-      user_id: userId,
-      user_avatar: userAvatar,
-      user_description: userDescription
-    }
-  })
-}
-
-// 获取用户头像选择接口
-export const getUserIconsAPI = () => {
-  return request<UserIconsResponse>({
-    url: '/api/v1/user/icons',
     method: 'GET'
   })
 }

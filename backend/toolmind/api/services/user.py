@@ -90,21 +90,9 @@ class UserService:
         return random.choice(avatars_url) if avatars_url else ""
 
     @classmethod
-    def get_available_avatars(cls):
-        files_url = aliyun_oss.list_files_in_folder("icons/user")
-        avatars_url = []
-        for file_url in files_url:
-            avatars_url.append(f"{app_settings.aliyun_oss['base_url']}/{file_url}")
-        return avatars_url
-
-    @classmethod
     def get_user_info_by_id(cls, user_id):
         user_info = UserDao.get_user(user_id)
         return user_info.to_dict()
-
-    @classmethod
-    def update_user_info(cls, user_id, user_avatar, user_description):
-        UserDao.update_user_info(user_id, user_avatar, user_description)
 
     @classmethod
     def get_user_id_by_name(cls, user_name):

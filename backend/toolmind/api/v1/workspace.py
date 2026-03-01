@@ -6,11 +6,6 @@ from toolmind.api.services.user import UserPayload, get_login_user
 router = APIRouter(prefix="/workspace", tags=["WorkSpace"])
 
 
-# @router.get("/plugins", summary="获取工作台的可用插件")
-# async def get_workspace_plugins(login_user: UserPayload = Depends(get_login_user)):
-#     results = await ToolService.get_visible_tool_by_user(login_user.user_id)
-#     return resp_200(data=results)
-
 @router.get("/session", summary="获取工作台所有会话列表")
 async def get_workspace_sessions(login_user: UserPayload = Depends(get_login_user)):
     results = await WorkSpaceSessionService.get_workspace_sessions(login_user.user_id)

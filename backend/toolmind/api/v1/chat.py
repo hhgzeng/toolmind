@@ -105,10 +105,10 @@ async def chat(*,
             # if agent_config.enable_memory: # 将完整的助手回复保存到记忆系统
             #     await memory_client.add([{"role": "user", "content": original_user_input}, {"role": "assistant", "content": response_content}], run_id=conversation_req.dialog_id)
             # 将助手回复及相关事件持久化到数据库
-            await HistoryService.save_chat_history("assistant", response_content, events, conversation_req.dialog_id, agent_config.enable_memory)
+            await HistoryService.save_chat_history("assistant", response_content, events, conversation_req.dialog_id)
 
     # 将用户输入持久化到MySQL数据库，用于历史对话记录展示
-    await HistoryService.save_chat_history("user", original_user_input, events, conversation_req.dialog_id, agent_config.enable_memory)
+    await HistoryService.save_chat_history("user", original_user_input, events, conversation_req.dialog_id)
 
     # 返回SSE流式响应，支持实时前端交互
     return WatchedStreamingResponse(general_generate(), callback=chat_agent.stop_streaming_callback, media_type="text/event-stream")

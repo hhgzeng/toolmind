@@ -70,12 +70,4 @@ export function getUsageModelsAPI() {
   })
 }
 
-// 获取智能体列表
-export function getUsageAgentsAPI() {
-  return request<ApiResponse<string[]>>({
-    url: '/api/v1/usage/agents_list',
-    method: 'GET'
-  })
-}
-
 

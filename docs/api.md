@@ -317,19 +317,6 @@
     }
   }
 
-### 4. 用户头像选择
-- **接口 URL**: `/api/v1/user/icons`
-- **请求方法**: `GET`
-- **返回参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "success",
-    "data": ["http://........", "https://........."]
-  }
-
-
-
 ---
 
 ## 工具 API
@@ -995,49 +982,6 @@
         "timestamp": "string"
       }
     ]
-  }
-  ```
-
----
-
-## 消息 API
-
-### 1. 消息点赞
-- **接口 URL**: `/api/v1/message/like`
-- **请求方法**: `POST`
-- **请求参数**:
-  
-  ```json
-  {
-    "user_input": "string",       // 用户输入
-    "agent_output": "string"      // 智能体输出
-  }
-  ```
-- **返回参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "success",
-    "data": null
-  }
-  ```
-
-### 2. 消息踩
-- **接口 URL**: `/api/v1/message/down`
-- **请求方法**: `POST`
-- **请求参数**:
-  ```json
-  {
-    "user_input": "string",       // 用户输入
-    "agent_output": "string"      // 智能体输出
-  }
-  ```
-- **返回参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "success",
-    "data": null
   }
   ```
 

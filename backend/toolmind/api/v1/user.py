@@ -69,21 +69,6 @@ async def login(user_name: str = Body(description='用户名'),
     return resp_200(data={'user_id': db_user.user_id, 'access_token': access_token})
 
 
-@router.put("/user/update", response_model=UnifiedResponseModel)
-async def update_user_info(user_id: str = Body(description="用户的ID"),
-                           user_avatar: Optional[str] = Body(description="用户的头像地址"),
-                           user_description: Optional[str] = Body(description="用户的描述")):
-    UserService.update_user_info(user_id, user_avatar, user_description)
-    return resp_200()
-
-
-@router.get("/user/icons", response_model=UnifiedResponseModel)
-async def get_select_user_avatar():
-    result = UserService.get_available_avatars()
-
-    return resp_200(result)
-
-
 @router.get("/user/info", response_model=UnifiedResponseModel)
 async def get_user_info(user_id: str):
     result = UserService.get_user_info_by_id(user_id)

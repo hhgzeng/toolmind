@@ -25,11 +25,6 @@ export interface searchType {
 //     logoFile:any
 // }
 
-export interface MsgLikeType {
-  userInput: string,
-  agentOutput: string,
-}
-
 // 兼容旧版本的CardListType，映射到Agent
 // export interface CardListType {
 //   code: string

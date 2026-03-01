@@ -3,14 +3,6 @@ import { fetchEventSource } from '@microsoft/fetch-event-source'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
-// 获取工作区插件列表
-export const getWorkspacePluginsAPI = async () => {
-  return request({
-    url: '/api/v1/workspace/plugins',
-    method: 'get'
-  })
-}
-
 // 获取工作区会话列表
 export const getWorkspaceSessionsAPI = async () => {
   return request({
