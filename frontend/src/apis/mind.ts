@@ -2,8 +2,8 @@ import { fetchEventSource } from '@microsoft/fetch-event-source'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
-// 生成灵寻的指导提示（流式）
-export const generateLingSeekGuidePromptAPI = async (
+// 生成 Mind 的指导提示（流式）
+export const generateMindGuidePromptAPI = async (
   data: {
     query: string
     tools?: string[]
@@ -16,15 +16,15 @@ export const generateLingSeekGuidePromptAPI = async (
 ) => {
   const token = localStorage.getItem('token')
 
-  console.log('=== generateLingSeekGuidePromptAPI 调用 ===')
+  console.log('=== generateMindGuidePromptAPI 调用 ===')
   console.log('参数:', data)
   console.log('Token:', token ? `${token.substring(0, 20)}...` : '无')
-  console.log('请求 URL:', `${BASE_URL}/api/v1/workspace/lingseek/guide_prompt`)
+  console.log('请求 URL:', `${BASE_URL}/api/v1/workspace/mind/guide_prompt`)
 
   const ctrl = new AbortController()
 
   try {
-    await fetchEventSource(`${BASE_URL}/api/v1/workspace/lingseek/guide_prompt`, {
+    await fetchEventSource(`${BASE_URL}/api/v1/workspace/mind/guide_prompt`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -73,7 +73,7 @@ export const generateLingSeekGuidePromptAPI = async (
 }
 
 // 根据用户反馈重新生成指导提示（流式）
-export const regenerateLingSeekGuidePromptAPI = async (
+export const regenerateMindGuidePromptAPI = async (
   data: {
     query: string
     guide_prompt: string
@@ -93,7 +93,7 @@ export const regenerateLingSeekGuidePromptAPI = async (
   const ctrl = new AbortController()
 
   try {
-    await fetchEventSource(`${BASE_URL}/api/v1/workspace/lingseek/guide_prompt/feedback`, {
+    await fetchEventSource(`${BASE_URL}/api/v1/workspace/mind/guide_prompt/feedback`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -140,8 +140,8 @@ export const regenerateLingSeekGuidePromptAPI = async (
   }
 }
 
-// 生成灵寻任务列表（流式）
-export const generateLingSeekTasksAPI = async (
+// 生成 Mind 任务列表（流式）
+export const generateMindTasksAPI = async (
   data: {
     guide_prompt: string
   },
@@ -156,7 +156,7 @@ export const generateLingSeekTasksAPI = async (
   const ctrl = new AbortController()
 
   try {
-    await fetchEventSource(`${BASE_URL}/api/v1/workspace/lingseek/task`, {
+    await fetchEventSource(`${BASE_URL}/api/v1/workspace/mind/task`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -203,8 +203,8 @@ export const generateLingSeekTasksAPI = async (
   }
 }
 
-// 开始执行灵寻任务（流式）
-export const startLingSeekTaskAPI = async (
+// 开始执行 Mind 任务（流式）
+export const startMindTaskAPI = async (
   data: {
     query: string
     guide_prompt?: string
@@ -226,7 +226,7 @@ export const startLingSeekTaskAPI = async (
   const ctrl = new AbortController()
 
   try {
-    await fetchEventSource(`${BASE_URL}/api/v1/workspace/lingseek/task_start`, {
+    await fetchEventSource(`${BASE_URL}/api/v1/workspace/mind/task_start`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -299,4 +299,3 @@ export const startLingSeekTaskAPI = async (
     }
   }
 }
-

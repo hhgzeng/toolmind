@@ -87,25 +87,25 @@ AutoBuild 服务提供智能代理的自动化构建功能，通过对话式交�
 - 实时 WebSocket 通信
 - 智能重名检测
 
-### LingSeek 智能代理
+### Mind 智能代理
 
 **功能概述**
-LingSeek 是一个高级智能代理，专门设计用于复杂任务的分解和执行。
+Mind 是一个高级智能代理，专门设计用于复杂任务的分解和执行。
 
 **核心功能**
 
 #### 引导提示生成
 ```python
-async def generate_guide_prompt(self, lingseek_info, feedback=False)
+async def generate_guide_prompt(self, mind_info, feedback=False)
 # 生成智能引导提示，支持反馈优化
 ```
 
 #### 任务分解与执行
 ```python
-async def generate_tasks(self, lingseek_task)
+async def generate_tasks(self, mind_task)
 # 将复杂任务分解为可执行的步骤
 
-async def submit_lingseek_task(self, lingseek_task)
+async def submit_mind_task(self, mind_task)
 # 执行任务并返回结果
 ```
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from toolmind.api.v1 import (chat, dialog, message, history, mcp_stdio_server,
                               user, llm, mcp_server, mcp_user_config,
-                              workspace, lingseek, usage_stats, upload, model_config)
+                              workspace, mind, usage_stats, upload, model_config)
 
 router = APIRouter(prefix="/api/v1")
 
@@ -15,7 +15,7 @@ router.include_router(mcp_server.router)
 router.include_router(mcp_stdio_server.router)
 router.include_router(mcp_user_config.router)
 router.include_router(workspace.router)
-router.include_router(lingseek.router)
+router.include_router(mind.router)
 router.include_router(usage_stats.router)
 router.include_router(upload.router)
 router.include_router(model_config.router)

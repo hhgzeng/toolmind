@@ -30,7 +30,7 @@ export interface UpdateLLMRequest {
   llm_type?: string
 }
 
-export interface LingseekModelConfig {
+export interface MindModelConfig {
   config_id?: string
   user_id?: string
   conversation_model_id?: string | null
@@ -112,18 +112,18 @@ export function deleteLLMAPI(data: { llm_id: string }) {
   })
 }
 
-// 获取 Lingseek 模型配置
-export function getLingseekConfigAPI() {
-  return request<ApiResponse<LingseekModelConfig>>({
-    url: '/api/v1/model/lingseek_config',
+// 获取 Mind 模型配置
+export function getMindConfigAPI() {
+  return request<ApiResponse<MindModelConfig>>({
+    url: '/api/v1/model/mind_config',
     method: 'GET'
   })
 }
 
-// 更新 Lingseek 模型配置
-export function updateLingseekConfigAPI(data: LingseekModelConfig) {
-  return request<ApiResponse<LingseekModelConfig>>({
-    url: '/api/v1/model/lingseek_config',
+// 更新 Mind 模型配置
+export function updateMindConfigAPI(data: MindModelConfig) {
+  return request<ApiResponse<MindModelConfig>>({
+    url: '/api/v1/model/mind_config',
     method: 'POST',
     data
   })

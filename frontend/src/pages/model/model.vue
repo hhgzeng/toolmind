@@ -7,12 +7,12 @@ import {
   createLLMAPI, 
   updateLLMAPI,
   deleteLLMAPI,
-  getLingseekConfigAPI,
-  updateLingseekConfigAPI,
+  getMindConfigAPI,
+  updateMindConfigAPI,
   type LLMResponse,
   type CreateLLMRequest,
   type UpdateLLMRequest,
-  type LingseekModelConfig
+  type MindModelConfig
 } from '../../apis/llm'
 
 // 响应式数据
@@ -20,13 +20,13 @@ const models = ref<LLMResponse[]>([])
 const loading = ref(false)
 const searchKeyword = ref('')
 
-// Lingseek 配置数据
-const lingseekConfig = ref<LingseekModelConfig>({
+// Mind 配置数据
+const mindConfig = ref<MindModelConfig>({
   conversation_model_id: null,
   tool_call_model_id: null,
   reasoning_model_id: null
 })
-const savingLingseek = ref(false)
+const savingMind = ref(false)
 
 // 创建对话框控制
 const createDialogVisible = ref(false)
@@ -85,31 +85,31 @@ const fetchModels = async () => {
   }
 
   try {
-    const configRes = await getLingseekConfigAPI()
+    const configRes = await getMindConfigAPI()
     if (configRes.data.status_code === 200) {
       if (Object.keys(configRes.data.data).length > 0) {
-        lingseekConfig.value = configRes.data.data
+        mindConfig.value = configRes.data.data
       }
     }
   } catch (error) {
-    console.error('获取 Lingseek 配置失败', error)
+    console.error('获取 Mind 配置失败', error)
   }
 }
 
-// 保存 Lingseek 配置
-const saveLingseekConfig = async () => {
-  savingLingseek.value = true
+// 保存 Mind 配置
+const saveMindConfig = async () => {
+  savingMind.value = true
   try {
-    const res = await updateLingseekConfigAPI(lingseekConfig.value)
+    const res = await updateMindConfigAPI(mindConfig.value)
     if (res.data.status_code === 200) {
       if (res.data.data && Object.keys(res.data.data).length > 0) {
-        lingseekConfig.value = res.data.data
+        mindConfig.value = res.data.data
       }
     }
   } catch (error) {
-    ElMessage.error('保存 Lingseek 配置失败')
+    ElMessage.error('保存 Mind 配置失败')
   } finally {
-    savingLingseek.value = false
+    savingMind.value = false
   }
 }
 
@@ -382,11 +382,11 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Lingseek 引擎配置区域 -->
-    <div class="lingseek-config-section">
+    <!-- ToolMind 引擎配置区域 -->
+    <div class="mind-config-section">
       <div class="section-title">
-        <h3>🚀 Lingseek 核心引擎配置</h3>
-        <p>为 Lingseek 的不同功能组件配置专属的 AI 模型</p>
+        <h3>🚀 ToolMind 核心引擎配置</h3>
+        <p>为 ToolMind 的不同功能组件配置专属的 AI 模型</p>
       </div>
       
       <div class="config-grid">
@@ -397,12 +397,12 @@ onMounted(() => {
             <p>负责理解用户意图并规划任务执行路径</p>
           </div>
           <el-select 
-            v-model="lingseekConfig.conversation_model_id" 
+            v-model="mindConfig.conversation_model_id" 
             placeholder="请选择会话模型" 
             class="model-select"
             clearable
             no-data-text="无模型"
-            @change="saveLingseekConfig"
+            @change="saveMindConfig"
           >
             <el-option
               v-for="m in models"
@@ -420,12 +420,12 @@ onMounted(() => {
             <p>负责执行 MCP 协议和外部工具调用</p>
           </div>
           <el-select 
-            v-model="lingseekConfig.tool_call_model_id" 
+            v-model="mindConfig.tool_call_model_id" 
             placeholder="请选择工具模型" 
             class="model-select"
             clearable
             no-data-text="无模型"
-            @change="saveLingseekConfig"
+            @change="saveMindConfig"
           >
             <el-option
               v-for="m in models"
@@ -443,12 +443,12 @@ onMounted(() => {
             <p>对任务执行的最终结果进行自我验证和评估</p>
           </div>
           <el-select 
-            v-model="lingseekConfig.reasoning_model_id" 
+            v-model="mindConfig.reasoning_model_id" 
             placeholder="请选择评估模型" 
             class="model-select"
             clearable
             no-data-text="无模型"
-            @change="saveLingseekConfig"
+            @change="saveMindConfig"
           >
             <el-option
               v-for="m in models.filter(m => m.llm_type === 'LLM' || m.llm_type === 'Rerank')"
@@ -901,8 +901,8 @@ onMounted(() => {
   }
 }
 
-/* Lingseek 引擎配置样式 */
-.lingseek-config-section {
+/* Mind 引擎配置样式 */
+.mind-config-section {
   margin-top: 40px;
   background: white;
   border-radius: 24px;

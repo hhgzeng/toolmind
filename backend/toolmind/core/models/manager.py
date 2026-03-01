@@ -3,7 +3,7 @@ from langchain_openai import ChatOpenAI
 from toolmind.core.models.tool_call import ToolCallModel
 from toolmind.core.models.reason_model import ReasoningModel
 from toolmind.settings import app_settings
-from toolmind.database.dao.lingseek_config import LingseekModelConfigDao
+from toolmind.database.dao.mind_config import MindModelConfigDao
 from toolmind.database.dao.llm import LLMDao
 from typing import Optional
 
@@ -13,7 +13,7 @@ class ModelManager:
     @classmethod
     async def _get_model_config(cls, user_id: str, config_type: str) -> Optional[dict]:
         """ Helper to fetch model config based on type ('conversation', 'tool_call', 'reasoning'). """
-        user_config = await LingseekModelConfigDao.get_config_by_user_id(user_id)
+        user_config = await MindModelConfigDao.get_config_by_user_id(user_id)
         if not user_config:
             return None
         
@@ -84,7 +84,7 @@ class ModelManager:
                               base_url=app_settings.multi_models.reasoning_model.base_url)
 
     @classmethod
-    async def get_lingseek_intent_model(cls, user_id: str = None, **kwargs) -> BaseChatModel:
+    async def get_mind_intent_model(cls, user_id: str = None, **kwargs) -> BaseChatModel:
         model_config = await cls._get_model_config(user_id, 'tool_call')
         
         if model_config:

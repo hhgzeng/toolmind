@@ -9,7 +9,7 @@ class UsageStatsRequest(BaseModel):
 
 class UsageStatsAgentType(str, Enum):
     mars_agent = "Mars-Agent"
-    lingseek_agent = "LingSeek-Agent"
+    mind_agent = "Mind-Agent"
     simple_agent = "Simple-Agent"
     wechat_agent = "WeChat-Agent"
 

@@ -21,13 +21,13 @@ from toolmind.core.models.manager import ModelManager
 from toolmind.utils.convert import mcp_tool_to_args_schema, convert_mcp_config
 from toolmind.utils.date_utils import get_beijing_time
 from toolmind.services.mcp.manager import MCPManager
-from toolmind.prompts.lingseek import GenerateGuidePrompt, FeedBackGuidePrompt, GenerateTitlePrompt, \
+from toolmind.prompts.mind import GenerateGuidePrompt, FeedBackGuidePrompt, GenerateTitlePrompt, \
     GenerateTaskPrompt, FixJsonPrompt, ToolCallPrompt, SystemMessagePrompt, EvaluateResultPrompt
-from toolmind.schema.lingseek import LingSeekGuidePrompt, LingSeekGuidePromptFeedBack, LingSeekTask, \
-    LingSeekTaskStep
+from toolmind.schema.mind import MindGuidePrompt, MindGuidePromptFeedBack, MindTask, \
+    MindTaskStep
 
 
-class LingSeekAgent:
+class MindAgent:
 
     def __init__(self, user_id: str):
         self.mcp_manager: Optional[MCPManager] = None
@@ -40,9 +40,9 @@ class LingSeekAgent:
         return await ModelManager.get_conversation_model(user_id=self.user_id)
         
     async def get_tool_call_model(self):
-        return await ModelManager.get_lingseek_intent_model(user_id=self.user_id)
+        return await ModelManager.get_mind_intent_model(user_id=self.user_id)
 
-    async def _generate_guide_prompt(self, lingseek_guide_prompt):
+    async def _generate_guide_prompt(self, mind_guide_prompt):
         """
         通过COT的方法使得模型回复的更加准确，但是展示的时候需要把思考内容隐藏
         """
@@ -52,7 +52,7 @@ class LingSeekAgent:
         answer = ""
         split_tags = ["<Thought_END>", "</Thought_END>"]
         model = await self.get_conversation_model()
-        async for one in model.astream(input=lingseek_guide_prompt, config={"callbacks": [usage_metadata_callback]}):
+        async for one in model.astream(input=mind_guide_prompt, config={"callbacks": [usage_metadata_callback]}):
             answer += f"{one.content}"
             if sop_flag:
                 yield one
@@ -70,11 +70,11 @@ class LingSeekAgent:
             one.content = answer
             yield one
 
-    async def _generate_tasks(self, lingseek_task_prompt):
+    async def _generate_tasks(self, mind_task_prompt):
         model = await self.get_conversation_model()
         conversation_json_model = model.bind(response_format={"type": "json_object"})
 
-        response = await conversation_json_model.ainvoke(input=lingseek_task_prompt, config={"callbacks": [usage_metadata_callback]})
+        response = await conversation_json_model.ainvoke(input=mind_task_prompt, config={"callbacks": [usage_metadata_callback]})
 
         try:
             content = json.loads(response.content)
@@ -101,7 +101,7 @@ class LingSeekAgent:
                 title=title,
                 user_id=self.user_id,
                 contexts=[contexts.model_dump()],
-                agent=WorkSpaceAgents.LingSeekAgent.value))
+                agent=WorkSpaceAgents.MindAgent.value))
 
     async def _parse_function_call_response(self, message: AIMessage):
         tool_messages = []
@@ -116,39 +116,39 @@ class LingSeekAgent:
 
         return tool_messages
 
-    async def generate_tasks(self, lingseek_task: LingSeekTask):
-        tools = await self._obtain_lingseek_tools(lingseek_task.plugins, lingseek_task.mcp_servers, lingseek_task.web_search)
+    async def generate_tasks(self, mind_task: MindTask):
+        tools = await self._obtain_mind_tools(mind_task.plugins, mind_task.mcp_servers, mind_task.web_search)
         tools_str = json.dumps(tools, ensure_ascii=False, indent=2)
 
-        lingseek_task_prompt = GenerateTaskPrompt.format(
+        mind_task_prompt = GenerateTaskPrompt.format(
             tools_str=tools_str,
-            query=lingseek_task.query,
+            query=mind_task.query,
             current_time=get_beijing_time(),
         )
 
-        response_task = await self._generate_tasks(lingseek_task_prompt)
+        response_task = await self._generate_tasks(mind_task_prompt)
         return response_task
 
-    async def generate_guide_prompt(self, lingseek_info: Union[LingSeekGuidePrompt, LingSeekGuidePromptFeedBack],
+    async def generate_guide_prompt(self, mind_info: Union[MindGuidePrompt, MindGuidePromptFeedBack],
                                     feedback: bool = False):
 
-        tools = await self._obtain_lingseek_tools(lingseek_info.plugins, lingseek_info.mcp_servers, lingseek_info.web_search)
+        tools = await self._obtain_mind_tools(mind_info.plugins, mind_info.mcp_servers, mind_info.web_search)
         tools_str = json.dumps(tools, ensure_ascii=False, indent=2)
 
         if feedback:
-            lingseek_guide_prompt = FeedBackGuidePrompt.format(
-                query=lingseek_info.query,
+            mind_guide_prompt = FeedBackGuidePrompt.format(
+                query=mind_info.query,
                 tools_str=tools_str,
-                feedback=lingseek_info.feedback,
-                feedback_guide_prompt=lingseek_info.guide_prompt,
+                feedback=mind_info.feedback,
+                feedback_guide_prompt=mind_info.guide_prompt,
             )
         else:
-            lingseek_guide_prompt = GenerateGuidePrompt.format(
+            mind_guide_prompt = GenerateGuidePrompt.format(
                 tools_str=tools_str,
-                query=lingseek_info.query,
+                query=mind_info.query,
                 guide_prompt_template=GuidePromptTemplate,
             )
-        async for chunk in self._generate_guide_prompt(lingseek_guide_prompt):
+        async for chunk in self._generate_guide_prompt(mind_guide_prompt):
             yield {
                 "event": "generate_guide_prompt",
                 "data": {
@@ -215,7 +215,7 @@ class LingSeekAgent:
             except Exception as e:
                 return {"score": 100, "reasoning": f"评判执行异常: {str(e)}，默认放行。"}
 
-    async def submit_lingseek_task(self, lingseek_task: LingSeekTask):
+    async def submit_mind_task(self, mind_task: MindTask):
         loop_count = 0
         max_loop = 3
 
@@ -227,13 +227,13 @@ class LingSeekAgent:
                     "data": {"message": "正在重新规划任务并重头执行...", "title": f"第 {loop_count} 次重跑"}
                 }
 
-            task = await self.generate_tasks(lingseek_task)
+            task = await self.generate_tasks(mind_task)
 
             tasks_graph = {}
             tasks_show = []
             steps = task.get("steps", [])
             for step in steps:
-                task_step = LingSeekTaskStep(**step)
+                task_step = MindTaskStep(**step)
                 tasks_graph[task_step.step_id] = task_step
 
             for step_id, step_info in tasks_graph.items():
@@ -255,11 +255,11 @@ class LingSeekAgent:
             }
 
 
-            tools = await self._obtain_lingseek_tools(lingseek_task.plugins, lingseek_task.mcp_servers, lingseek_task.web_search)
+            tools = await self._obtain_mind_tools(mind_task.plugins, mind_task.mcp_servers, mind_task.web_search)
             model = await self.get_tool_call_model()
             tool_call_model = model.bind_tools(tools) if len(tools) else model
 
-            messages: List[BaseMessage] = [SystemMessage(content=SystemMessagePrompt), HumanMessage(content=lingseek_task.query)]
+            messages: List[BaseMessage] = [SystemMessage(content=SystemMessagePrompt), HumanMessage(content=mind_task.query)]
             context_task = []
             for step_id, step_info in tasks_graph.items():
                 step_context = []
@@ -273,7 +273,7 @@ class LingSeekAgent:
                     step_info=step_info,
                     step_context=str(step_context)
                 )
-                step_messages = [SystemMessage(content=step_prompt), HumanMessage(content=lingseek_task.query)]
+                step_messages = [SystemMessage(content=step_prompt), HumanMessage(content=mind_task.query)]
                 response = await tool_call_model.ainvoke(input=step_messages, config={"callbacks": [usage_metadata_callback]})
 
                 tools_messages = await self._parse_function_call_response(response)
@@ -285,7 +285,7 @@ class LingSeekAgent:
                     messages.append(response)
                     messages.extend(tools_messages)
                 else:
-                    messages.append(HumanMessage(content=lingseek_task.query))
+                    messages.append(HumanMessage(content=mind_task.query))
                     messages.append(AIMessage(content=response.content))
                 yield {
                     "event": "step_result",
@@ -302,11 +302,11 @@ class LingSeekAgent:
                 }
 
             # Evaluation check
-            print(f"[{get_beijing_time()}] [LingSeekAgent] Start _evaluate_result...")
-            eval_res = await self._evaluate_result(lingseek_task.query, final_response)
+            print(f"[{get_beijing_time()}] [MindAgent] Start _evaluate_result...")
+            eval_res = await self._evaluate_result(mind_task.query, final_response)
             score = eval_res.get("score", 100)
             reasoning = eval_res.get("reasoning", "")
-            print(f"[{get_beijing_time()}] [LingSeekAgent] Evaluated result -> Score: {score}, Reasoning: {reasoning}")
+            print(f"[{get_beijing_time()}] [MindAgent] Evaluated result -> Score: {score}, Reasoning: {reasoning}")
 
             if score >= 80 or loop_count == max_loop:
                 pass_msg = f"\n\n\n> **✅ 自我反馈通过** (匹配度: {score}/100)\n> **理由**: {reasoning}\n\n---\n\n"
@@ -317,9 +317,9 @@ class LingSeekAgent:
                 final_response += pass_msg
                 
                 await self._add_workspace_session(
-                    lingseek_task.query,
+                    mind_task.query,
                     WorkSpaceSessionContext(
-                        query=lingseek_task.query,
+                        query=mind_task.query,
                         guide_prompt="",
                         task=context_task,
                         task_graph=tasks_show,
@@ -349,17 +349,17 @@ class LingSeekAgent:
         else:
             from toolmind.services.web_search.tavily_search.action import tavily_search
             from toolmind.services.web_search.google_search.action import google_search
-            LingSeekPlugins = {
+            MindPlugins = {
                 "tavily_search": tavily_search,
                 "web_search": tavily_search,
                 "google_search": google_search,
             }
-            text_content = LingSeekPlugins[tool_name].invoke(tool_args)
+            text_content = MindPlugins[tool_name].invoke(tool_args)
         return text_content
 
-    async def _obtain_lingseek_tools(self, plugins, mcp_servers, enable_web_search=False):
+    async def _obtain_mind_tools(self, plugins, mcp_servers, enable_web_search=False):
         # plugins_name = await ToolService.get_tool_name_by_id(plugins)
-        # plugins_func = [LingSeekPlugins.get(name) for name in plugins_name]
+        # plugins_func = [MindPlugins.get(name) for name in plugins_name]
         # tools = [convert_to_openai_tool(func) for func in plugins_func]
 
         # if enable_web_search and web_search not in plugins_func:
@@ -397,7 +397,7 @@ class LingSeekAgent:
             await UsageStatsService.create_usage_stats(
                 model=model,
                 user_id=self.user_id,
-                agent=UsageStatsAgentType.lingseek_agent,
+                agent=UsageStatsAgentType.mind_agent,
                 input_tokens=response.usage_metadata.get("input_tokens"),
                 output_tokens=response.usage_metadata.get("output_tokens")
             )

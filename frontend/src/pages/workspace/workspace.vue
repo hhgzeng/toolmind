@@ -141,7 +141,7 @@ const fetchSessions = async () => {
         sessionId: session.session_id || session.id,
         title: session.title || '未命名会话',
         createTime: session.create_time || session.created_at || new Date().toISOString(),
-        agent: session.agent || 'lingseek',
+        agent: session.agent || 'mind',
         contexts: session.contexts || []
       }))
       console.log('工作区会话列表:', sessions.value)

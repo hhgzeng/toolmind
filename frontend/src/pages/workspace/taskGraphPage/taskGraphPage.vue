@@ -5,8 +5,8 @@ import { ElMessage } from 'element-plus'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { 
-  startLingSeekTaskAPI 
-} from '../../../apis/lingseek'
+  startMindTaskAPI 
+} from '../../../apis/mind'
 import { getWorkspaceSessionInfoAPI } from '../../../apis/workspace'
 
 const route = useRoute()
@@ -539,7 +539,7 @@ const startTask = async () => {
   // 保持结果区“接收中”指示关闭，直到流程完成
 
   try {
-    await startLingSeekTaskAPI(
+    await startMindTaskAPI(
       taskParams.value,
       (data) => {
         // 通用文本 chunk：统一进入缓冲；若处于接收阶段，确保排空

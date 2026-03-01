@@ -7,8 +7,8 @@ from sqlmodel import Field
 from toolmind.database.models.base import SQLModelSerializable
 from uuid import uuid4
 
-class LingseekModelConfigTable(SQLModelSerializable, table=True):
-    __tablename__ = "lingseek_model_config"
+class MindModelConfigTable(SQLModelSerializable, table=True):
+    __tablename__ = "mind_model_config"
 
     config_id: str = Field(default_factory=lambda: uuid4().hex, primary_key=True)
     user_id: str = Field(description="用户ID", unique=True, index=True)

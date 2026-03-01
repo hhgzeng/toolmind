@@ -14,7 +14,7 @@ from toolmind.database.models.message import MessageDownTable, MessageLikeTable
 from toolmind.database.models.role import Role
 from toolmind.database.models.workspace_session import WorkSpaceSession
 from toolmind.database.models.usage_stats import UsageStats
-from toolmind.database.models.lingseek_config import LingseekModelConfigTable
+from toolmind.database.models.mind_config import MindModelConfigTable
 
 from toolmind.settings import app_settings
 

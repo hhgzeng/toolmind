@@ -1,13 +1,13 @@
 from toolmind.database import async_engine
-from toolmind.database.models.lingseek_config import LingseekModelConfigTable
+from toolmind.database.models.mind_config import MindModelConfigTable
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
 
-class LingseekModelConfigDao:
+class MindModelConfigDao:
     @classmethod
-    async def get_config_by_user_id(cls, user_id: str) -> LingseekModelConfigTable:
+    async def get_config_by_user_id(cls, user_id: str) -> MindModelConfigTable:
         async with AsyncSession(async_engine) as session:
-            statement = select(LingseekModelConfigTable).where(LingseekModelConfigTable.user_id == user_id)
+            statement = select(MindModelConfigTable).where(MindModelConfigTable.user_id == user_id)
             result = await session.exec(statement)
             return result.first()
 
@@ -17,7 +17,7 @@ class LingseekModelConfigDao:
                             tool_call_model_id: str = None,
                             reasoning_model_id: str = None):
         async with AsyncSession(async_engine) as session:
-            statement = select(LingseekModelConfigTable).where(LingseekModelConfigTable.user_id == user_id)
+            statement = select(MindModelConfigTable).where(MindModelConfigTable.user_id == user_id)
             result = await session.exec(statement)
             config = result.first()
             if config:
@@ -29,7 +29,7 @@ class LingseekModelConfigDao:
                     config.reasoning_model_id = reasoning_model_id
                 session.add(config)
             else:
-                config = LingseekModelConfigTable(
+                config = MindModelConfigTable(
                     user_id=user_id,
                     conversation_model_id=conversation_model_id,
                     tool_call_model_id=tool_call_model_id,
