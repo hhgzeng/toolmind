@@ -45,20 +45,20 @@ watch(
           >
             <el-menu-item index="workspace" @click="goCurrent('workspace')">
               <template #title>
-                <el-icon><ChatDotRound /></el-icon>
-                <span>对话</span>
+                <el-icon><Back /></el-icon>
+                <span>返回</span>
               </template>
             </el-menu-item>
             <el-menu-item index="model" @click="goCurrent('model')">
               <template #title>
                 <el-icon><Cpu /></el-icon>
-                <span>模型</span>
+                <span>模型管理</span>
               </template>
             </el-menu-item>
             <el-menu-item index="mcp-server" @click="goCurrent('mcp-server')">
               <template #title>
                 <el-icon><Connection /></el-icon>
-                <span>MCP</span>
+                <span>MCP 服务器</span>
               </template>
             </el-menu-item>
             <el-menu-item index="dashboard" @click="goCurrent('dashboard')">
