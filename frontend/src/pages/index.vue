@@ -2,6 +2,7 @@
 import { ref, watch, computed } from "vue"
 import { useRouter } from "vue-router"
 import { useRoute } from "vue-router"
+import { Setting } from "@element-plus/icons-vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -12,8 +13,11 @@ const goCurrent = (item: string) => {
   const routes: Record<string, string> = {
     "workspace": "/workspace",
     "model": "/model",
+    "mind-config": "/mind-config",
+    "web-search": "/web-search",
     "mcp-server": "/mcp-server",
-    "dashboard": "/dashboard"
+    "dashboard": "/dashboard",
+    "general-settings": "/general-settings"
   }
   
   router.push(routes[item] || "/")
@@ -47,6 +51,24 @@ watch(
               <template #title>
                 <el-icon><Back /></el-icon>
                 <span>返回</span>
+              </template>
+            </el-menu-item>
+            <el-menu-item index="general-settings" @click="goCurrent('general-settings')">
+              <template #title>
+                <el-icon><Setting /></el-icon>
+                <span>通用设置</span>
+              </template>
+            </el-menu-item>
+            <el-menu-item index="mind-config" @click="goCurrent('mind-config')">
+              <template #title>
+                <el-icon><Operation /></el-icon>
+                <span>模型配置</span>
+              </template>
+            </el-menu-item>
+            <el-menu-item index="web-search" @click="goCurrent('web-search')">
+              <template #title>
+                <el-icon><Search /></el-icon>
+                <span>联网搜索</span>
               </template>
             </el-menu-item>
             <el-menu-item index="model" @click="goCurrent('model')">
@@ -173,6 +195,46 @@ watch(
       z-index: 1;
       transition: all 0.2s ease;
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
+    }
+  }
+}
+
+/* 深色模式 */
+.theme-dark {
+  .ai-body {
+    .ai-main {
+      background-color: #020617;
+
+      .sidebar {
+        background: #020617;
+        border-color: #1f2937;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+      }
+
+      .content {
+        background-color: #020617;
+      }
+    }
+  }
+
+  ::deep(.el-menu-vertical-demo) {
+    .el-menu-item {
+      color: #e5e7eb;
+
+      &:hover {
+        background: rgba(148, 163, 184, 0.2);
+        color: #f9fafb;
+      }
+
+      &.is-active {
+        background: rgba(37, 99, 235, 0.18);
+        color: #f9fafb;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.6);
+
+        span {
+          color: #ffffff !important;
+        }
+      }
     }
   }
 }

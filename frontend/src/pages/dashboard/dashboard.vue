@@ -67,16 +67,16 @@
     </div>
 
     <div class="charts-container">
-      <!-- 调用次数折线图 -->
+      <!-- 模型调用次数折线图 -->
       <div class="chart-wrapper" v-loading="loading">
-        <div class="chart-title">调用次数统计</div>
+        <div class="chart-title">模型调用次数统计</div>
         <div class="chart-content" ref="callCountChartRef"></div>
         <div class="empty" v-if="!hasCallCountData">暂无数据</div>
       </div>
 
-      <!-- Token使用量柱状图 -->
+      <!-- Token 使用量柱状图 -->
       <div class="chart-wrapper" v-loading="loading">
-        <div class="chart-title">Token使用量统计</div>
+        <div class="chart-title">Token 使用量统计</div>
         <div class="chart-content" ref="tokenUsageChartRef"></div>
         <div class="empty" v-if="!hasTokenUsageData">暂无数据</div>
       </div>
@@ -526,9 +526,8 @@ onBeforeUnmount(() => {
 
   .header-actions {
     display: flex;
-    align-items: stretch;
+    align-items: center;
     gap: 16px;
-    flex-wrap: wrap;
   }
 }
 
@@ -544,8 +543,8 @@ onBeforeUnmount(() => {
   transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
   background: #ffffff;
   padding: 8px 20px !important;
-  min-height: 40px !important;
-  height: 40px !important;
+  min-height: 36px !important;
+  height: 36px !important;
 }
 .filter-select :deep(.el-select__placeholder),
 .filter-select :deep(.el-select__selected-item) {

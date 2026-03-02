@@ -1,32 +1,21 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Edit, Delete, Connection, Cpu, Search, ChatDotRound } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Connection, Cpu, Search } from '@element-plus/icons-vue'
 import { 
   getVisibleLLMsAPI, 
   createLLMAPI, 
   updateLLMAPI,
   deleteLLMAPI,
-  getMindConfigAPI,
-  updateMindConfigAPI,
   type LLMResponse,
   type CreateLLMRequest,
-  type UpdateLLMRequest,
-  type MindModelConfig
+  type UpdateLLMRequest
 } from '../../apis/llm'
 
 // 响应式数据
 const models = ref<LLMResponse[]>([])
 const loading = ref(false)
 const searchKeyword = ref('')
-
-// Mind 配置数据
-const mindConfig = ref<MindModelConfig>({
-  conversation_model_id: null,
-  tool_call_model_id: null,
-  reasoning_model_id: null
-})
-const savingMind = ref(false)
 
 // 创建对话框控制
 const createDialogVisible = ref(false)
@@ -82,34 +71,6 @@ const fetchModels = async () => {
     ElMessage.error('获取模型列表失败')
   } finally {
     loading.value = false
-  }
-
-  try {
-    const configRes = await getMindConfigAPI()
-    if (configRes.data.status_code === 200) {
-      if (Object.keys(configRes.data.data).length > 0) {
-        mindConfig.value = configRes.data.data
-      }
-    }
-  } catch (error) {
-    console.error('获取 Mind 配置失败', error)
-  }
-}
-
-// 保存 Mind 配置
-const saveMindConfig = async () => {
-  savingMind.value = true
-  try {
-    const res = await updateMindConfigAPI(mindConfig.value)
-    if (res.data.status_code === 200) {
-      if (res.data.data && Object.keys(res.data.data).length > 0) {
-        mindConfig.value = res.data.data
-      }
-    }
-  } catch (error) {
-    ElMessage.error('保存 Mind 配置失败')
-  } finally {
-    savingMind.value = false
   }
 }
 
@@ -380,86 +341,6 @@ onMounted(() => {
         <p>点击添加按钮创建您的第一个 AI 模型吧</p>
 
       </div>
-    </div>
-
-    <!-- ToolMind 引擎配置区域 -->
-    <div class="mind-config-section">
-      <div class="section-title">
-        <h3>🚀 ToolMind 核心引擎配置</h3>
-        <p>为 ToolMind 的不同功能组件配置专属的 AI 模型</p>
-      </div>
-      
-      <div class="config-grid">
-        <div class="config-card">
-          <div class="config-icon"><el-icon><ChatDotRound /></el-icon></div>
-          <div class="config-info">
-            <h4>对话与任务生成模型</h4>
-            <p>负责理解用户意图并规划任务执行路径</p>
-          </div>
-          <el-select 
-            v-model="mindConfig.conversation_model_id" 
-            placeholder="请选择会话模型" 
-            class="model-select"
-            clearable
-            no-data-text="无模型"
-            @change="saveMindConfig"
-          >
-            <el-option
-              v-for="m in models"
-              :key="m.llm_id"
-              :label="m.model + ' (' + m.provider + ')'"
-              :value="m.llm_id"
-            />
-          </el-select>
-        </div>
-        
-        <div class="config-card">
-          <div class="config-icon"><el-icon><Connection /></el-icon></div>
-          <div class="config-info">
-            <h4>工具调用模型</h4>
-            <p>负责执行 MCP 协议和外部工具调用</p>
-          </div>
-          <el-select 
-            v-model="mindConfig.tool_call_model_id" 
-            placeholder="请选择工具模型" 
-            class="model-select"
-            clearable
-            no-data-text="无模型"
-            @change="saveMindConfig"
-          >
-            <el-option
-              v-for="m in models"
-              :key="m.llm_id"
-              :label="m.model + ' (' + m.provider + ')'"
-              :value="m.llm_id"
-            />
-          </el-select>
-        </div>
-        
-        <div class="config-card">
-          <div class="config-icon"><el-icon><Cpu /></el-icon></div>
-          <div class="config-info">
-            <h4>结果推理与评估模型</h4>
-            <p>对任务执行的最终结果进行自我验证和评估</p>
-          </div>
-          <el-select 
-            v-model="mindConfig.reasoning_model_id" 
-            placeholder="请选择评估模型" 
-            class="model-select"
-            clearable
-            no-data-text="无模型"
-            @change="saveMindConfig"
-          >
-            <el-option
-              v-for="m in models.filter(m => m.llm_type === 'LLM' || m.llm_type === 'Rerank')"
-              :key="m.llm_id"
-              :label="m.model + ' (' + m.provider + ')'"
-              :value="m.llm_id"
-            />
-          </el-select>
-        </div>
-      </div>
-
     </div>
 
     <!-- 创建模型对话框 -->
@@ -899,110 +780,6 @@ onMounted(() => {
 
     }
   }
-}
-
-/* Mind 引擎配置样式 */
-.mind-config-section {
-  margin-top: 40px;
-  background: white;
-  border-radius: 24px;
-  padding: 32px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
-  position: relative;
-  overflow: hidden;
-  border: 1px solid #ebeef5;
-
-
-  .section-title {
-    margin-bottom: 24px;
-    
-    h3 {
-      font-size: 22px;
-      font-weight: 700;
-      color: #303133;
-      margin: 0 0 8px 0;
-    }
-    
-    p {
-      color: #909399;
-      font-size: 14px;
-      margin: 0;
-    }
-  }
-
-  .config-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    margin-bottom: 24px;
-  }
-
-  .config-card {
-    background: #f8f9fa;
-    border-radius: 24px;
-    padding: 24px;
-    border: 1px solid #ebeef5;
-    transition: all 0.3s;
-    
-    &:hover {
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
-      transform: translateY(-2px);
-      border-color: #c6e2ff;
-    }
-    
-    .config-icon {
-      width: 48px;
-      height: 48px;
-      background: rgba(64, 158, 255, 0.1);
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 16px;
-      
-      .el-icon {
-        font-size: 24px;
-        color: #409eff;
-      }
-    }
-    
-    .config-info {
-      margin-bottom: 20px;
-      
-      h4 {
-        margin: 0 0 8px 0;
-        font-size: 16px;
-        font-weight: 600;
-        color: #303133;
-      }
-      
-      p {
-        margin: 0;
-        font-size: 13px;
-        color: #606266;
-        line-height: 1.5;
-      }
-    }
-    
-    .model-select {
-      width: 100%;
-      
-      :deep(.el-select__wrapper) {
-        border-radius: 100px !important;
-      }
-      
-      :deep(.el-popper.is-light) {
-        border-radius: 16px !important;
-      }
-      
-      :deep(.el-select-dropdown__item) {
-        border-radius: 8px !important;
-        margin: 0 8px;
-        width: calc(100% - 16px);
-      }
-    }
-  }
-
 }
 
 // 响应式调整

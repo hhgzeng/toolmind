@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Connection, Edit, Delete, Tools } from '@element-plus/icons-vue'
+import { Plus, Connection, Edit, Delete, Tools, Search } from '@element-plus/icons-vue'
 import { 
   createMCPServerAPI, 
   getMCPServersAPI, 
@@ -24,6 +24,26 @@ const selectedServerName = ref('')
 const deleteDialogVisible = ref(false)
 const serverToDelete = ref<MCPServer | null>(null)
 const deleteLoading = ref(false)
+
+// 搜索相关
+const searchKeyword = ref('')
+
+const filteredServers = computed(() => {
+  if (!searchKeyword.value) {
+    return servers.value
+  }
+
+  const keyword = searchKeyword.value.toLowerCase()
+  return servers.value.filter(server => {
+    const name = (server.server_name || '').toLowerCase()
+    const type = (getServerType(server) || '').toLowerCase()
+    return name.includes(keyword) || type.includes(keyword)
+  })
+})
+
+const clearSearch = () => {
+  searchKeyword.value = ''
+}
 
 const configPlaceholder = `// Example JSON (sse):
 // {
@@ -304,15 +324,35 @@ onUnmounted(() => {
         <el-icon class="mcp-icon"><Connection /></el-icon>
         MCP 服务器
       </h2>
-      <el-button type="primary" :icon="Plus" @click="handleCreate">
-        添加服务器
-      </el-button>
+      <div class="header-actions">
+        <div class="search-box">
+          <el-input
+            v-model="searchKeyword"
+            placeholder="搜索服务器名称或类型..."
+            :prefix-icon="Search"
+            clearable
+            @clear="clearSearch"
+            style="width: 300px"
+          />
+        </div>
+
+        <div class="action-buttons">
+          <el-button
+            type="primary"
+            :icon="Plus"
+            @click="handleCreate"
+            class="add-btn"
+          >
+            添加服务器
+          </el-button>
+        </div>
+      </div>
     </div>
 
     <div class="server-list" v-loading="loading">
-      <div class="server-table-container" v-if="servers.length > 0">
+      <div class="server-table-container" v-if="filteredServers.length > 0">
         <el-table 
-          :data="servers || []" 
+          :data="filteredServers" 
           style="width: 100%" 
           :header-cell-style="{ background: '#f8fafc', color: '#64748b', fontWeight: '600' }"
           row-class-name="server-table-row"
@@ -392,7 +432,7 @@ onUnmounted(() => {
         </el-table>
       </div>
       
-      <div v-if="servers.length === 0 && !loading" class="empty-state">
+      <div v-if="filteredServers.length === 0 && !loading" class="empty-state">
         <div class="empty-icon">
           <i class="empty-icon-symbol">📡</i>
         </div>
@@ -1266,21 +1306,53 @@ onUnmounted(() => {
         color: #409eff;
       }
     }
-    
-    .el-button {
-      border-radius: 100px;
-      padding: 12px 20px;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.3s;
-      background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
-      border: none;
-      box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
-      
-      &:hover {
-        transform: translateY(-2px);
-        background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
-        box-shadow: 0 6px 16px rgba(64, 158, 255, 0.3);
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .search-box {
+        margin-right: 12px;
+
+        .el-input__wrapper {
+          border-radius: 100px;
+          transition: all 0.3s;
+          border: 1px solid #dcdfe6;
+
+          &:hover {
+            border-color: #409eff;
+            box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.2);
+          }
+        }
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+
+        .el-button {
+          border-radius: 100px;
+          padding: 12px 20px;
+          font-size: 14px;
+          font-weight: 500;
+          transition: all 0.3s;
+
+          &:hover {
+            transform: translateY(-2px);
+          }
+
+          &.add-btn {
+            background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
+            border: none;
+            box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
+
+            &:hover {
+              background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
+              box-shadow: 0 6px 16px rgba(64, 158, 255, 0.3);
+            }
+          }
+        }
       }
     }
   }

@@ -269,7 +269,7 @@ const handleUserCommand = async (command: string) => {
   showUserMenu.value = false
   switch (command) {
     case 'settings':
-      router.push('/model')
+      router.push('/general-settings')
       break
     case 'logout':
       await handleLogout()
@@ -344,11 +344,7 @@ onBeforeUnmount(() => {
       <!-- 新对话按钮 -->
       <div class="create-section">
         <button @click="goToHomepage" class="create-btn-native">
-          <svg class="btn-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor">
-            <path d="M512 85.333333c235.648 0 426.666667 191.018667 426.666667 426.666667 0 231.68-184.618667 420.181333-414.72 426.496L512 938.666667H165.077333a42.666667 42.666667 0 0 1-35.498666-66.346667l27.52-41.301333 6.528-11.648 5.333333-10.282667 2.218667-4.693333 3.541333-8.277334c3.84-10.24 4.565333-16.981333 2.048-20.181333A424.832 424.832 0 0 1 85.333333 512C85.333333 276.352 276.352 85.333333 512 85.333333z m0 85.333334a341.333333 341.333333 0 0 0-341.333333 341.333333c0 72.917333 22.826667 142.165333 64.512 199.765333l8.576 11.349334c32.768 41.557333 29.312 70.570667 4.181333 119.68L242.304 853.333333H512a341.333333 341.333333 0 0 0 341.162667-330.666666L853.333333 512a341.333333 341.333333 0 0 0-341.333333-341.333333z"></path>
-            <path d="M469.333333 298.666667m42.666667 0l0 0q42.666667 0 42.666667 42.666666l0 341.333334q0 42.666667-42.666667 42.666666l0 0q-42.666667 0-42.666667-42.666666l0-341.333334q0-42.666667 42.666667-42.666666Z"></path>
-            <path d="M725.333333 469.333333m0 42.666667l0 0q0 42.666667-42.666666 42.666667l-341.333334 0q-42.666667 0-42.666666-42.666667l0 0q0-42.666667 42.666666-42.666667l341.333334 0q42.666667 0 42.666666 42.666667Z"></path>
-          </svg>
+          <el-icon class="btn-icon"><ChatDotRound /></el-icon>
           <span>开启新对话</span>
         </button>
       </div>
@@ -580,9 +576,12 @@ onBeforeUnmount(() => {
         gap: 6px;
 
         .btn-icon {
-          font-size: 15px;
-          font-weight: 400;
-          color: #666;
+          font-size: 18px;
+          color: inherit; // 与文字保持同色
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          line-height: 1;
         }
 
         &:hover {

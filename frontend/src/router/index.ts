@@ -6,6 +6,9 @@ import Login from '../pages/login'
 import { Register } from '../pages/login'
 import McpServer from '../pages/mcp-server'
 import Model from '../pages/model'
+import MindConfig from '../pages/mind-config'
+import WebSearchPage from '../pages/web-search'
+import GeneralSettings from '../pages/general-settings'
 import Workspace from '../pages/workspace/workspace.vue'
 import WorkspaceDefaultPage from '../pages/workspace/defaultPage/defaultPage.vue'
 import TaskGraphPage from '../pages/workspace/taskGraphPage/taskGraphPage.vue'
@@ -75,12 +78,36 @@ const routes: RouteRecordRaw[] = [
         component: Model,
       },
       {
+        path: '/mind-config',
+        name: 'mind-config',
+        meta: {
+          current: 'mind-config'
+        },
+        component: MindConfig,
+      },
+      {
+        path: '/web-search',
+        name: 'web-search',
+        meta: {
+          current: 'web-search'
+        },
+        component: WebSearchPage,
+      },
+      {
         path: '/dashboard',
         name: 'dashboard',
         meta: {
           current: 'dashboard'
         },
         component: Dashboard,
+      },
+      {
+        path: '/general-settings',
+        name: 'general-settings',
+        meta: {
+          current: 'general-settings'
+        },
+        component: GeneralSettings,
       }
     ]
   },
