@@ -3,7 +3,7 @@
     <div class="page-header">
       <div class="header-titles">
         <h2>
-          <el-icon class="dashboard-icon" color="#409eff"><DataAnalysis /></el-icon>
+          <el-icon class="dashboard-icon"><DataAnalysis /></el-icon>
           数据看板
         </h2>
       </div>
@@ -509,14 +509,11 @@ onBeforeUnmount(() => {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: linear-gradient(90deg, #409eff, #3a7be2);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #303133;
     
     .dashboard-icon {
       font-size: 30px;
-      color: #409eff;
+      color: #303133;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -557,7 +554,7 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 0 1px #a8abb2 inset !important;
 }
 .filter-select :deep(.el-select__wrapper.is-focused) {
-  box-shadow: 0 0 0 1.5px #409eff inset, 0 0 0 3px rgba(64, 158, 255, 0.15) !important;
+  box-shadow: 0 0 0 1.5px #409eff inset !important;
 }
 .filter-select :deep(.el-select__caret) {
   color: #94a3b8;
@@ -687,6 +684,104 @@ onBeforeUnmount(() => {
   
   &:hover {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* 深色模式 */
+.theme-dark {
+  .dashboard-container {
+    background-color: #1c1c1e;
+
+    .page-header {
+      background: #242426;
+      box-shadow: none;
+
+      h2 {
+        color: #f5f5f7;
+
+        .dashboard-icon {
+          color: #f5f5f7;
+        }
+      }
+    }
+
+    /* 筛选下拉（全部模型 / 全部时间）深色适配 */
+    .filter-select :deep(.el-select__wrapper) {
+      background: #2c2c2e;
+      box-shadow: 0 0 0 1px #3a3a3c inset !important;
+    }
+
+    .filter-select :deep(.el-select__placeholder),
+    .filter-select :deep(.el-select__selected-item) {
+      color: #e5e7eb;
+    }
+
+    .filter-select :deep(.el-select__caret) {
+      color: #9ca3af;
+    }
+
+    .filter-select :deep(.el-select__wrapper.is-hovering),
+    .filter-select :deep(.el-select__wrapper:hover) {
+      box-shadow: 0 0 0 1px #4b5563 inset !important;
+    }
+
+    .filter-select :deep(.el-select__wrapper.is-focused) {
+      box-shadow: 0 0 0 1.5px #3b82f6 inset !important;
+    }
+
+    .dashboard-select-popper {
+      background: #18181b;
+      border-color: #3f3f46 !important;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45) !important;
+    }
+
+    .dashboard-select-popper :deep(.el-select-dropdown__item) {
+      color: #e5e7eb;
+    }
+
+    .dashboard-select-popper :deep(.el-select-dropdown__item.hover),
+    .dashboard-select-popper :deep(.el-select-dropdown__item:hover) {
+      background: #27272a;
+      color: #f9fafb;
+    }
+
+    .dashboard-select-popper :deep(.el-select-dropdown__item.selected) {
+      background: linear-gradient(135deg, #1d283a 0%, #0f172a 100%);
+      color: #60a5fa;
+    }
+
+    .kpi-card {
+      background: #242426;
+      border-color: #2c2c2e;
+      box-shadow: none;
+
+      .kpi-title {
+        color: rgba(255, 255, 255, 0.65);
+      }
+
+      .kpi-value {
+        color: #f5f5f7;
+      }
+
+      .kpi-desc {
+        color: rgba(255, 255, 255, 0.55);
+      }
+    }
+
+    .chart-wrapper {
+      background-color: #242426;
+      border-color: #2c2c2e;
+      box-shadow: none;
+
+      .chart-title {
+        color: #f5f5f7;
+        border-bottom-color: #3a3a3c;
+      }
+
+      .empty {
+        color: #a1a1aa;
+      }
+    }
   }
 }
 

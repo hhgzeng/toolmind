@@ -455,7 +455,7 @@ onUnmounted(() => {
                   
                   <div class="form-grid">
                     <div class="form-group" style="grid-column: 1 / -1;">
-                      <label for="config" style="font-size: 18px; font-weight: 600; color: #1c1c1e; margin-bottom: 20px;">
+                      <label for="config" style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                           <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1294,16 +1294,13 @@ onUnmounted(() => {
       display: flex;
       align-items: center;
       gap: 12px;
-      background: linear-gradient(90deg, #409eff, #3a7be2);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      
+      color: #303133;
+
       .mcp-icon {
         font-size: 30px;
         width: 32px;
         height: 32px;
-        color: #409eff;
+        color: #303133;
       }
     }
 
@@ -1407,7 +1404,6 @@ onUnmounted(() => {
           font-weight: bold;
           font-size: 20px;
           background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
-          box-shadow: 0 4px 10px rgba(64, 158, 255, 0.2);
         }
         
         .server-title {
@@ -1605,6 +1601,373 @@ onUnmounted(() => {
 
         &:hover {
           background: #fff0f0;
+        }
+      }
+    }
+  }
+}
+
+/* 深色模式 */
+.theme-dark {
+  .mcp-server-page {
+    background-color: #1c1c1e;
+
+    .page-header {
+      background: #242426;
+      box-shadow: none;
+
+      h2 {
+        color: #f5f5f7;
+
+        .mcp-icon {
+          color: #f5f5f7;
+        }
+      }
+
+      .header-actions {
+        .search-box {
+          .el-input__wrapper {
+            background-color: #2c2c2e;
+            border-color: #3a3a3c;
+            box-shadow: none;
+
+            .el-input__inner {
+              color: #f5f5f7;
+            }
+
+            .el-input__prefix,
+            .el-input__suffix {
+              color: rgba(255, 255, 255, 0.55);
+            }
+          }
+        }
+      }
+    }
+
+    .server-list {
+      .server-table-container {
+        .el-table {
+          background-color: #1c1c1e !important;
+          border-color: #2c2c2e !important;
+          color: #e5e5ea;
+
+          th.el-table__cell {
+            background-color: #2c2c2e !important;
+            color: #e5e5ea;
+            border-bottom-color: #3a3a3c !important;
+          }
+
+          td.el-table__cell {
+            background-color: #242426;
+            border-bottom-color: #2c2c2e;
+          }
+
+          .el-table__row:hover > td {
+            background-color: #2c2c2e !important;
+          }
+
+          .el-table__inner-wrapper::before {
+            background-color: #2c2c2e;
+          }
+        }
+
+        .server-info-cell {
+          .server-title {
+            .server-name {
+              color: #f5f5f7;
+            }
+
+            .server-provider {
+              color: rgba(255, 255, 255, 0.55);
+            }
+          }
+        }
+      }
+
+      .empty-state {
+        h3 {
+          color: #f5f5f7;
+        }
+
+        p {
+          color: rgba(255, 255, 255, 0.65);
+        }
+      }
+    }
+  }
+
+  /* 创建/编辑 MCP 服务器弹窗深色模式 */
+  .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.6);
+
+    .modal-dialog {
+      background: #1c1c1e;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 8px 32px rgba(0, 0, 0, 0.6);
+      border-color: rgba(63, 63, 70, 0.9);
+    }
+
+    .modal-header {
+      border-bottom-color: #2c2c2e;
+
+      h3 {
+        color: #e5e5ea;
+      }
+
+      .close-btn {
+        background: rgba(255, 255, 255, 0.05);
+        color: #a1a1aa;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.12);
+          color: #f5f5f7;
+        }
+      }
+    }
+
+    .modal-body {
+      background: #1c1c1e;
+    }
+
+    .mcp-form {
+      .form-group {
+        label {
+          color: #e5e5ea;
+        }
+
+        input,
+        select,
+        textarea {
+          background: #2c2c2e;
+          border-color: #3a3a3c;
+          color: #f5f5f7;
+
+          &::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+          }
+
+          &:focus {
+            border-color: #4d6bfe;
+            box-shadow: 0 0 0 2px rgba(77, 107, 254, 0.28);
+          }
+
+          &:disabled,
+          &[readonly] {
+            background-color: #1f1f23;
+            border-color: #3a3a3c;
+            color: rgba(255, 255, 255, 0.4);
+          }
+        }
+
+        textarea {
+          background: #141417;
+          border-color: #27272a;
+
+          &::placeholder {
+            color: rgba(148, 163, 184, 0.9);
+          }
+        }
+
+        .textarea-wrapper {
+          .json-indicator {
+            background: rgba(24, 24, 27, 0.9);
+            border-color: #3a3a3c;
+            color: #a1a1aa;
+          }
+        }
+
+        .error-text {
+          color: #fca5a5;
+        }
+      }
+    }
+
+    .modal-footer {
+      background: #1c1c1e;
+
+      .dialog-btn {
+        background: transparent;
+      }
+
+      .cancel-btn {
+        border-color: #3a3a3c;
+        color: #e5e5ea;
+
+        &:hover {
+          background: #2c2c2e;
+        }
+      }
+
+      .save-btn {
+        border-color: #4d6bfe;
+        color: #4d6bfe;
+
+        &:hover:not(:disabled) {
+          background: rgba(77, 107, 254, 0.16);
+        }
+      }
+    }
+  }
+
+  /* MCP 工具弹窗深色模式 */
+  .modal-dialog.tools-dialog {
+    background: #1c1c1e;
+    border-color: #27272a;
+  }
+
+  .tools-content {
+    background: #18181b;
+
+    .no-tools {
+      .empty-text {
+        h3 {
+          color: #e5e5ea;
+        }
+
+        p {
+          color: rgba(255, 255, 255, 0.6);
+        }
+      }
+    }
+
+    .tools-overview {
+      .tools-stats {
+        .stat-card {
+          background: #18181b;
+          border-color: #27272a;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+
+          .stat-number {
+            color: #a5b4fc;
+          }
+
+          .stat-label {
+            color: #e5e5ea;
+          }
+        }
+      }
+
+      .tools-list {
+        .tool-card {
+          background: #18181b;
+          border-color: #27272a;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
+
+          .tool-header {
+            .tool-info {
+              .tool-text {
+                .tool-name {
+                  color: #e5e5ea;
+                }
+              }
+            }
+          }
+
+          .tool-description {
+            color: rgba(255, 255, 255, 0.8);
+          }
+
+          .tool-schema {
+            background: #111827;
+            border-color: #1f2937;
+
+            .schema-header {
+              color: #e5e5ea;
+              border-bottom-color: #374151;
+            }
+
+            .schema-content {
+              .schema-meta {
+                .meta-item {
+                  .meta-label {
+                    color: #a1a1aa;
+                  }
+
+                  .meta-value {
+                    color: #e5e5ea;
+                  }
+                }
+              }
+
+              .required-section {
+                .required-params {
+                  .required-param {
+                    background: rgba(254, 242, 242, 0.08);
+                    border-color: rgba(254, 202, 202, 0.6);
+                  }
+                }
+              }
+
+              .properties-section {
+                .properties-grid {
+                  .property-card {
+                    background: #020617;
+                    border-color: #111827;
+
+                    .property-header {
+                      .property-name {
+                        color: #e5e5ea;
+                      }
+                    }
+
+                    .property-body {
+                      .property-desc {
+                        color: rgba(209, 213, 219, 0.9);
+                      }
+
+                      .property-default {
+                        .default-value {
+                          background: rgba(15, 23, 42, 0.9);
+                          color: #e5e5ea;
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /* 删除 MCP 服务器弹窗深色模式 */
+  .confirm-dialog-overlay {
+    background-color: rgba(0, 0, 0, 0.6);
+
+    .confirm-dialog {
+      background: #1c1c1e;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+
+      .dialog-title {
+        color: #f5f5f7;
+      }
+
+      .dialog-message {
+        color: rgba(255, 255, 255, 0.75);
+      }
+
+      .dialog-footer {
+        .dialog-btn {
+          background: transparent;
+
+          &.cancel-btn {
+            border-color: #3a3a3c;
+            color: #e5e5ea;
+
+            &:hover {
+              background: #2c2c2e;
+            }
+          }
+
+          &.delete-btn {
+            border-color: #ff453a;
+            color: #ff453a;
+
+            &:hover {
+              background: rgba(255, 69, 58, 0.16);
+            }
+          }
         }
       }
     }

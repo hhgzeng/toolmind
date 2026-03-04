@@ -80,16 +80,13 @@ const { theme, setTheme } = useTheme()
       display: flex;
       align-items: center;
       gap: 12px;
-      background: linear-gradient(90deg, #409eff, #3a7be2);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: #303133;
 
       .page-icon {
         font-size: 30px;
         width: 32px;
         height: 32px;
-        color: #409eff;
+        color: #303133;
       }
     }
 
@@ -226,56 +223,81 @@ const { theme, setTheme } = useTheme()
 /* 深色模式 */
 .theme-dark {
   .general-settings-page {
-    background-color: #020617;
+    background-color: #1c1c1e;
 
     .page-header {
-      background: linear-gradient(to right, #020617, #0b1120);
-      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.9);
+      background: #242426;
+      box-shadow: none;
+
+      h2 {
+        color: #f5f5f7;
+
+        .page-icon {
+          color: #f5f5f7;
+        }
+      }
 
       .header-subtitle {
-        color: #9ca3af;
+        color: rgba(255, 255, 255, 0.55);
       }
     }
   }
 
   .settings-section {
-    background: #020617;
-    border-color: #1f2937;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    background: #242426;
+    border-color: #2c2c2e;
+    box-shadow: none;
 
     .section-title {
       h3 {
-        color: #e5e7eb;
+        color: #f5f5f7;
       }
 
       p {
-        color: #9ca3af;
+        color: rgba(255, 255, 255, 0.55);
       }
     }
 
     .theme-control {
       .theme-card {
-        background: #020617;
-        border-color: #1f2937;
+        background: #2c2c2e;
+        border-color: #3a3a3c;
 
         &:hover {
-          border-color: #2563eb;
-          box-shadow: 0 10px 30px rgba(37, 99, 235, 0.45);
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.18);
+          box-shadow: none;
         }
 
         &.active {
-          background: radial-gradient(circle at top left, #1f2937, #020617);
-          border-color: #2563eb;
-          box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.7);
+          background: #3a3a3c;
+          border-color: #4d6bfe;
+          box-shadow: none;
+        }
+
+        .theme-icon {
+          &.light {
+            background: rgba(251, 191, 36, 0.1);
+            .el-icon {
+              color: #f59e0b;
+            }
+          }
+
+          &.dark {
+            background: rgba(77, 107, 254, 0.12);
+            .el-icon {
+              color: #4d6bfe;
+            }
+          }
         }
 
         .theme-info {
           h4 {
-            color: #e5e7eb;
+            color: #f5f5f7;
           }
 
           p {
-            color: #9ca3af;
+            color: rgba(255, 255, 255, 0.55);
           }
         }
       }

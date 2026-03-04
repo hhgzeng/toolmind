@@ -12,7 +12,7 @@ class WorkSpaceSessionBase(SQLModelSerializable):
     title: str = Field(..., description="工作台会话的标题")
     agent: str = Field(..., description="工作台中选用的智能体")
     user_id: str = Field(..., description="工作台会话对应的User ID")
-    contexts: List[dict] = Field([], sa_column=Column(JSON), description="JSON, 含 tasks、questions、answers、guide_prompts 四个字段的结构化对话上下文")
+    contexts: List[dict] = Field([], sa_column=Column(JSON), description="JSON, 含 tasks、questions、answers 等字段的结构化对话上下文")
 
     # tasks: List[str] = Field(None, description="工作台会话的任务")
     # questions: List[str] = Field(None, description="用户的问题列表")
@@ -50,7 +50,6 @@ class WorkSpaceSessionCreate(BaseModel):
 
 class WorkSpaceSessionContext(BaseModel):
     query: str
-    guide_prompt: str = ""
     task: list[dict] = []
     task_graph: list[dict] = []
     answer: str

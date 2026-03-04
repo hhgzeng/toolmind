@@ -3,11 +3,15 @@ import { ref, watch, computed } from "vue"
 import { useRouter } from "vue-router"
 import { useRoute } from "vue-router"
 import { Setting } from "@element-plus/icons-vue"
+import { theme as useTheme } from "../apis/theme"
 
 const route = useRoute()
 const router = useRouter()
+const { theme } = useTheme()
 
 const current = ref(route.meta.current)
+const menuTextColor = computed(() => (theme.value === "dark" ? "rgba(255, 255, 255, 0.6)" : "#333"))
+const menuActiveTextColor = computed(() => (theme.value === "dark" ? "#f5f5f7" : "#1a1a1a"))
 
 const goCurrent = (item: string) => {
   const routes: Record<string, string> = {
@@ -35,17 +39,17 @@ watch(
 </script>
 
 <template>
-  <div class="ai-body">
+  <div class="ai-body" :class="{ 'is-dark': theme === 'dark' }">
     <div class="ai-main">
       <div class="sidebar">
         <!-- 导航菜单 -->
         <div class="sidebar-nav">
           <el-menu
-            active-text-color="#1a1a1a"
+            :active-text-color="menuActiveTextColor"
             background-color="transparent"
             class="el-menu-vertical-demo"
             :default-active="current"
-            text-color="#333"
+            :text-color="menuTextColor"
           >
             <el-menu-item index="workspace" @click="goCurrent('workspace')">
               <template #title>
@@ -145,7 +149,7 @@ watch(
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
   
   .el-menu-item {
-    border-radius: 20px;
+    border-radius: 100px;
     margin: 4px 10px;
     padding: 0 16px;
     height: 52px;
@@ -156,7 +160,7 @@ watch(
     transition: all 0.2s ease;
     position: relative;
     overflow: hidden;
-    color: #333;
+    color: var(--el-menu-text-color);
     
     &:hover {
       background: rgba(0, 0, 0, 0.04);
@@ -174,7 +178,7 @@ watch(
       }
       
       span {
-        font-weight: 600;
+        font-weight: 500;
         color: #1a1a1a !important;
       }
     }
@@ -188,52 +192,69 @@ watch(
       height: 24px;
       font-size: 20px;
       transition: all 0.2s ease;
+      color: inherit;
     }
     
     span {
       position: relative;
       z-index: 1;
       transition: all 0.2s ease;
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
+      color: inherit;
     }
   }
 }
 
 /* 深色模式 */
-.theme-dark {
-  .ai-body {
-    .ai-main {
-      background-color: #020617;
+.ai-body.is-dark {
+  .ai-main {
+    background-color: #1c1c1e;
 
-      .sidebar {
-        background: #020617;
-        border-color: #1f2937;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
-      }
+    .sidebar {
+      background: #242426;
+      border-color: #2c2c2e;
+      box-shadow: none;
+    }
 
-      .content {
-        background-color: #020617;
-      }
+    .content {
+      background-color: #1c1c1e;
     }
   }
+}
 
-  ::deep(.el-menu-vertical-demo) {
-    .el-menu-item {
-      color: #e5e7eb;
+.ai-body.is-dark :deep(.el-menu-vertical-demo) {
+  .el-menu-item {
+    color: rgba(255, 255, 255, 0.6);
+    
+    span {
+      color: rgba(255, 255, 255, 0.6);
+    }
 
-      &:hover {
-        background: rgba(148, 163, 184, 0.2);
-        color: #f9fafb;
+    .el-icon {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.85);
+
+      span,
+      .el-icon {
+        color: rgba(255, 255, 255, 0.85);
+      }
+    }
+
+    &.is-active {
+      background: #2c2c2e;
+      color: #f5f5f7;
+      box-shadow: none;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+
+      span {
+        color: #f5f5f7 !important;
       }
 
-      &.is-active {
-        background: rgba(37, 99, 235, 0.18);
-        color: #f9fafb;
-        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.6);
-
-        span {
-          color: #ffffff !important;
-        }
+      .el-icon {
+        color: #f5f5f7;
       }
     }
   }

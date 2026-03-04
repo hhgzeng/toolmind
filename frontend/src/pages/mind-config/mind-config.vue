@@ -209,16 +209,13 @@ onMounted(() => {
       display: flex;
       align-items: center;
       gap: 12px;
-      background: linear-gradient(90deg, #409eff, #3a7be2);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: #303133;
 
       .page-icon {
         font-size: 30px;
         width: 32px;
         height: 32px;
-        color: #409eff;
+        color: #303133;
       }
     }
 
@@ -370,6 +367,130 @@ onMounted(() => {
       }
       .header-subtitle {
         text-align: center;
+      }
+    }
+  }
+}
+
+/* 深色模式 */
+.theme-dark {
+  .mind-config-page {
+    background-color: #1c1c1e;
+
+    .page-header {
+      background: #242426;
+      box-shadow: none;
+
+      h2 {
+        color: #f5f5f7;
+
+        .page-icon {
+          color: #f5f5f7;
+        }
+      }
+
+      .header-subtitle {
+        color: rgba(255, 255, 255, 0.55);
+      }
+    }
+  }
+
+  .mind-config-section {
+    background: #242426;
+    border-color: #2c2c2e;
+    box-shadow: none;
+
+    .section-title {
+      h3 {
+        color: #f5f5f7;
+      }
+
+      p {
+        color: rgba(255, 255, 255, 0.55);
+      }
+    }
+
+    .config-card {
+      background: #2c2c2e;
+      border-color: #3a3a3c;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.14);
+        box-shadow: none;
+      }
+
+      .model-select {
+        :deep(.el-select__wrapper) {
+          background-color: #2c2c2e;
+          border-color: #3a3a3c;
+          color: #f5f5f7;
+          box-shadow: 0 0 0 1px #3a3a3c inset !important;
+          transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        :deep(.el-select__placeholder) {
+          color: rgba(255, 255, 255, 0.55);
+        }
+
+        :deep(.el-select__selected-item) {
+          color: #f5f5f7;
+        }
+
+        :deep(.el-popper.is-light) {
+          background-color: #2c2c2e;
+          border-color: #3a3a3c;
+          color: #f5f5f7;
+        }
+
+        :deep(.el-select-dropdown__item) {
+          color: #f5f5f7;
+
+          &.is-hovering {
+            background-color: rgba(255, 255, 255, 0.06);
+          }
+
+          &.is-selected {
+            background-color: rgba(77, 107, 254, 0.18);
+          }
+        }
+
+        :deep(.el-select__wrapper.is-hovering),
+        :deep(.el-select__wrapper:hover) {
+          box-shadow: 0 0 0 1px #4b5563 inset !important;
+        }
+
+        :deep(.el-select__wrapper.is-focused) {
+          box-shadow: 0 0 0 1.5px #3b82f6 inset !important;
+        }
+      }
+
+      .config-icon {
+        background: rgba(64, 158, 255, 0.1);
+
+        .el-icon {
+          color: #4d6bfe;
+        }
+      }
+
+      .config-info {
+        h4 {
+          color: #f5f5f7;
+        }
+
+        p {
+          color: rgba(255, 255, 255, 0.65);
+        }
+      }
+    }
+
+    .empty-state {
+      h3 {
+        color: #f5f5f7;
+      }
+
+      p {
+        color: rgba(255, 255, 255, 0.65);
       }
     }
   }

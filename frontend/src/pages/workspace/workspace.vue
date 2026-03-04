@@ -56,6 +56,38 @@ const handleGlobalClick = (e: Event) => {
   }
 }
 
+// 监听子页面通过全局事件总线发来的会话创建 / 更新事件
+const handleNewSessionEvent = (event: Event) => {
+  const detail = (event as CustomEvent<any>).detail || {}
+  const sessionId = detail.sessionId || detail.session_id
+  if (!sessionId) return
+
+  // 已存在则不重复添加
+  if (sessions.value.some(s => s.sessionId === sessionId)) return
+
+  const newSession = {
+    sessionId,
+    title: detail.title || '新对话',
+    createTime: detail.createTime || new Date().toISOString(),
+    agent: detail.agent || 'mind',
+    contexts: detail.contexts || []
+  }
+  sessions.value.unshift(newSession)
+  // 新会话创建后，侧边栏高亮该会话，效果等同于用户点击了它
+  selectedSession.value = sessionId
+}
+
+const handleSessionUpdatedEvent = (event: Event) => {
+  const detail = (event as CustomEvent<any>).detail || {}
+  const sessionId = detail.sessionId || detail.session_id
+  if (!sessionId) return
+
+  const target = sessions.value.find(s => s.sessionId === sessionId)
+  if (target && detail.title) {
+    target.title = detail.title
+  }
+}
+
 // 按时间分组的会话列表
 const groupedSessions = computed(() => {
   const now = new Date()
@@ -322,10 +354,14 @@ onMounted(async () => {
   
   await fetchSessions()
   document.addEventListener('click', handleGlobalClick)
+  window.addEventListener('workspace:new-session', handleNewSessionEvent)
+  window.addEventListener('workspace:session-updated', handleSessionUpdatedEvent)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleGlobalClick)
+  window.removeEventListener('workspace:new-session', handleNewSessionEvent)
+  window.removeEventListener('workspace:session-updated', handleSessionUpdatedEvent)
 })
 </script>
 
@@ -388,7 +424,6 @@ onBeforeUnmount(() => {
                 <button
                   class="more-btn"
                   @click="toggleMenu(session.sessionId, $event)"
-                  title="更多操作"
                 >
                   ⋯
                 </button>
@@ -646,7 +681,7 @@ onBeforeUnmount(() => {
           font-size: 12px;
           font-weight: 600;
           color: #8e8e93;
-          padding: 14px 10px 6px;
+          padding: 14px 12px 6px;
           letter-spacing: 0.3px;
           font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
         }
@@ -654,8 +689,8 @@ onBeforeUnmount(() => {
         .session-item {
           display: flex;
           align-items: center;
-          padding: 10px 10px;
-          border-radius: 16px;
+          padding: 8px 12px;
+          border-radius: 100px;
           cursor: pointer;
           position: relative;
           margin-bottom: 1px;
@@ -701,7 +736,7 @@ onBeforeUnmount(() => {
             top: calc(100% + 4px);
             background: #ffffff;
             border: 1px solid #e5e5e5;
-            border-radius: 16px;
+            border-radius: 24px;
             padding: 4px;
             z-index: 100;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
@@ -718,7 +753,7 @@ onBeforeUnmount(() => {
               color: #333;
               font-size: 13px;
               cursor: pointer;
-              border-radius: 14px;
+              border-radius: 24px;
               text-align: left;
               transition: background 0.15s ease;
               font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
@@ -756,7 +791,7 @@ onBeforeUnmount(() => {
 
             .session-title {
               color: #1a1a1a;
-              font-weight: 500;
+              font-weight: 400;
             }
 
             .more-btn {
@@ -769,14 +804,14 @@ onBeforeUnmount(() => {
             padding: 0; /* Clear padding to let input fill exactly */
             transition: none; /* Remove any transition animation when entering renaming state */
             /* Add correct border matching Figure 1's clicking state, remove box shadow */
-            border: 1.5px solid #4D6BFE;
-            border-radius: 16px;
+            border: 1px solid #4D6BFE;
+            border-radius: 24px;
             
             .inline-rename-input {
                width: 100%;
                height: 100%;
                min-height: 42px; /* adjust match to correct active button height with 1.5px border subtracted */
-               padding: 8px 12px; /* adjusted padding for pill-shaped input */
+               padding: 8px 11px; /* adjusted padding for pill-shaped input */
                box-sizing: border-box;
                border: none;
                background: transparent;
@@ -785,7 +820,7 @@ onBeforeUnmount(() => {
                color: #1a1a1a;
                line-height: 1.4;
                font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
-               border-radius: 16px;
+               border-radius: 24px;
             }
           }
         }
@@ -793,7 +828,7 @@ onBeforeUnmount(() => {
     }
 
     .sidebar-footer {
-      padding: 12px 14px;
+      padding: 8px 8px;
       position: relative;
 
       &::before {
@@ -815,9 +850,9 @@ onBeforeUnmount(() => {
       .user-profile {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         padding: 8px 8px;
-        border-radius: 16px;
+        border-radius: 24px;
         transition: all 0.15s ease;
         cursor: pointer;
         user-select: none;
@@ -867,7 +902,7 @@ onBeforeUnmount(() => {
         left: 0;
         right: 0;
         background: #ffffff;
-        border-radius: 16px;
+        border-radius: 24px;
         box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.06);
         z-index: 2000;
         overflow: hidden;
@@ -878,7 +913,7 @@ onBeforeUnmount(() => {
           align-items: center;
           gap: 10px;
           padding: 12px 12px;
-          border-radius: 16px;
+          border-radius: 24px;
 
           .popup-avatar {
             width: 36px;
@@ -922,7 +957,7 @@ onBeforeUnmount(() => {
           color: #1f2937;
           font-size: 14px;
           cursor: pointer;
-          border-radius: 14px;
+          border-radius: 24px;
           text-align: left;
           transition: background 0.15s ease;
           font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
@@ -1106,5 +1141,205 @@ onBeforeUnmount(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* 深色模式 */
+.theme-dark {
+  .workspace-container {
+    background-color: #1c1c1e;
+  }
+
+  .workspace-main {
+    background-color: #1c1c1e;
+
+    .sidebar {
+      background: #242426;
+      border-color: #2c2c2e;
+      box-shadow: none;
+
+      .sidebar-header {
+        .sidebar-brand {
+          color: #4d6bfe;
+        }
+      }
+
+      .create-section {
+        .create-btn-native {
+          background: #2c2c2e;
+          border-color: #3a3a3c;
+          color: #f5f5f7;
+
+          &:hover {
+            background: #3a3a3c;
+            border-color: #4d6bfe;
+          }
+
+          &:active {
+            background: #2c2c2e;
+          }
+        }
+      }
+
+      .session-list {
+        .loading-text {
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .empty-text {
+          color: rgba(255, 255, 255, 0.4);
+        }
+
+        .group-label {
+          color: rgba(255, 255, 255, 0.5);
+        }
+
+        .session-item {
+          .session-title {
+            color: rgba(255, 255, 255, 0.9);
+          }
+
+          .more-btn {
+            color: rgba(255, 255, 255, 0.4);
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.08);
+              color: rgba(255, 255, 255, 0.85);
+            }
+          }
+
+          .action-menu {
+            background: #2c2c2e;
+            border-color: #3a3a3c;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+
+            .menu-item {
+              color: rgba(255, 255, 255, 0.9);
+
+              &:hover {
+                background: rgba(255, 255, 255, 0.06);
+              }
+
+              &.delete {
+                color: #ff453a;
+
+                &:hover {
+                  background: rgba(255, 69, 58, 0.12);
+                }
+              }
+            }
+          }
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.06);
+          }
+
+          &.active {
+            background: #2c2c2e;
+
+            .session-title {
+              color: #f5f5f7;
+            }
+          }
+
+          &.is-renaming {
+            background: #242426;
+            border-color: #4d6bfe;
+
+            .inline-rename-input {
+              color: #f5f5f7;
+            }
+          }
+        }
+      }
+
+      .sidebar-footer {
+        &::before {
+          background: linear-gradient(to bottom, transparent, #242426);
+        }
+
+        .user-profile {
+          &:hover {
+            background: rgba(255, 255, 255, 0.06);
+          }
+
+          .profile-name {
+            color: #f5f5f7;
+          }
+
+          .profile-dots {
+            color: rgba(255, 255, 255, 0.5);
+          }
+        }
+
+        .user-popup-menu {
+          background: #242426;
+          border-color: #2c2c2e;
+          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+
+          .popup-user-info {
+            .popup-username {
+              color: #f5f5f7;
+            }
+          }
+
+          .popup-divider {
+            background: #3a3a3c;
+          }
+
+          .popup-menu-item {
+            color: rgba(255, 255, 255, 0.9);
+
+            .popup-icon {
+              color: rgba(255, 255, 255, 0.7);
+            }
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.06);
+            }
+          }
+        }
+      }
+    }
+
+    .content {
+      background-color: #1c1c1e;
+    }
+  }
+
+  .confirm-dialog {
+    background: #242426;
+    border-radius: 24px;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.7);
+
+    .dialog-title {
+      color: #f5f5f7;
+    }
+
+    .dialog-message {
+      color: rgba(235, 235, 245, 0.6);
+    }
+
+    .dialog-footer {
+      .dialog-btn {
+        &.cancel-btn {
+          border-color: #3a3a3c;
+          color: #f5f5f7;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.08);
+          }
+        }
+
+        &.delete-btn {
+          border-color: #ff453a;
+          color: #ff453a;
+
+          &:hover {
+            background: rgba(255, 69, 58, 0.16);
+          }
+        }
+      }
+    }
+  }
 }
 </style>

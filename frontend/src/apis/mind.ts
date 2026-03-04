@@ -2,214 +2,11 @@ import { fetchEventSource } from '@microsoft/fetch-event-source'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
-// 生成 Mind 的指导提示（流式）
-export const generateMindGuidePromptAPI = async (
-  data: {
-    query: string
-    tools?: string[]
-    web_search?: boolean
-    mcp_servers?: string[]
-  },
-  onMessage: (data: any) => void,
-  onError?: (error: any) => void,
-  onClose?: () => void
-) => {
-  const token = localStorage.getItem('token')
-
-  console.log('=== generateMindGuidePromptAPI 调用 ===')
-  console.log('参数:', data)
-  console.log('Token:', token ? `${token.substring(0, 20)}...` : '无')
-  console.log('请求 URL:', `${BASE_URL}/api/v1/workspace/mind/guide_prompt`)
-
-  const ctrl = new AbortController()
-
-  try {
-    await fetchEventSource(`${BASE_URL}/api/v1/workspace/mind/guide_prompt`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(data),
-      signal: ctrl.signal,
-      openWhenHidden: true,
-      onmessage(event) {
-        console.log('📨 收到原始消息:', event.data)
-        if (event.data) {
-          try {
-            // 后端返回的是 JSON 格式: { "event": "...", "data": { "chunk": "..." } }
-            const parsedData = JSON.parse(event.data)
-            console.log('📦 解析后的数据:', parsedData)
-
-            if (parsedData.data && parsedData.data.chunk) {
-              const chunk = parsedData.data.chunk
-              console.log('📝 提取的 chunk:', chunk)
-              onMessage(chunk)
-            }
-          } catch (error) {
-            console.error('❌ JSON 解析失败:', error, '原始数据:', event.data)
-            // 如果解析失败，尝试直接使用原始数据
-            onMessage(event.data)
-          }
-        }
-      },
-      onerror(err) {
-        console.error('Stream 错误:', err)
-        onError?.(err)
-        // 不要 throw，而是中断连接
-        ctrl.abort()
-      },
-      onclose() {
-        console.log('Stream 关闭')
-        onClose?.()
-      }
-    })
-  } catch (error) {
-    console.error('fetchEventSource 异常:', error)
-    if (error.name !== 'AbortError') {
-      onError?.(error)
-    }
-  }
-}
-
-// 根据用户反馈重新生成指导提示（流式）
-export const regenerateMindGuidePromptAPI = async (
-  data: {
-    query: string
-    guide_prompt: string
-    feedback: string
-    web_search?: boolean
-    plugins?: string[]
-    mcp_servers?: string[]
-  },
-  onMessage: (data: any) => void,
-  onError?: (error: any) => void,
-  onClose?: () => void
-) => {
-  const token = localStorage.getItem('token')
-
-  console.log('开始调用 guide_prompt/feedback 接口，参数:', data)
-
-  const ctrl = new AbortController()
-
-  try {
-    await fetchEventSource(`${BASE_URL}/api/v1/workspace/mind/guide_prompt/feedback`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(data),
-      signal: ctrl.signal,
-      openWhenHidden: true,
-      onmessage(event) {
-        console.log('📨 收到原始消息:', event.data)
-        if (event.data) {
-          try {
-            // 后端返回的是 JSON 格式: { "event": "...", "data": { "chunk": "..." } }
-            const parsedData = JSON.parse(event.data)
-            console.log('📦 解析后的数据:', parsedData)
-
-            if (parsedData.data && parsedData.data.chunk) {
-              const chunk = parsedData.data.chunk
-              console.log('📝 提取的 chunk:', chunk)
-              onMessage(chunk)
-            }
-          } catch (error) {
-            console.error('❌ JSON 解析失败:', error, '原始数据:', event.data)
-            // 如果解析失败，尝试直接使用原始数据
-            onMessage(event.data)
-          }
-        }
-      },
-      onerror(err) {
-        console.error('Stream 错误:', err)
-        onError?.(err)
-        ctrl.abort()
-      },
-      onclose() {
-        console.log('Stream 关闭')
-        onClose?.()
-      }
-    })
-  } catch (error) {
-    console.error('fetchEventSource 异常:', error)
-    if (error.name !== 'AbortError') {
-      onError?.(error)
-    }
-  }
-}
-
-// 生成 Mind 任务列表（流式）
-export const generateMindTasksAPI = async (
-  data: {
-    guide_prompt: string
-  },
-  onMessage: (data: any) => void,
-  onError?: (error: any) => void,
-  onClose?: () => void
-) => {
-  const token = localStorage.getItem('token')
-
-  console.log('开始调用 task 接口，参数:', data)
-
-  const ctrl = new AbortController()
-
-  try {
-    await fetchEventSource(`${BASE_URL}/api/v1/workspace/mind/task`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(data),
-      signal: ctrl.signal,
-      openWhenHidden: true,
-      onmessage(event) {
-        console.log('📨 收到原始消息:', event.data)
-        if (event.data) {
-          try {
-            // 后端返回的是 JSON 格式: { "event": "...", "data": { "chunk": "..." } }
-            const parsedData = JSON.parse(event.data)
-            console.log('📦 解析后的数据:', parsedData)
-
-            if (parsedData.data && parsedData.data.chunk) {
-              const chunk = parsedData.data.chunk
-              console.log('📝 提取的 chunk:', chunk)
-              onMessage(chunk)
-            }
-          } catch (error) {
-            console.error('❌ JSON 解析失败:', error, '原始数据:', event.data)
-            // 如果解析失败，尝试直接使用原始数据
-            onMessage(event.data)
-          }
-        }
-      },
-      onerror(err) {
-        console.error('Stream 错误:', err)
-        onError?.(err)
-        ctrl.abort()
-      },
-      onclose() {
-        console.log('Stream 关闭')
-        onClose?.()
-      }
-    })
-  } catch (error) {
-    console.error('fetchEventSource 异常:', error)
-    if (error.name !== 'AbortError') {
-      onError?.(error)
-    }
-  }
-}
-
 // 开始执行 Mind 任务（流式）
 export const startMindTaskAPI = async (
   data: {
     query: string
-    guide_prompt?: string
     web_search?: boolean
-    plugins?: string[]
     mcp_servers?: string[]
   },
   onMessage: (data: any) => void,
@@ -217,7 +14,10 @@ export const startMindTaskAPI = async (
   onStepResult?: (stepData: { title: string; message: string }) => void,  // 处理步骤结果
   onTaskResult?: (message: string) => void,  // 新增：处理任务最终结果
   onError?: (error: any) => void,
-  onClose?: () => void
+  onClose?: () => void,
+  onSessionStarted?: (session: { sessionId: string; title: string; createTime?: string; agent?: string }) => void,
+  onSessionUpdated?: (session: { sessionId: string; title: string }) => void,
+  onSessionTitleChunk?: (session: { sessionId: string; title: string }) => void
 ) => {
   const token = localStorage.getItem('token')
 
@@ -254,7 +54,30 @@ export const startMindTaskAPI = async (
             console.log('📦 解析后的数据:', parsedData)
 
             // 处理不同类型的事件
-            if (parsedData.event === 'generate_tasks' && parsedData.data?.graph) {
+            if (parsedData.event === 'session_started' && parsedData.data?.session_id) {
+              const d = parsedData.data
+              onSessionStarted?.({
+                sessionId: d.session_id,
+                title: d.title || '新对话',
+                createTime: d.create_time,
+                agent: d.agent
+              })
+              return
+            } else if (parsedData.event === 'session_title_chunk' && parsedData.data?.session_id) {
+              const d = parsedData.data
+              onSessionTitleChunk?.({
+                sessionId: d.session_id,
+                title: d.title
+              })
+              return
+            } else if (parsedData.event === 'session_updated' && parsedData.data?.session_id) {
+              const d = parsedData.data
+              onSessionUpdated?.({
+                sessionId: d.session_id,
+                title: d.title
+              })
+              return
+            } else if (parsedData.event === 'generate_tasks' && parsedData.data?.graph) {
               // 处理任务图数据
               console.log('📊 收到任务图数据:', parsedData.data.graph)
               onTaskGraph?.(parsedData.data.graph)

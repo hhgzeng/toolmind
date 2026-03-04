@@ -228,8 +228,7 @@ npm run dev
 
 核心数据结构位于 `backend/toolmind/schema/mind.py`：
 
-- **`MindGuidePrompt` / `MindGuidePromptFeedBack`**：用于生成引导提示词，支持反馈迭代。
-- **`MindTask`**：描述一个完整任务（`query`、`guide_prompt`、`web_search`、`plugins`、`mcp_servers`）。
+- **`MindTask`**：描述一个完整任务（`query`、`web_search`、`mcp_servers`）。
 - **`MindTaskStep`**：单个任务步骤（`step_id`、`title`、`target`、`workflow`、`input`、`result` 等）。
 
 执行流程由 `MindAgent.submit_mind_task` 负责：生成任务图 → 按步骤调用工具 → 汇总结果 → 自我评估 → 可选重跑 → 写入工作区会话。

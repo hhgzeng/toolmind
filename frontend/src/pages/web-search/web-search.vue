@@ -106,16 +106,13 @@ onMounted(() => {
       display: flex;
       align-items: center;
       gap: 12px;
-      background: linear-gradient(90deg, #409eff, #3a7be2);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: #303133;
 
       .page-icon {
         font-size: 30px;
         width: 32px;
         height: 32px;
-        color: #409eff;
+        color: #303133;
       }
     }
 
@@ -162,6 +159,27 @@ onMounted(() => {
       border-radius: 999px !important;
       padding-left: 18px;
       padding-right: 18px;
+      box-shadow: 0 0 0 1px #dcdfe6 inset !important;
+      transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: #ffffff;
+      min-height: 36px !important;
+      height: 36px !important;
+    }
+
+    :deep(.el-input__inner) {
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    :deep(.el-input__wrapper.is-hovering),
+    :deep(.el-input__wrapper:hover) {
+      box-shadow: 0 0 0 1px #a8abb2 inset !important;
+    }
+
+    :deep(.el-input__wrapper.is-focus),
+    :deep(.el-input__wrapper.is-focused) {
+      box-shadow: 0 0 0 1.5px #409eff inset !important;
     }
   }
 }
@@ -178,6 +196,73 @@ onMounted(() => {
       }
       .header-subtitle {
         text-align: center;
+      }
+    }
+  }
+}
+
+/* 深色模式 */
+.theme-dark {
+  .web-search-config-page {
+    background-color: #1c1c1e;
+
+    .page-header {
+      background: #242426;
+      box-shadow: none;
+
+      h2 {
+        color: #f5f5f7;
+
+        .page-icon {
+          color: #f5f5f7;
+        }
+      }
+
+      .header-subtitle {
+        color: rgba(255, 255, 255, 0.55);
+      }
+    }
+  }
+
+  .web-search-config-section {
+    background: #242426;
+    border-color: #2c2c2e;
+    box-shadow: none;
+
+    .section-title {
+      h3 {
+        color: #f5f5f7;
+      }
+
+      p {
+        color: rgba(255, 255, 255, 0.55);
+      }
+    }
+
+    .config-form {
+      :deep(.el-input__wrapper) {
+        background-color: #2c2c2e;
+        border-color: #3a3a3c;
+        box-shadow: 0 0 0 1px #3a3a3c inset !important;
+        transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      :deep(.el-input__inner) {
+        color: #e5e7eb;
+      }
+
+      :deep(.el-input__suffix-inner .el-icon) {
+        color: #9ca3af;
+      }
+
+      :deep(.el-input__wrapper.is-hovering),
+      :deep(.el-input__wrapper:hover) {
+        box-shadow: 0 0 0 1px #4b5563 inset !important;
+      }
+
+      :deep(.el-input__wrapper.is-focus),
+      :deep(.el-input__wrapper.is-focused) {
+        box-shadow: 0 0 0 1.5px #3b82f6 inset !important;
       }
     }
   }

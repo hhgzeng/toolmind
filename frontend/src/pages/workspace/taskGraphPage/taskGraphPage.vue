@@ -24,7 +24,6 @@ interface NodeStatus {
 
 interface HistoryContext {
   query: string
-  guide_prompt?: string
   task_graph?: GraphNode[]
   answer: string
 }
@@ -38,6 +37,51 @@ const showNodeDetail = ref(false)
 const taskResultContent = ref('')
 const showTaskResult = ref(false)
 const resultContainer = ref<HTMLElement>()
+const currentContextIndex = ref(0)
+
+// 基于任务图推导严格串行的 To-dos 列表（用户问题 -> step_1 -> step_2 -> ...）
+const todos = computed(() => {
+  const graph = taskGraph.value
+  if (!graph.length) return []
+
+  const nextMap = new Map<string, string>()
+  const allStarts = new Set<string>()
+  const allEnds = new Set<string>()
+
+  graph.forEach((item) => {
+    nextMap.set(item.start, item.end)
+    allStarts.add(item.start)
+    allEnds.add(item.end)
+  })
+
+  // 优先从“用户问题”开始；如果不存在，则从任意没有入边的起点开始
+  let current = '用户问题'
+  if (!nextMap.has(current)) {
+    const candidates = Array.from(allStarts).filter((s) => !allEnds.has(s))
+    if (candidates.length > 0) {
+      current = candidates[0]
+    }
+  }
+
+  const ordered: string[] = []
+  const visited = new Set<string>()
+  while (nextMap.has(current)) {
+    const next = nextMap.get(current)!
+    if (visited.has(next)) break
+    visited.add(next)
+    ordered.push(next)
+    current = next
+  }
+
+  return ordered
+})
+
+// 历史运行轮次信息
+const totalContexts = computed(() => historyContexts.value.length)
+const currentRunLabel = computed(() => {
+  if (!totalContexts.value) return ''
+  return `${currentContextIndex.value + 1} / ${totalContexts.value}`
+})
 
 // 计算属性：分离 markdown 正文与自我反馈区块，独立呈现以自定义样式提取展示
 const parsedTaskResult = computed(() => {
@@ -79,6 +123,9 @@ let drainTimer: number | null = null
 const drainChunkSize = 120  // 增大块大小减少渲染频率
 const drainIntervalMs = 80  // 降低刷新频率，减少抖动
 let scrollPending = false
+
+// 当前这次 Mind 任务对应的工作区会话 ID（由后端在任务启动时创建）
+const currentSessionId = ref<string | null>(null)
 
 
 
@@ -176,135 +223,6 @@ const selectedNodeDetail = computed(() => {
     message: status?.message || '该节点尚未执行'
   }
 })
-
-// 构建图形节点和边的数据结构（竖向布局）
-const graphData = computed(() => {
-  if (taskGraph.value.length === 0) {
-    return { nodes: [], edges: [] }
-  }
-
-  const nodeSet = new Set<string>()
-  const edges: { from: string; to: string }[] = []
-
-  // 提取所有节点和边
-  taskGraph.value.forEach((item) => {
-    nodeSet.add(item.start)
-    nodeSet.add(item.end)
-    edges.push({ from: item.start, to: item.end })
-  })
-
-  const nodes = Array.from(nodeSet).map((node, index) => {
-    const status = nodeStatusMap.value.get(node)?.status || 'pending'
-    return {
-      id: node,
-      label: node,
-      x: 0,
-      y: 0,
-      level: 0,
-      status
-    }
-  })
-
-  // 计算节点层级（用于竖向布局）
-  const calculateLevels = () => {
-    const levelMap = new Map<string, number>()
-    const visited = new Set<string>()
-
-    const dfs = (node: string, level: number) => {
-      if (visited.has(node)) return
-      visited.add(node)
-      
-      const currentLevel = levelMap.get(node) || 0
-      levelMap.set(node, Math.max(currentLevel, level))
-
-      edges.forEach(edge => {
-        if (edge.from === node) {
-          dfs(edge.to, level + 1)
-        }
-      })
-    }
-
-    // 找到所有起始节点（没有入边的节点）
-    const startNodes = nodes.filter(node => 
-      !edges.some(edge => edge.to === node.id)
-    )
-
-    startNodes.forEach(node => dfs(node.id, 0))
-
-    // 更新节点层级
-    nodes.forEach(node => {
-      node.level = levelMap.get(node.id) || 0
-    })
-  }
-
-  calculateLevels()
-
-  // 按层级分组布局（竖向）
-  const levelGroups = new Map<number, string[]>()
-  nodes.forEach(node => {
-    const level = node.level
-    if (!levelGroups.has(level)) {
-      levelGroups.set(level, [])
-    }
-    levelGroups.get(level)!.push(node.id)
-  })
-
-  // 设置节点位置（竖向布局：Y轴表示层级，X轴表示同层级的位置）
-  const verticalSpacing = 90  // 层级之间的垂直间距（减小）
-  const horizontalSpacing = 160  // 同层级节点的水平间距（减小）
-  const nodeHeight = 40
-
-  nodes.forEach(node => {
-    const levelNodes = levelGroups.get(node.level)!
-    const indexInLevel = levelNodes.indexOf(node.id)
-    const totalInLevel = levelNodes.length
-
-    // X轴：居中排列同层级节点
-    node.x = (indexInLevel - (totalInLevel - 1) / 2) * horizontalSpacing
-    // Y轴：根据层级垂直排列
-    node.y = node.level * verticalSpacing + 60
-  })
-
-  return { nodes, edges }
-})
-
-// 计算 SVG 视图框（竖向适配）
-const svgViewBox = computed(() => {
-  if (graphData.value.nodes.length === 0) {
-    return '0 0 600 800'
-  }
-
-  const xs = graphData.value.nodes.map(n => n.x)
-  const ys = graphData.value.nodes.map(n => n.y)
-  
-  const minX = Math.min(...xs) - 100
-  const maxX = Math.max(...xs) + 100
-  const minY = Math.min(...ys) - 40
-  const maxY = Math.max(...ys) + 60
-
-  const width = maxX - minX
-  const height = maxY - minY
-
-  return `${minX} ${minY} ${width} ${height}`
-})
-
-// 生成箭头路径（竖向）
-const getEdgePath = (edge: { from: string; to: string }) => {
-  const fromNode = graphData.value.nodes.find(n => n.id === edge.from)
-  const toNode = graphData.value.nodes.find(n => n.id === edge.to)
-  
-  if (!fromNode || !toNode) return ''
-
-  const x1 = fromNode.x
-  const y1 = fromNode.y + 20  // 从节点底部出发
-  const x2 = toNode.x
-  const y2 = toNode.y - 20    // 到节点顶部
-
-  // 使用贝塞尔曲线创建平滑的连接线（竖向）
-  const midY = (y1 + y2) / 2
-  
-  return `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`
-}
 
 // 初始化
 onMounted(async () => {
@@ -406,60 +324,9 @@ const loadSessionInfo = async (sessionId: string) => {
       // 加载历史上下文
       if (sessionData.contexts && Array.isArray(sessionData.contexts) && sessionData.contexts.length > 0) {
         historyContexts.value = sessionData.contexts
+        currentContextIndex.value = 0
         console.log('📦 contexts 数组:', historyContexts.value)
-        
-        // 获取第一个context（最新的数据）
-        const context = historyContexts.value[0]
-        console.log('📦 当前 context:', context)
-        
-        // 加载用户问题
-        if (context.query) {
-          userQuery.value = context.query
-          console.log('✅ 用户问题已加载:', userQuery.value)
-        }
-        
-        // 显示任务图（对应第二列）- 使用 task_graph 字段
-        console.log('🔍 检查 task_graph 字段:', context.task_graph)
-        console.log('🔍 task_graph 类型:', typeof context.task_graph)
-        console.log('🔍 是否为数组:', Array.isArray(context.task_graph))
-        
-        if (context.task_graph && Array.isArray(context.task_graph) && context.task_graph.length > 0) {
-          console.log('✅ 任务图数据 (task_graph):', JSON.stringify(context.task_graph, null, 2))
-          
-          // task_graph 已经是 { start, end } 格式，直接使用
-          taskGraph.value = context.task_graph
-          console.log('✅ 加载的任务图:', taskGraph.value)
-          
-          // 初始化节点状态（历史模式下所有节点都是已完成）
-          const nodeSet = new Set<string>()
-          context.task_graph.forEach((edge: GraphNode) => {
-            nodeSet.add(edge.start)
-            nodeSet.add(edge.end)
-          })
-          
-          console.log('✅ 提取的节点集合:', Array.from(nodeSet))
-          
-          // 所有节点标记为已完成
-          nodeSet.forEach((nodeId: string) => {
-            updateNodeStatus(nodeId, 'completed', '已执行完成')
-          })
-          
-          showGraph.value = true
-          console.log('✅ 任务图已显示，showGraph:', showGraph.value)
-        } else {
-          console.warn('⚠️ 未找到 task_graph 字段或为空数组')
-          console.warn('⚠️ context 完整内容:', JSON.stringify(context, null, 2))
-        }
-        
-        // 显示执行结果（对应第三列）
-        if (context.answer) {
-          taskResultContent.value = context.answer
-          showTaskResult.value = true
-          // 历史记录如果能提供得分也可以在这里读取，目前如果是已完成的至少是大于等于80的，这里不显示或者根据已有据设置
-          console.log('✅ 执行结果已加载，长度:', taskResultContent.value.length)
-        } else {
-          console.warn('⚠️ 未找到 answer 字段')
-        }
+        applyContextByIndex(currentContextIndex.value)
       } else {
         console.warn('⚠️ contexts 为空或不是数组')
         ElMessage.warning('该会话暂无历史数据')
@@ -471,6 +338,74 @@ const loadSessionInfo = async (sessionId: string) => {
     console.error('❌ 加载会话信息出错:', error)
     ElMessage.error('加载会话信息出错')
   }
+}
+
+// 按索引应用某一轮上下文，刷新任务流程与任务结果
+const applyContextByIndex = (index: number) => {
+  if (index < 0 || index >= historyContexts.value.length) {
+    console.warn('⚠️ applyContextByIndex 索引越界:', index)
+    return
+  }
+
+  const context = historyContexts.value[index]
+  console.log('📦 应用 context 索引:', index, '内容:', context)
+
+  // 加载用户问题
+  if (context.query) {
+    userQuery.value = context.query
+    console.log('✅ 用户问题已加载:', userQuery.value)
+  }
+
+  // 重建任务图与节点状态
+  taskGraph.value = []
+  nodeStatusMap.value.clear()
+
+  if (context.task_graph && Array.isArray(context.task_graph) && context.task_graph.length > 0) {
+    console.log('✅ 任务图数据 (task_graph):', JSON.stringify(context.task_graph, null, 2))
+
+    taskGraph.value = context.task_graph
+    const nodeSet = new Set<string>()
+    context.task_graph.forEach((edge: GraphNode) => {
+      nodeSet.add(edge.start)
+      nodeSet.add(edge.end)
+    })
+
+    console.log('✅ 提取的节点集合:', Array.from(nodeSet))
+
+    nodeSet.forEach((nodeId: string) => {
+      updateNodeStatus(nodeId, 'completed', '已执行完成')
+    })
+
+    showGraph.value = true
+  } else {
+    console.warn('⚠️ 未找到 task_graph 字段或为空数组')
+    showGraph.value = false
+  }
+
+  // 切换结果内容
+  taskResultContent.value = context.answer || ''
+  resultBuffer.value = ''
+  isReceivingResult.value = false
+  isDraining.value = false
+  if (drainTimer !== null) {
+    window.clearInterval(drainTimer)
+    drainTimer = null
+  }
+  showTaskResult.value = !!context.answer
+  console.log('✅ 执行结果已加载，长度:', taskResultContent.value.length)
+}
+
+// 历史运行结果切换
+const switchToPrevRun = () => {
+  if (currentContextIndex.value <= 0) return
+  currentContextIndex.value -= 1
+  applyContextByIndex(currentContextIndex.value)
+}
+
+const switchToNextRun = () => {
+  if (currentContextIndex.value >= historyContexts.value.length - 1) return
+  currentContextIndex.value += 1
+  applyContextByIndex(currentContextIndex.value)
 }
 
 // 更新节点状态
@@ -615,6 +550,42 @@ const startTask = async () => {
         console.log('✅ 任务执行完成')
         // 任务流程结束时，开启接收阶段并以流式回放缓冲
         startReceivingResults()
+      },
+      // 会话创建完成（标题为「新对话」）时触发，立刻通知工作区左侧会话列表新增一条记录
+      (sessionInfo) => {
+        currentSessionId.value = sessionInfo.sessionId
+        window.dispatchEvent(
+          new CustomEvent('workspace:new-session', {
+            detail: {
+              sessionId: sessionInfo.sessionId,
+              title: sessionInfo.title,
+              createTime: sessionInfo.createTime,
+              agent: sessionInfo.agent
+            }
+          })
+        )
+      },
+      // 会话标题流式生成时触发，实时更新侧边栏中对应会话的标题
+      (sessionInfo) => {
+        window.dispatchEvent(
+          new CustomEvent('workspace:session-updated', {
+            detail: {
+              sessionId: sessionInfo.sessionId,
+              title: sessionInfo.title
+            }
+          })
+        )
+      },
+      // 会话最终命名完成时触发，确保标题为最终结果
+      (sessionInfo) => {
+        window.dispatchEvent(
+          new CustomEvent('workspace:session-updated', {
+            detail: {
+              sessionId: sessionInfo.sessionId,
+              title: sessionInfo.title
+            }
+          })
+        )
       }
     )
   } catch (error) {
@@ -623,18 +594,6 @@ const startTask = async () => {
   }
 }
 
-// 获取节点颜色
-const getNodeColor = (status: string) => {
-  switch (status) {
-    case 'completed':
-      return '#10b981' // 绿色 - 已完成
-    case 'executing':
-      return '#f59e0b' // 橙色 - 执行中
-    case 'pending':
-    default:
-      return '#cbd5e1' // 灰色 - 待执行
-  }
-}
 </script>
 
 <template>
@@ -659,7 +618,7 @@ const getNodeColor = (status: string) => {
           </div>
         </div>
 
-        <!-- 第一列：任务流程图 -->
+        <!-- 第一列：任务流程（To-dos + 简化流程图） -->
         <div class="column column-graph">
           <div class="column-header">
             <span class="header-icon">
@@ -680,99 +639,37 @@ const getNodeColor = (status: string) => {
           </div>
           
           <div class="column-content">
-
-          <div v-if="showGraph" class="graph-wrapper">
-            <!-- SVG流程图（竖向） -->
-            <div class="graph-container">
-              <svg :viewBox="svgViewBox" class="graph-svg" preserveAspectRatio="xMidYMid meet">
-                <!-- 定义箭头标记 -->
-                <defs>
-                  <marker
-                    id="arrowhead"
-                    markerWidth="8"
-                    markerHeight="8"
-                    refX="7"
-                    refY="2.5"
-                    orient="auto"
-                    markerUnits="strokeWidth"
-                  >
-                    <path d="M0,0 L0,5 L7,2.5 z" fill="#667eea" />
-                  </marker>
-                  
-                  <!-- 定义不同状态的渐变 -->
-                  <linearGradient id="completedGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style="stop-color:#dcfce7;stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:#a7f3d0;stop-opacity:1" />
-                  </linearGradient>
-                  
-                  <linearGradient id="executingGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style="stop-color:#fef3c7;stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:#fde68a;stop-opacity:1" />
-                  </linearGradient>
-                </defs>
-
-                <!-- 绘制边（连接线） -->
-                <g class="edges">
-                  <path
-                    v-for="(edge, index) in graphData.edges"
-                    :key="`edge-${index}`"
-                    :d="getEdgePath(edge)"
-                    class="edge-path"
-                    marker-end="url(#arrowhead)"
-                  />
-                </g>
-
-                <!-- 绘制节点 -->
-                <g class="nodes">
-              <g
-                v-for="node in graphData.nodes"
-                :key="node.id"
-                :transform="`translate(${node.x}, ${node.y})`"
-                class="node-group"
-                :class="[`node-${node.status}`, { 'node-clickable': node.status === 'completed' }]"
-                @click="handleNodeClick(node.id)"
+            <!-- To-dos 列表：按串行步骤顺序展示每个子任务 -->
+            <div v-if="showGraph && todos.length" class="todos-list">
+              <div
+                v-for="(title, index) in todos"
+                :key="title + index"
+                class="todo-item"
+                :class="nodeStatusMap.get(title)?.status || 'pending'"
+                @click="handleNodeClick(title)"
               >
-                <rect
-                  x="-65"
-                  y="-20"
-                  width="130"
-                  height="40"
-                  rx="14"
-                  class="node-rect"
-                  :fill="node.status === 'completed' ? 'url(#completedGradient)' : node.status === 'executing' ? 'url(#executingGradient)' : '#ffffff'"
-                  :stroke="getNodeColor(node.status)"
-                  stroke-width="1.5"
-                />
-                
-                <!-- 节点状态图标 -->
-                <text
-                  x="-50"
-                  y="4"
-                  class="node-icon"
-                  font-size="14"
-                >
-                  {{ node.status === 'completed' ? '✓' : node.status === 'executing' ? '⟳' : '○' }}
-                </text>
-                
-                <!-- 节点文本 -->
-                <text
-                  x="-32"
-                  y="4"
-                  class="node-label"
-                  text-anchor="start"
-                  dominant-baseline="middle"
-                >
-                  {{ node.label.length > 8 ? node.label.substring(0, 8) + '...' : node.label }}
-                </text>
-              </g>
-                </g>
-              </svg>
+                <div class="todo-status-dot" />
+                <div class="todo-main">
+                  <div class="todo-title-row">
+                    <span class="todo-index">Step {{ index + 1 }}</span>
+                    <span class="todo-title">{{ title }}</span>
+                  </div>
+                  <div class="todo-status-text">
+                    {{
+                      nodeStatusMap.get(title)?.status === 'completed'
+                        ? '已完成'
+                        : nodeStatusMap.get(title)?.status === 'executing'
+                          ? '执行中'
+                          : '待执行'
+                    }}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
 
           <div v-else class="empty-placeholder">
             <span class="empty-icon">🔄</span>
-            <p>等待任务图生成...</p>
+            <p>等待任务流程生成...</p>
           </div>
         </div>
       </div>
@@ -793,13 +690,26 @@ const getNodeColor = (status: string) => {
             </svg>
           </span>
           <h2 class="header-title">任务结果</h2>
-          
-
-          
-          <span v-if="isReceivingResult" class="status-badge streaming">
-            <span class="status-dot"></span>
-            <span>接收中</span>
-          </span>
+          <div
+            v-if="isHistoryMode && totalContexts > 1"
+            class="run-toggle"
+          >
+            <button
+              class="run-arrow"
+              :disabled="currentContextIndex === 0"
+              @click.stop="switchToPrevRun"
+            >
+              ‹
+            </button>
+            <span class="run-label">{{ currentRunLabel }}</span>
+            <button
+              class="run-arrow"
+              :disabled="currentContextIndex === totalContexts - 1"
+              @click.stop="switchToNextRun"
+            >
+              ›
+            </button>
+          </div>
         </div>
         <div class="column-content">
           <div v-if="showTaskResult" class="result-wrapper" ref="resultContainer">
@@ -824,12 +734,6 @@ const getNodeColor = (status: string) => {
                   <MdPreview :editorId="'fb-preview-' + i" :modelValue="fb.content" />
                 </div>
               </details>
-            </div>
-
-            <div v-if="isReceivingResult" class="typing-indicator">
-              <span class="typing-dot"></span>
-              <span class="typing-dot"></span>
-              <span class="typing-dot"></span>
             </div>
           </div>
           <div v-else class="empty-placeholder">
@@ -1076,36 +980,6 @@ $error: #ef4444;
       letter-spacing: -0.5px;
     }
 
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      padding: 8px 18px;
-      border-radius: 24px;
-      font-weight: 700;
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.5);
-
-      &.streaming {
-        background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
-        color: #ea580c;
-        border-color: rgba(234, 88, 12, 0.2);
-        box-shadow: 0 4px 16px rgba(234, 88, 12, 0.25);
-        
-        .status-dot {
-          width: 9px;
-          height: 9px;
-          border-radius: 50%;
-          background: #ea580c;
-          animation: pulseGlow 1.5s ease-in-out infinite;
-          box-shadow: 0 0 8px rgba(234, 88, 12, 0.6);
-        }
-      }
-    }
-
     /* 编辑/预览切换按钮（新） */
     .mode-toggle {
       display: flex;
@@ -1188,117 +1062,147 @@ $error: #ef4444;
   }
 }
 
-// 第二列：任务流程图
-.column-graph {
-  .graph-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding: 0 0px 20px; // 内卡边缘外边距
-    margin-top: -16px; // 抵消上方标题留白
+// To-dos 列表样式
+.todos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 12px 4px 12px;
+}
 
-    .graph-container {
-      flex: 1;
-      height: 100%;
-      background: transparent;
-      padding: 0;
-      margin-top: 16px;
-      overflow: auto;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: center;
-      
-      // 隐藏滚动条但保持滚动功能
-      scrollbar-width: none;  // Firefox
-      -ms-overflow-style: none;  // IE/Edge
-      
-      &::-webkit-scrollbar {
-        display: none;  // Chrome/Safari/Edge
-      }
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 24px;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 
-      .graph-svg {
-        width: 100%;
-        height: auto;
-        min-height: 300px;
-        max-width: 320px;
-        margin: auto 0;
-        display: block;
-
-        .edge-path {
-          fill: none;
-          stroke: #667eea;
-          stroke-width: 1.5;
-          opacity: 0.6;
-          transition: all 0.3s ease;
-
-          &:hover {
-            stroke-width: 2.5;
-            opacity: 1;
-          }
-        }
-
-        .node-group {
-          transition: all 0.3s ease;
-
-          &.node-clickable {
-            cursor: pointer;
-
-            &:hover {
-              .node-rect {
-                filter: brightness(1.05);
-                stroke-width: 2.5;
-              }
-            }
-          }
-
-          &.node-completed {
-            .node-icon {
-              fill: #10b981;
-              font-weight: bold;
-            }
-          }
-
-          &.node-executing {
-            .node-icon {
-              fill: #f59e0b;
-              animation: spin 2s linear infinite;
-            }
-          }
-
-          &.node-pending {
-            .node-icon {
-              fill: #cbd5e1;
-            }
-          }
-
-          .node-rect {
-            transition: all 0.3s ease;
-            filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.1));
-          }
-
-          .node-label {
-            font-size: 12px;
-            font-weight: 600;
-            fill: #1f2937;
-            pointer-events: none;
-          }
-
-          .node-icon {
-            font-size: 16px;
-            pointer-events: none;
-          }
-        }
-      }
-    }
+  &:hover {
+    border-color: #d1d5db;
+    background-color: #f9fafb;
   }
+
+  &.completed {
+    border-color: #bbf7d0;
+    background-color: #f0fdf4;
+  }
+
+  &.executing {
+    border-color: #fed7aa;
+    background-color: #fff7ed;
+  }
+
+  &.pending {
+    border-color: #e5e7eb;
+    background-color: #ffffff;
+  }
+}
+
+.todo-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background-color: #cbd5e1;
+}
+
+.todo-item.completed .todo-status-dot {
+  background-color: #16a34a;
+}
+
+.todo-item.executing .todo-status-dot {
+  background-color: #f59e0b;
+}
+
+.todo-item.pending .todo-status-dot {
+  background-color: #9ca3af;
+}
+
+.todo-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.todo-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.todo-index {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background-color: #f3f4f6;
+}
+
+.todo-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.todo-status-text {
+  font-size: 12px;
+  color: #6b7280;
 }
 
 // 第三列：执行结果
 .column-result {
   .column-content {
     padding: 0; // 移除外层 padding，以便滚动层贴近边缘
+  }
+
+  .column-header {
+    display: flex;
+    align-items: center;
+  }
+
+  .run-toggle {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    font-size: 12px;
+    color: #4b5563;
+  }
+
+  .run-arrow {
+    border: none;
+    background: transparent;
+    padding: 2px 4px;
+    font-size: 14px;
+    line-height: 1;
+    color: #4b5563;
+    cursor: pointer;
+    border-radius: 999px;
+    min-width: 20px;
+  }
+
+  .run-arrow:hover:not(:disabled) {
+    background-color: #e5e7eb;
+  }
+
+  .run-arrow:disabled {
+    color: #cbd5f5;
+    cursor: default;
+  }
+
+  .run-label {
+    min-width: 40px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: #374151;
   }
 
   .result-wrapper {
@@ -1365,35 +1269,7 @@ $error: #ef4444;
       }
     }
 
-    .typing-indicator {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      padding: 24px;
-      margin-top: 20px;
-
-      .typing-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
-        animation: typingBounce 1.4s infinite ease-in-out;
-
-        &:nth-child(1) {
-          animation-delay: -0.32s;
-        }
-
-        &:nth-child(2) {
-          animation-delay: -0.16s;
-        }
-        
-        &:nth-child(3) {
-          animation-delay: 0s;
-        }
-      }
-    }
+ 
   }
 }
 
@@ -1430,7 +1306,7 @@ $error: #ef4444;
     font-weight: 600;
     padding: 6px 16px;
     background: rgba(102, 126, 234, 0.08);
-    border-radius: 20px;
+    border-radius: 24px;
   }
 }
 
@@ -1459,7 +1335,7 @@ $error: #ef4444;
 
   .modal-content {
     background: white;
-    border-radius: 16px;
+    border-radius: 24px;
     width: 90%;
     max-width: 700px;
     max-height: 80vh;
@@ -1507,6 +1383,7 @@ $error: #ef4444;
       padding: 24px;
       overflow-y: auto;
       max-height: calc(80vh - 80px);
+      background: #f9fafb;
 
       .detail-item {
         margin-bottom: 20px;
@@ -1533,7 +1410,7 @@ $error: #ef4444;
           &.message-content {
             background: #f9fafb;
             padding: 16px;
-            border-radius: 8px;
+            border-radius: 24px;
             border: 1px solid #e5e7eb;
             max-height: 400px;
             overflow-y: auto;
@@ -1682,7 +1559,7 @@ $error: #ef4444;
 .column {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 24px;
   backdrop-filter: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
@@ -1706,7 +1583,7 @@ $error: #ef4444;
   font-size: 18px;
   background: var(--primary);
   color: #fff;
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: none;
 }
 .column .column-header .header-icon::after {
@@ -1714,31 +1591,13 @@ $error: #ef4444;
 }
 .column .column-header .header-icon:hover {
   transform: none;
+  box-shadow: none;
 }
 .column .column-header .header-title {
   background: none;
   -webkit-text-fill-color: initial;
   color: var(--text);
   font-weight: 700;
-}
-
-.column .column-header .status-badge {
-  background: #f3f4f6;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-weight: 600;
-  box-shadow: none;
-}
-.column .column-header .status-badge.streaming {
-  background: #fff8eb;
-  border-color: #fde68a;
-  color: #b45309;
-}
-.column .column-header .status-badge.streaming .status-dot {
-  background: #f59e0b;
-  box-shadow: none;
 }
 
 .column .column-content {
@@ -1793,6 +1652,9 @@ $error: #ef4444;
   fill: #fff !important;
   stroke-width: 1.5;
   filter: none;
+  /* 统一节点圆角为 24px（SVG rect 支持通过 CSS 设置 rx/ry） */
+  rx: 24px;
+  ry: 24px;
 }
 .column-graph .graph-wrapper .graph-container .graph-svg .node-group .node-label {
   fill: var(--text);
@@ -1846,7 +1708,7 @@ $error: #ef4444;
 }
 
 .feedback-card-native {
-  border-radius: 20px;
+  border-radius: 24px;
   background-color: #f2f2f7;
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 0.05);
@@ -1916,5 +1778,263 @@ $error: #ef4444;
 }
 .feedback-card-native.error summary {
   color: #c92a2a;
+}
+
+/* 深色模式：对齐通用设置页配色 */
+.theme-dark {
+  .task-graph-page {
+    --bg: #1c1c1e;
+    --panel: #242426;
+    --border: #2c2c2e;
+    --border-strong: #3a3a3c;
+    --text: #f5f5f7;
+    --muted: rgba(235, 235, 245, 0.6);
+    --primary: #4d6bfe;
+    --primary-600: #4d6bfe;
+    --success: #30d158;
+    --warning: #ffd60a;
+    --pending: #636366;
+
+    background: var(--bg);
+  }
+
+  .task-graph-page::before,
+  .task-graph-page::after {
+    display: none !important;
+  }
+
+  .two-column-layout {
+    padding: 12px;
+  }
+
+  .column {
+    background: var(--panel);
+    border-color: var(--border);
+    box-shadow: none;
+  }
+
+  .column .column-header {
+    background: #242426;
+    border-bottom-color: var(--border);
+  }
+
+  .column .column-header .header-icon {
+    background: var(--primary);
+  }
+
+  .column .column-header .header-title {
+    color: var(--text);
+  }
+
+  .column .column-content {
+    background: var(--panel);
+  }
+
+  .user-query-card .query-card-body .query-text {
+    color: var(--text);
+  }
+
+  .todos-list {
+    .todo-item {
+      border-color: var(--border);
+      background-color: #242426;
+
+      &.completed {
+        background-color: rgba(48, 209, 88, 0.12);
+        border-color: rgba(48, 209, 88, 0.6);
+      }
+
+      &.executing {
+        background-color: rgba(255, 214, 10, 0.14);
+        border-color: rgba(255, 214, 10, 0.7);
+      }
+
+      &.pending {
+        background-color: #242426;
+      }
+    }
+
+    .todo-index {
+      background-color: #2c2c2e;
+      color: var(--muted);
+    }
+
+    .todo-title {
+      color: var(--text);
+    }
+
+    .todo-status-text {
+      color: var(--muted);
+    }
+  }
+
+  .todo-status-dot {
+    background-color: #3a3a3c;
+  }
+
+  .todo-item.completed .todo-status-dot {
+    background-color: var(--success);
+  }
+
+  .todo-item.executing .todo-status-dot {
+    background-color: var(--warning);
+  }
+
+  .todo-item.pending .todo-status-dot {
+    background-color: var(--pending);
+  }
+
+  .column-result .result-wrapper {
+    :deep(.md-editor-preview) {
+      background: transparent;
+
+      p {
+        color: var(--text);
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        color: var(--text);
+      }
+
+      code {
+        background: #2c2c2e;
+        color: #ff9f0a;
+      }
+
+      pre {
+        background: #111827;
+        color: #f9fafb;
+      }
+    }
+  }
+
+  .empty-placeholder {
+    .empty-icon {
+      opacity: 0.4;
+    }
+
+    p {
+      color: var(--muted);
+    }
+  }
+
+  .node-detail-modal .modal-content {
+    background: #1c1c1e;
+    border-radius: 24px;
+
+    .modal-header {
+      background: #242426;
+      color: var(--text);
+      border-bottom-color: var(--border);
+
+      .modal-close {
+        color: var(--muted);
+      }
+    }
+
+    .modal-body {
+      background: #1c1c1e;
+      .detail-label {
+        color: var(--muted);
+      }
+
+      .detail-value {
+        color: var(--text);
+        background: transparent;
+
+        &.message-content {
+          background: #242426;
+          border-color: var(--border);
+          border-radius: 24px;
+
+          /* 深色模式下节点详情 Markdown 适配 */
+          :deep(.md-editor-preview) {
+            background: transparent;
+            padding: 0;
+            border: none;
+            box-shadow: none;
+
+            p {
+              color: var(--text);
+            }
+
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6 {
+              color: var(--text);
+            }
+
+            code {
+              background: #2c2c2e;
+              color: #ff9f0a;
+            }
+
+            pre {
+              background: #111827;
+              color: #f9fafb;
+            }
+          }
+        }
+
+        .status-tag.completed {
+          background: rgba(48, 209, 88, 0.16);
+          color: #30d158;
+        }
+
+        .status-tag.executing {
+          background: rgba(255, 214, 10, 0.18);
+          color: #ffd60a;
+        }
+
+        .status-tag.pending {
+          background: #2c2c2e;
+          color: var(--muted);
+        }
+      }
+    }
+  }
+
+  .feedback-card-native {
+    background-color: #2c2c2e;
+    border-color: #3a3a3c;
+  }
+
+  .feedback-card-native summary {
+    color: var(--text);
+  }
+
+  .feedback-card-native summary::after {
+    color: #8e8e93;
+  }
+
+  .feedback-content-native :deep(.md-editor-preview) p {
+    color: rgba(235, 235, 245, 0.8);
+  }
+
+  .feedback-card-native.success {
+    background-color: rgba(48, 209, 88, 0.12);
+    border-color: rgba(48, 209, 88, 0.6);
+  }
+
+  .feedback-card-native.success summary {
+    color: #30d158;
+  }
+
+  .feedback-card-native.error {
+    background-color: rgba(255, 69, 58, 0.14);
+    border-color: rgba(255, 69, 58, 0.7);
+  }
+
+  .feedback-card-native.error summary {
+    color: #ff453a;
+  }
 }
 </style>

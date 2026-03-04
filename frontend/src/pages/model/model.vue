@@ -567,21 +567,13 @@ onMounted(() => {
       display: flex;
       align-items: center;
       gap: 12px;
-      background: linear-gradient(90deg, #409eff, #3a7be2); // 添加渐变效果，蓝色系
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      
+      color: #303133;
+
       .model-icon {
         font-size: 30px;
         width: 32px;
         height: 32px;
-        color: #409eff;
-      }
-      
-      &::before {
-        content: '';
-        display: none; // 隐藏原来的表情符号
+        color: #303133;
       }
     }
     
@@ -679,15 +671,12 @@ onMounted(() => {
           
           &.llm {
             background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
-            box-shadow: 0 4px 10px rgba(64, 158, 255, 0.2);
           }
           &.embedding {
             background: linear-gradient(135deg, #67c23a 0%, #529b2e 100%);
-            box-shadow: 0 4px 10px rgba(103, 194, 58, 0.2);
           }
           &.rerank {
             background: linear-gradient(135deg, #e6a23c 0%, #d9b55b 100%);
-            box-shadow: 0 4px 10px rgba(230, 162, 60, 0.2);
           }
         }
         
@@ -813,6 +802,216 @@ onMounted(() => {
       }
     }
     
+  }
+}
+
+/* 深色模式 */
+.theme-dark {
+  .model-page {
+    background-color: #1c1c1e;
+
+    .page-header {
+      background: #242426;
+      box-shadow: none;
+
+      h2 {
+        color: #f5f5f7;
+
+        .model-icon {
+          color: #f5f5f7;
+        }
+      }
+
+      .header-actions {
+        .search-box {
+          :deep(.el-input__wrapper) {
+            background-color: #2c2c2e;
+            border-color: #3a3a3c;
+            box-shadow: none;
+
+            .el-input__inner {
+              color: #f5f5f7;
+            }
+
+            .el-input__prefix,
+            .el-input__suffix {
+              color: rgba(255, 255, 255, 0.55);
+            }
+          }
+        }
+      }
+    }
+
+    .model-list {
+      .model-table-container {
+        :deep(.el-table) {
+          background-color: #1c1c1e;
+          border-color: #2c2c2e;
+          color: #e5e5ea;
+
+          th.el-table__cell {
+            background-color: #2c2c2e !important;
+            color: #e5e5ea !important;
+            border-bottom-color: #3a3a3c !important;
+          }
+
+          td.el-table__cell {
+            background-color: #242426;
+            border-bottom-color: #2c2c2e;
+          }
+
+          .el-table__row:hover > td {
+            background-color: #2c2c2e !important;
+          }
+
+          .el-table__inner-wrapper::before {
+            background-color: #2c2c2e;
+          }
+        }
+
+      .model-info-cell {
+
+          .model-title {
+            .model-name {
+              color: #f5f5f7;
+            }
+
+            .model-provider {
+              color: rgba(255, 255, 255, 0.55);
+            }
+          }
+        }
+      }
+
+      .empty-state {
+        h3 {
+          color: #f5f5f7;
+        }
+
+        p {
+          color: rgba(255, 255, 255, 0.65);
+        }
+      }
+
+      :deep(.el-loading-mask) {
+        background-color: rgba(0, 0, 0, 0.6);
+        .el-loading-spinner .el-loading-text {
+          color: #e5e5ea;
+        }
+      }
+    }
+  }
+
+  /* 创建/编辑模型对话框深色模式 */
+  .dialog-overlay {
+    background-color: rgba(0, 0, 0, 0.6);
+
+    .dialog-container {
+      background: #1c1c1e;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .dialog-body {
+      background: #1c1c1e;
+    }
+
+    .form-label {
+      color: #e5e5ea;
+    }
+
+    .label-text {
+      color: #e5e5ea;
+    }
+
+    .input-wrapper {
+      .form-input {
+        background: #2c2c2e;
+        border-color: #3a3a3c;
+        color: #f5f5f7;
+
+        &::placeholder {
+          color: rgba(255, 255, 255, 0.4);
+        }
+
+        &:focus {
+          border-color: #4d6bfe;
+          background: #2c2c2e;
+        }
+      }
+    }
+
+    .dialog-footer {
+      border-top: none;
+
+      .dialog-btn {
+        background: transparent;
+      }
+
+      .cancel-btn {
+        border-color: #3a3a3c;
+        color: #e5e5ea;
+
+        &:hover {
+          background: #2c2c2e;
+        }
+      }
+
+      .confirm-btn {
+        border-color: #4d6bfe;
+        color: #4d6bfe;
+
+        &:hover:not(.disabled) {
+          background: rgba(77, 107, 254, 0.16);
+        }
+
+        &.disabled {
+          border-color: rgba(77, 107, 254, 0.45);
+          color: rgba(77, 107, 254, 0.7);
+        }
+      }
+    }
+  }
+
+  /* 删除确认对话框深色模式 */
+  .confirm-dialog-overlay {
+    background-color: rgba(0, 0, 0, 0.6);
+
+    .confirm-dialog {
+      background: #1c1c1e;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+
+      .dialog-title {
+        color: #f5f5f7;
+      }
+
+      .dialog-message {
+        color: rgba(255, 255, 255, 0.75);
+      }
+
+      .confirm-dialog-footer {
+        .confirm-dialog-btn {
+          background: transparent;
+
+          &.confirm-cancel-btn {
+            border-color: #3a3a3c;
+            color: #e5e5ea;
+
+            &:hover {
+              background: #2c2c2e;
+            }
+          }
+
+          &.confirm-delete-btn {
+            border-color: #ff453a;
+            color: #ff453a;
+
+            &:hover {
+              background: rgba(255, 69, 58, 0.16);
+            }
+          }
+        }
+      }
+    }
   }
 }
 

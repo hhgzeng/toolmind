@@ -992,6 +992,222 @@ watch(
   transform: translateY(4px);
 }
 
+/* 深色模式 */
+.theme-dark {
+  .chat-page {
+    background: #1c1c1e;
+
+    &.chat-active {
+      background-color: #1c1c1e;
+    }
+  }
+
+  .chat-container {
+    .welcome-section {
+      .welcome-title {
+        background: none;
+        -webkit-text-fill-color: #f5f5f7;
+        color: #f5f5f7;
+      }
+    }
+  }
+
+  .input-section {
+    &.input-fixed {
+      background: #1c1c1e;
+    }
+
+    .input-wrapper {
+      background: #2c2c2e;
+      border-color: #3a3a3c;
+
+      &:focus-within {
+        background: #2c2c2e;
+      }
+
+      .message-input {
+        color: #f5f5f7;
+
+        &::placeholder {
+          color: rgba(235, 235, 245, 0.6);
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: #4b5563;
+        }
+      }
+
+      .input-footer {
+        .footer-left {
+          .selector-dropdown {
+            .selector-item {
+              background: rgba(255, 255, 255, 0.04);
+              border-color: rgba(255, 255, 255, 0.08);
+              color: rgba(255, 255, 255, 0.7);
+
+              &:hover {
+                background: rgba(77, 107, 254, 0.18);
+                border-color: #4d6bfe;
+                color: #f5f5f7;
+              }
+
+              &.active {
+                background: linear-gradient(135deg, #2c2c2e, #3b3b3f);
+                border-color: #4d6bfe;
+                color: #f5f5f7;
+              }
+            }
+
+            .dropdown-menu {
+              background: #1c1c1e;
+              border-color: #2c2c2e;
+              box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+
+              .dropdown-header {
+                background: #242426;
+                border-bottom-color: #2c2c2e;
+
+                .header-title {
+                  color: #f5f5f7;
+                }
+
+                .header-count {
+                  background: #1c1c1e;
+                  border-color: #2c2c2e;
+                  color: rgba(235, 235, 245, 0.7);
+                }
+              }
+
+              .dropdown-list {
+                &::-webkit-scrollbar-thumb {
+                  background: #4b4b4f;
+
+                  &:hover {
+                    background: #636366;
+                  }
+                }
+              }
+
+              .dropdown-empty {
+                color: rgba(235, 235, 245, 0.6);
+
+                .empty-text {
+                  color: rgba(235, 235, 245, 0.6);
+                }
+              }
+
+              .dropdown-item {
+                background: #2c2c2e;
+                border-color: transparent;
+
+                .item-icon-wrapper {
+                  background: linear-gradient(135deg, #3a3a3c, #48484a);
+                }
+
+                .item-text {
+                  color: #f5f5f7;
+                }
+
+                .item-desc {
+                  color: rgba(235, 235, 245, 0.6);
+                }
+
+                &:hover {
+                  background: #333336;
+                  border-color: #3a3a3c;
+                }
+
+                &.selected {
+                  background: linear-gradient(135deg, #2c2c2e, #3b3b3f);
+                  border-color: #4d6bfe;
+                }
+              }
+
+              .dropdown-footer {
+                border-top-color: #2c2c2e;
+                background: #242426;
+
+                .clear-btn {
+                  background: #1c1c1e;
+                  border-color: #3a3a3c;
+                  color: rgba(235, 235, 245, 0.7);
+
+                  &:hover {
+                    background: rgba(248, 113, 113, 0.18);
+                    border-color: #f97373;
+                    color: #fecaca;
+                    box-shadow: none;
+                  }
+                }
+
+                .selected-count {
+                  background: rgba(77, 107, 254, 0.18);
+                  border-color: #4d6bfe;
+                  color: #f5f5f7;
+                }
+              }
+            }
+          }
+        }
+
+        .footer-left {
+          .attach-btn {
+            color: rgba(255, 255, 255, 0.8);
+
+            &:hover {
+              color: #ffffff;
+              background: rgba(255, 255, 255, 0.1);
+            }
+          }
+        }
+
+        .footer-right {
+          .send-btn {
+            &.btn-disabled {
+              background: #3a3a3c;
+              color: rgba(235, 235, 245, 0.5);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .chat-conversation {
+    background-color: #1c1c1e;
+
+    .ai-message {
+      .avatar {
+        border-color: #3a3a3c;
+      }
+
+      .message-content {
+        background-color: #242426;
+        color: #f5f5f7;
+        box-shadow: none;
+
+        .loading-spinner-container {
+          color: rgba(235, 235, 245, 0.7);
+
+          .loading-text {
+            color: rgba(235, 235, 245, 0.6);
+          }
+        }
+      }
+    }
+
+    .user-message {
+      .avatar {
+        border-color: #3a3a3c;
+      }
+
+      .message-content {
+        box-shadow: none;
+      }
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .chat-page {
     padding: 40px 16px 20px;

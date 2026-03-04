@@ -94,12 +94,6 @@ Mind 是一个高级智能代理，专门设计用于复杂任务的分解和执
 
 **核心功能**
 
-#### 引导提示生成
-```python
-async def generate_guide_prompt(self, mind_info, feedback=False)
-# 生成智能引导提示，支持反馈优化
-```
-
 #### 任务分解与执行
 ```python
 async def generate_tasks(self, mind_task)
@@ -110,7 +104,6 @@ async def submit_mind_task(self, mind_task)
 ```
 
 **特色功能**
-- **COT 思维链**: 使用思维链方法提高推理准确性
 - **任务图构建**: 自动构建任务依赖关系图
 - **工具集成**: 支持插件和 MCP 服务器集成
 - **增量执行**: 支持任务的增量执行和结果累积
