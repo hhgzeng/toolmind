@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ChatDotRound, Connection, Cpu, Operation } from '@element-plus/icons-vue'
 import { 
@@ -11,7 +11,7 @@ import {
 } from '../../apis/llm'
 
 const models = ref<LLMResponse[]>([])
-const loading = ref(false)
+const loading = ref(true)
 
 const mindConfig = ref<MindModelConfig>({
   conversation_model_id: null,
@@ -73,8 +73,6 @@ const saveMindConfig = async () => {
   }
 }
 
-const hasModels = computed(() => models.value.length > 0)
-
 onMounted(() => {
   fetchModels()
 })
@@ -89,13 +87,13 @@ onMounted(() => {
       </h2>
     </div>
 
-    <div class="mind-config-section" v-loading="loading || savingMind">
+    <div class="mind-config-section">
       <div class="section-title">
         <h3>ToolMind 核心模型配置</h3>
         <p>为 ToolMind 的不同功能组件配置专属的 AI 模型</p>
       </div>
       
-      <div v-if="hasModels" class="config-grid">
+      <div class="config-grid">
         <div class="config-card">
           <div class="config-icon">
             <el-icon><ChatDotRound /></el-icon>
@@ -110,6 +108,7 @@ onMounted(() => {
             class="model-select"
             clearable
             no-data-text="无模型"
+            :loading="loading || savingMind"
             @change="saveMindConfig"
           >
             <el-option
@@ -135,6 +134,7 @@ onMounted(() => {
             class="model-select"
             clearable
             no-data-text="无模型"
+            :loading="loading || savingMind"
             @change="saveMindConfig"
           >
             <el-option
@@ -160,6 +160,7 @@ onMounted(() => {
             class="model-select"
             clearable
             no-data-text="无模型"
+            :loading="loading || savingMind"
             @change="saveMindConfig"
           >
             <el-option
@@ -170,14 +171,6 @@ onMounted(() => {
             />
           </el-select>
         </div>
-      </div>
-
-      <div v-else class="empty-state">
-        <div class="empty-icon">
-          <span class="empty-emoji">🤖</span>
-        </div>
-        <h3>还没有可用模型</h3>
-        <p>请先在「模型管理」中创建至少一个模型，再回来为 ToolMind 引擎进行配置。</p>
       </div>
     </div>
   </div>
@@ -325,34 +318,6 @@ onMounted(() => {
       }
     }
   }
-
-  .empty-state {
-    text-align: center;
-    padding: 60px 30px;
-
-    .empty-icon {
-      margin-bottom: 24px;
-
-      .empty-emoji {
-        font-size: 48px;
-        opacity: 0.8;
-      }
-    }
-
-    h3 {
-      font-size: 20px;
-      font-weight: 600;
-      color: #303133;
-      margin-bottom: 12px;
-    }
-
-    p {
-      font-size: 14px;
-      color: #606266;
-      margin: 0 auto;
-      max-width: 420px;
-    }
-  }
 }
 
 @media (max-width: 768px) {
@@ -481,16 +446,6 @@ onMounted(() => {
         p {
           color: rgba(255, 255, 255, 0.65);
         }
-      }
-    }
-
-    .empty-state {
-      h3 {
-        color: #f5f5f7;
-      }
-
-      p {
-        color: rgba(255, 255, 255, 0.65);
       }
     }
   }

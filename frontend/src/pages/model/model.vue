@@ -267,44 +267,42 @@ onMounted(() => {
 
     <!-- 模型列表 -->
     <div class="model-list" v-loading="loading">
-      <!-- 模型列表 (表格视图) -->
-      <div class="model-table-container" v-if="filteredModels.length > 0">
-        <el-table 
-          :data="filteredModels" 
-          style="width: 100%" 
-          :header-cell-style="{ background: '#f8fafc', color: '#64748b', fontWeight: '600' }"
-          row-class-name="model-table-row"
-        >
-          <!-- 模型信息列 -->
-          <el-table-column label="模型" min-width="180">
-            <template #default="{ row }">
+      <!-- 模型列表 (静态视图) -->
+      <div class="static-model-list" v-if="filteredModels.length > 0">
+        <div class="list-header">
+          <div class="header-col col-model">模型</div>
+          <div class="header-col col-url">基础 URL</div>
+          <div class="header-col col-actions">操作</div>
+        </div>
+        <div class="list-body">
+          <div 
+            v-for="row in filteredModels" 
+            :key="row.llm_id" 
+            class="list-row"
+          >
+            <!-- 模型信息列 -->
+            <div class="cell col-model">
               <div class="model-info-cell">
-                <div class="model-avatar" :class="row.llm_type.toLowerCase()">
+                <div class="model-avatar" :class="row.llm_type ? row.llm_type.toLowerCase() : ''">
                   <span v-if="row.provider === 'OpenAI'" class="provider-icon">O</span>
                   <span v-else-if="row.provider === 'Anthropic'" class="provider-icon">A</span>
                   <span v-else-if="row.provider === 'Google'" class="provider-icon">G</span>
-                  <span v-else class="provider-icon">{{ row.provider[0] }}</span>
+                  <span v-else class="provider-icon">{{ row.provider ? row.provider[0] : 'M' }}</span>
                 </div>
                 <div class="model-title">
                   <div class="model-name">{{ row.model }}</div>
                   <div class="model-provider">{{ row.provider }}</div>
                 </div>
               </div>
-            </template>
-          </el-table-column>
+            </div>
 
-
-
-          <!-- 基础 URL 列 -->
-          <el-table-column label="基础 URL" min-width="250">
-            <template #default="{ row }">
+            <!-- 基础 URL 列 -->
+            <div class="cell col-url">
               <div class="url-value">{{ truncateUrl(row.base_url, 38) }}</div>
-            </template>
-          </el-table-column>
+            </div>
 
-          <!-- 操作列 -->
-          <el-table-column label="操作" width="200" align="left">
-            <template #default="{ row }">
+            <!-- 操作列 -->
+            <div class="cell col-actions">
               <div class="action-buttons-cell">
                 <el-button 
                   size="small" 
@@ -327,9 +325,9 @@ onMounted(() => {
                   <span>删除</span>
                 </el-button>
               </div>
-            </template>
-          </el-table-column>
-        </el-table>
+            </div>
+          </div>
+        </div>
       </div>
       
       <!-- 空状态 -->
@@ -631,27 +629,63 @@ onMounted(() => {
     min-height: 300px;
     position: relative;
     
-    .model-table-container {
-      /* Custom Table Styles */
-      :deep(.el-table) {
-        border-radius: 24px;
-        overflow: hidden;
-        border: 1px solid #ebeef5;
+    .static-model-list {
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid #ebeef5;
+      background: #ffffff;
+
+      .list-header {
+        display: flex;
+        background-color: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
         
-        th.el-table__cell {
-          background-color: #f8fafc !important;
+        .header-col {
+          padding: 12px 16px;
           color: #64748b;
           font-weight: 600;
-          border-bottom: 2px solid #e2e8f0;
-          padding: 12px 16px;
-        }
-        
-        td.el-table__cell {
-          border-bottom: 1px solid #f1f5f9;
-          padding: 16px;
+          font-size: 14px;
+          text-align: left;
+          box-sizing: border-box;
+          flex-shrink: 0;
         }
       }
-      
+
+      .list-body {
+        .list-row {
+          display: flex;
+          align-items: center;
+          border-bottom: 1px solid #f1f5f9;
+          transition: background-color 0.2s;
+
+          &:hover {
+            background-color: #f8fafc;
+          }
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .cell {
+            padding: 16px;
+            box-sizing: border-box;
+            flex-shrink: 0;
+          }
+        }
+      }
+
+      .col-model {
+        width: 35%;
+      }
+
+      .col-url {
+        flex: 1;
+      }
+
+      .col-actions {
+        width: 200px;
+      }
+
       .model-info-cell {
         display: flex;
         align-items: center;
@@ -678,6 +712,9 @@ onMounted(() => {
           &.rerank {
             background: linear-gradient(135deg, #e6a23c 0%, #d9b55b 100%);
           }
+          &:not(.llm):not(.embedding):not(.rerank) {
+             background: linear-gradient(135deg, #909399 0%, #606266 100%);
+          }
         }
         
         .model-title {
@@ -703,6 +740,7 @@ onMounted(() => {
         font-size: 13px;
         display: inline-block;
         border: 1px dashed rgba(64, 158, 255, 0.3);
+        word-break: break-all;
         
         &:hover {
           background-color: rgba(64, 158, 255, 0.15);
@@ -843,34 +881,30 @@ onMounted(() => {
     }
 
     .model-list {
-      .model-table-container {
-        :deep(.el-table) {
-          background-color: #1c1c1e;
-          border-color: #2c2c2e;
-          color: #e5e5ea;
+      .static-model-list {
+        background-color: #1c1c1e;
+        border-color: #2c2c2e;
 
-          th.el-table__cell {
-            background-color: #2c2c2e !important;
-            color: #e5e5ea !important;
-            border-bottom-color: #3a3a3c !important;
-          }
-
-          td.el-table__cell {
-            background-color: #242426;
-            border-bottom-color: #2c2c2e;
-          }
-
-          .el-table__row:hover > td {
-            background-color: #2c2c2e !important;
-          }
-
-          .el-table__inner-wrapper::before {
-            background-color: #2c2c2e;
+        .list-header {
+          background-color: #2c2c2e;
+          border-bottom-color: #3a3a3c;
+          
+          .header-col {
+            color: #e5e5ea;
           }
         }
 
-      .model-info-cell {
+        .list-body {
+          .list-row {
+            border-bottom-color: #2c2c2e;
 
+            &:hover {
+              background-color: #2c2c2e;
+            }
+          }
+        }
+
+        .model-info-cell {
           .model-title {
             .model-name {
               color: #f5f5f7;

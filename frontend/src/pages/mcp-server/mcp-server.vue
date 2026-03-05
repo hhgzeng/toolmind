@@ -389,17 +389,22 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div class="server-list" v-loading="loading">
-      <div class="server-table-container" v-if="filteredServers.length > 0">
-        <el-table 
-          :data="filteredServers" 
-          style="width: 100%" 
-          :header-cell-style="{ background: '#f8fafc', color: '#64748b', fontWeight: '600' }"
-          row-class-name="server-table-row"
-        >
-          <!-- 头像和名称统一列 -->
-          <el-table-column label="服务器名称" min-width="180">
-            <template #default="{ row }">
+    <div class="server-list">
+      <div class="static-server-list" v-if="filteredServers.length > 0">
+        <div class="list-header">
+          <div class="header-col col-name">服务器名称</div>
+          <div class="header-col col-tools">可用工具</div>
+          <div class="header-col col-status">启用状态</div>
+          <div class="header-col col-actions">操作</div>
+        </div>
+        <div class="list-body">
+          <div 
+            v-for="row in filteredServers" 
+            :key="row.mcp_server_id" 
+            class="list-row"
+          >
+            <!-- 头像和名称统一列 -->
+            <div class="cell col-name">
               <div class="server-info-cell">
                 <div class="server-avatar">
                   {{ row.server_name ? row.server_name.charAt(0).toUpperCase() : 'M' }}
@@ -409,12 +414,10 @@ onUnmounted(() => {
                   <div class="server-provider">{{ getServerType(row) }}</div>
                 </div>
               </div>
-            </template>
-          </el-table-column>
-          
-          <!-- 可用工具数量列 -->
-          <el-table-column label="可用工具" min-width="250">
-            <template #default="{ row }">
+            </div>
+            
+            <!-- 可用工具数量列 -->
+            <div class="cell col-tools">
               <div class="tools-count">
                 <el-button 
                   type="primary" 
@@ -427,24 +430,20 @@ onUnmounted(() => {
                   {{ row.params?.length || 0 }} 个工具
                 </el-button>
               </div>
-            </template>
-          </el-table-column>
-          
-          <!-- 配置状态列 -->
-          <el-table-column label="启用状态" width="120">
-            <template #default="{ row }">
+            </div>
+            
+            <!-- 配置状态列 -->
+            <div class="cell col-status">
               <div class="config-status-align-left">
                 <el-switch
                   v-model="row.is_active"
                   @change="(val) => handleToggleActive(row, val as boolean)"
                 />
               </div>
-            </template>
-          </el-table-column>
-          
-          <!-- 操作列 -->
-          <el-table-column label="操作" width="200" align="left">
-            <template #default="{ row }">
+            </div>
+            
+            <!-- 操作列 -->
+            <div class="cell col-actions">
               <div class="action-buttons-cell">
                 <el-button 
                   size="small" 
@@ -467,9 +466,9 @@ onUnmounted(() => {
                   <span>删除</span>
                 </el-button>
               </div>
-            </template>
-          </el-table-column>
-        </el-table>
+            </div>
+          </div>
+        </div>
       </div>
       
       <div v-if="filteredServers.length === 0 && !loading" class="empty-state">
@@ -1419,33 +1418,65 @@ onUnmounted(() => {
     min-height: 300px;
     position: relative;
     
-    .server-table-container {
-      /* 与 model.vue 统一的表格样式 */
+    .static-server-list {
       border-radius: 24px;
       overflow: hidden;
-      
-      .el-table {
-        border-radius: 24px !important;
-        overflow: hidden !important;
-        border: 1px solid #ebeef5 !important;
+      border: 1px solid #ebeef5;
+      background: #ffffff;
+
+      .list-header {
+        display: flex;
+        background-color: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
         
-        &::before,
-        &::after {
-          display: none !important;
-        }
-        
-        th.el-table__cell {
-          background-color: #f8fafc !important;
+        .header-col {
+          padding: 12px 16px;
           color: #64748b;
           font-weight: 600;
-          border-bottom: 2px solid #e2e8f0;
-          padding: 12px 16px;
+          font-size: 14px;
+          text-align: left;
+          box-sizing: border-box;
+          flex-shrink: 0;
         }
-        
-        td.el-table__cell {
+      }
+
+      .list-body {
+        .list-row {
+          display: flex;
+          align-items: center;
           border-bottom: 1px solid #f1f5f9;
-          padding: 16px;
+          transition: background-color 0.2s;
+
+          &:hover {
+            background-color: #f8fafc;
+          }
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .cell {
+            padding: 16px;
+            box-sizing: border-box;
+            flex-shrink: 0;
+          }
         }
+      }
+
+      .col-name {
+        width: 35%;
+      }
+
+      .col-tools {
+        flex: 1;
+      }
+
+      .col-status {
+        width: 120px;
+      }
+
+      .col-actions {
+        width: 200px;
       }
       
       .server-info-cell {
@@ -1515,7 +1546,6 @@ onUnmounted(() => {
         }
       }
     }
-    
     .empty-state {
       text-align: center;
       padding: 80px 20px;
@@ -1706,29 +1736,26 @@ onUnmounted(() => {
     }
 
     .server-list {
-      .server-table-container {
-        .el-table {
-          background-color: #1c1c1e !important;
-          border-color: #2c2c2e !important;
-          color: #e5e5ea;
+      .static-server-list {
+        background-color: #1c1c1e;
+        border-color: #2c2c2e;
 
-          th.el-table__cell {
-            background-color: #2c2c2e !important;
+        .list-header {
+          background-color: #2c2c2e;
+          border-bottom-color: #3a3a3c;
+          
+          .header-col {
             color: #e5e5ea;
-            border-bottom-color: #3a3a3c !important;
           }
+        }
 
-          td.el-table__cell {
-            background-color: #242426;
+        .list-body {
+          .list-row {
             border-bottom-color: #2c2c2e;
-          }
 
-          .el-table__row:hover > td {
-            background-color: #2c2c2e !important;
-          }
-
-          .el-table__inner-wrapper::before {
-            background-color: #2c2c2e;
+            &:hover {
+              background-color: #2c2c2e;
+            }
           }
         }
 

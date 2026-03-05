@@ -94,6 +94,9 @@ class ModelManager:
             base_url=app_settings.multi_models.reasoning_model.base_url,
         )
 
+
+
+
     @classmethod
     async def get_mind_intent_model(
         cls, user_id: str = None, **kwargs

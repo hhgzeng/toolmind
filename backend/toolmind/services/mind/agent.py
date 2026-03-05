@@ -57,6 +57,9 @@ class MindAgent:
     async def get_tool_call_model(self):
         return await ModelManager.get_mind_intent_model(user_id=self.user_id)
 
+    async def get_reasoning_model(self):
+        return await ModelManager.get_reasoning_model(user_id=self.user_id)
+
     async def _generate_tasks(self, mind_task_prompt):
         model = await self.get_conversation_model()
         conversation_json_model = model.bind(response_format={"type": "json_object"})
@@ -146,8 +149,12 @@ class MindAgent:
         enable_web_search: bool = True,
     ) -> dict:
         """
-        Evaluate the generated result using tool_call_model and available tools.
+        使用推理模型（ReasoningModel）对生成结果进行多轮工具调用评估。
+        ReasoningModel 在序列化时会正确携带 reasoning_content，
+        因此支持 DeepSeek Reasoner 等推理模型的多轮对话。
         """
+        import re
+
         eval_prompt = EvaluateResultPrompt.format(query=query, answer=answer)
         messages: List[BaseMessage] = [
             SystemMessage(content="你是一个专业的结果评判助手。"),
@@ -155,9 +162,10 @@ class MindAgent:
         ]
 
         tools = await self._obtain_mind_tools(mcp_servers, enable_web_search)
-        model = await self.get_tool_call_model()
+        model = await self.get_reasoning_model()
         eval_model = model.bind_tools(tools) if len(tools) else model
 
+        content = ""
         try:
             while True:
                 response = await eval_model.ainvoke(
@@ -174,13 +182,8 @@ class MindAgent:
             content = response.content.strip()
             print(f"[DEBUG _evaluate_result] Raw LLM response: {content}")
 
-            import re
-
             json_match = re.search(r"\{.*\}", content, re.DOTALL)
-            if json_match:
-                json_str = json_match.group(0)
-            else:
-                json_str = content
+            json_str = json_match.group(0) if json_match else content
 
             parsed_json = json.loads(json_str)
             print(f"[DEBUG _evaluate_result] Parsed JSON data: {parsed_json}")
@@ -194,22 +197,19 @@ class MindAgent:
                 or "insufficient_quota" in str(err)
                 or "429" in str(err)
             ):
-                print(
-                    f"[DEBUG _evaluate_result] Returning 80 due to RateLimit API issue."
-                )
                 return {
                     "score": 80,
                     "reasoning": "评判模型触发限流或余额不足 (RateLimitError/Insufficient Quota)，默认算作通过。",
                 }
 
             try:
-                # 尝试修复一般的 JSON 格式错误或者报错，注意应传入原本的 content
-                json_content_to_fix = locals().get("content", "")
+                # 尝试修复一般的 JSON 格式错误
+                json_content_to_fix = content or locals().get("content", "")
                 fix_message = FixJsonPrompt.format(
                     json_content=json_content_to_fix, json_error=str(err)
                 )
-                model = await self.get_conversation_model()
-                fix_response = await model.ainvoke(
+                fix_model = await self.get_conversation_model()
+                fix_response = await fix_model.ainvoke(
                     input=fix_message, config={"callbacks": [usage_metadata_callback]}
                 )
                 fix_content = fix_response.content.strip()
@@ -503,23 +503,33 @@ class MindAgent:
             except Exception as e:
                 text_content = f"[工具执行失败] {tool_name}: {type(e).__name__} - {e}"
         else:
-            from toolmind.services.web_search.action import tavily_search
-
-            MindPlugins = {
-                "web_search": tavily_search,
-            }
-            text_content = MindPlugins[tool_name].invoke(tool_args)
+            if tool_name == "web_search":
+                from toolmind.services.web_search.action import _tavily_search
+                from toolmind.database.dao.web_search_config import WebSearchConfigDao
+                
+                user_config = await WebSearchConfigDao.get_config_by_user_id(self.user_id)
+                api_key = user_config.api_key if user_config else None
+                
+                text_content = _tavily_search(**tool_args, api_key=api_key)
+            else:
+                text_content = f"[工具执行失败] 未知内置工具 {tool_name}"
         return text_content
 
     async def _obtain_mind_tools(self, mcp_servers, enable_web_search=False):
         tools = []
 
         # 内置搜索工具：按开关决定是否暴露给模型作为可选工具
-        global_web_search_enabled = True
-        if getattr(app_settings, "tools", None) and getattr(
-            app_settings.tools, "tavily", None
-        ):
-            global_web_search_enabled = app_settings.tools.tavily.get("enabled", True)
+        from toolmind.database.dao.web_search_config import WebSearchConfigDao
+        user_config = await WebSearchConfigDao.get_config_by_user_id(self.user_id)
+        
+        if user_config:
+            global_web_search_enabled = user_config.enabled
+        else:
+            global_web_search_enabled = True
+            if getattr(app_settings, "tools", None) and getattr(
+                app_settings.tools, "tavily", None
+            ):
+                global_web_search_enabled = app_settings.tools.tavily.get("enabled", True)
 
         if enable_web_search and global_web_search_enabled:
             tools.append(convert_to_openai_tool(web_search))

@@ -4,9 +4,6 @@ from tavily import TavilyClient
 
 from toolmind.settings import app_settings
 
-
-tavily_client = TavilyClient(app_settings.tools.tavily.get("api_key"))
-
 @tool("web_search", parse_docstring=True)
 def tavily_search(query: str,
                   topic: Optional[str],
@@ -24,10 +21,16 @@ def tavily_search(query: str,
     Returns:
         将联网搜索到的信息返回给用户
     """
+    # Note: `tavily_search` is typically called via LangChain agent.
+    # The actual executing logic is mostly handled in `_process_tools_result` in `agent.py` where we bypass normal tool execution.
     return _tavily_search(query, topic, max_results, time_range)
 
-def _tavily_search(query, topic, max_results, time_range):
+def _tavily_search(query, topic, max_results, time_range, api_key: str = None):
     """使用Tavily搜索工具给用户进行搜索"""
+    if not api_key:
+        api_key = app_settings.tools.tavily.get("api_key")
+    
+    tavily_client = TavilyClient(api_key=api_key)
     response = tavily_client.search(
         query=query,
         country="china",

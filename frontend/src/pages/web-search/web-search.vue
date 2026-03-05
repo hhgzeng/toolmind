@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue"
 import { ElMessage } from "element-plus"
-import { Connection } from "@element-plus/icons-vue"
+import { Connection, Search, Loading } from "@element-plus/icons-vue"
 import { getWebSearchAPI, updateWebSearchAPI, type WebSearchSettings } from "../../apis/web-search"
 
 const loading = ref(false)
@@ -61,7 +61,7 @@ onMounted(() => {
       </h2>
     </div>
 
-    <div class="web-search-config-section" v-loading="loading || saving">
+    <div class="web-search-config-section">
       <div class="section-title">
         <div class="section-title-main">
           <div>
@@ -74,6 +74,7 @@ onMounted(() => {
               v-model="websearch.enabled"
               active-text="已开启"
               inactive-text="已关闭"
+              :loading="saving"
               @change="saveConfig"
             />
           </div>
@@ -82,14 +83,21 @@ onMounted(() => {
 
       <el-form label-position="top" class="config-form">
         <el-form-item>
+          <div v-if="loading" class="skeleton-input"></div>
           <el-input
+            v-else
             v-model="websearch.api_key"
             type="password"
             show-password
             placeholder="请输入 Tavily API Key，例如 tvly-xxxxxx"
             autocomplete="off"
+            :disabled="saving"
             @change="saveConfig"
-          />
+          >
+            <template #suffix>
+              <el-icon v-if="saving" class="is-loading"><Loading /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
       </el-form>
     </div>
@@ -191,6 +199,14 @@ onMounted(() => {
       margin-bottom: 16px;
     }
 
+    .skeleton-input {
+      width: 100%;
+      height: 36px;
+      border-radius: 999px;
+      box-shadow: 0 0 0 1px #dcdfe6 inset;
+      animation: skeleton-pulse 1.5s ease-in-out infinite;
+    }
+
     :deep(.el-input__wrapper) {
       border-radius: 999px !important;
       padding-left: 18px;
@@ -237,6 +253,18 @@ onMounted(() => {
   }
 }
 
+@keyframes skeleton-pulse {
+  0% { background-color: #ffffff; box-shadow: 0 0 0 1px #dcdfe6 inset; }
+  50% { background-color: #f1f5f9; box-shadow: 0 0 0 1px #dcdfe6 inset; }
+  100% { background-color: #ffffff; box-shadow: 0 0 0 1px #dcdfe6 inset; }
+}
+
+@keyframes skeleton-pulse-dark {
+  0% { background-color: #2c2c2e; box-shadow: 0 0 0 1px #3a3a3c inset; }
+  50% { background-color: #363638; box-shadow: 0 0 0 1px #3a3a3c inset; }
+  100% { background-color: #2c2c2e; box-shadow: 0 0 0 1px #3a3a3c inset; }
+}
+
 /* 深色模式 */
 .theme-dark {
   .web-search-config-page {
@@ -276,6 +304,10 @@ onMounted(() => {
     }
 
     .config-form {
+      .skeleton-input {
+        animation: skeleton-pulse-dark 1.5s ease-in-out infinite;
+      }
+
       :deep(.el-input__wrapper) {
         background-color: #2c2c2e;
         border-color: #3a3a3c;

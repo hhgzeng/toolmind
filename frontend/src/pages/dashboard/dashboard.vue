@@ -68,14 +68,14 @@
 
     <div class="charts-container">
       <!-- 模型调用次数折线图 -->
-      <div class="chart-wrapper" v-loading="loading">
+      <div class="chart-wrapper">
         <div class="chart-title">模型调用次数统计</div>
         <div class="chart-content" ref="callCountChartRef"></div>
         <div class="empty" v-if="!hasCallCountData">暂无数据</div>
       </div>
 
       <!-- Token 使用量柱状图 -->
-      <div class="chart-wrapper" v-loading="loading">
+      <div class="chart-wrapper">
         <div class="chart-title">Token 使用量统计</div>
         <div class="chart-content" ref="tokenUsageChartRef"></div>
         <div class="empty" v-if="!hasTokenUsageData">暂无数据</div>
