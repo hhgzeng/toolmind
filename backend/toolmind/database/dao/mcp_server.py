@@ -83,7 +83,8 @@ class MCPServerDao:
                 update_values["type"] = type
             if config:
                 update_values["config"] = config
-            if tools:
+            # 注意：tools 可能是空列表（全部关闭），不能用 if tools 判断
+            if tools is not None:
                 update_values["tools"] = tools
             if params:
                 update_values["params"] = params

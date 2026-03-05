@@ -8,11 +8,18 @@ export const startMindTaskAPI = async (
     query: string
     web_search?: boolean
     mcp_servers?: string[]
+    // 前端上传到 OSS 的附件元信息，会一并传给后端 MindTask
+    attachments?: {
+      name: string
+      url: string
+      size?: string
+    }[]
   },
   onMessage: (data: any) => void,
   onTaskGraph?: (graph: any) => void,  // 处理任务图数据
   onStepResult?: (stepData: { title: string; message: string }) => void,  // 处理步骤结果
   onTaskResult?: (message: string) => void,  // 新增：处理任务最终结果
+  onEvaluating?: () => void,  // 处理开始评判事件
   onError?: (error: any) => void,
   onClose?: () => void,
   onSessionStarted?: (session: { sessionId: string; title: string; createTime?: string; agent?: string }) => void,
@@ -89,6 +96,10 @@ export const startMindTaskAPI = async (
               // 处理任务最终结果（流式）
               console.log('📄 收到任务结果数据块:', parsedData.data.message)
               onTaskResult?.(parsedData.data.message)
+            } else if (parsedData.event === 'evaluating_result') {
+              // 处理评判阶段开始
+              console.log('🔍 收到评判开始事件')
+              onEvaluating?.()
             } else if (parsedData.data?.chunk) {
               // 处理文本块数据
               const chunk = parsedData.data.chunk

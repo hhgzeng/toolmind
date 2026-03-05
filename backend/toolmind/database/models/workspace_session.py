@@ -4,7 +4,7 @@ from typing import Optional, List
 from sqlmodel import Field
 from uuid import uuid4
 from pydantic import BaseModel
-from sqlalchemy import Column, Text, JSON, DateTime, text, ForeignKey, CHAR, func
+from sqlalchemy import Column, Text, JSON, DateTime, Boolean, text, ForeignKey, CHAR, func
 
 from toolmind.database.models.base import SQLModelSerializable
 
@@ -13,6 +13,15 @@ class WorkSpaceSessionBase(SQLModelSerializable):
     agent: str = Field(..., description="工作台中选用的智能体")
     user_id: str = Field(..., description="工作台会话对应的User ID")
     contexts: List[dict] = Field([], sa_column=Column(JSON), description="JSON, 含 tasks、questions、answers 等字段的结构化对话上下文")
+    is_pinned: bool = Field(
+        default=False,
+        sa_column=Column(
+            Boolean,
+            nullable=False,
+            server_default=text('0'),
+        ),
+        description="是否置顶该会话",
+    )
 
     # tasks: List[str] = Field(None, description="工作台会话的任务")
     # questions: List[str] = Field(None, description="用户的问题列表")
@@ -47,6 +56,7 @@ class WorkSpaceSessionCreate(BaseModel):
     user_id: str
     session_id: str = None  # 允许传入session_id，如果为None则自动生成
     contexts: list[dict] = []
+    is_pinned: bool = False
 
 class WorkSpaceSessionContext(BaseModel):
     query: str

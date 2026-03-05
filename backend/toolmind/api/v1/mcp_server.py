@@ -117,6 +117,9 @@ async def update_mcp_server(
     server_id: str = Body(..., description="MCP Server 的ID"),
     config: dict = Body(None, description="MCP Server的JSON配置"),
     is_active: bool = Body(None, description="连接状态"),
+    tools: list[str] | None = Body(
+        None, description="当前启用的工具名称列表，例如 ['search', 'browse']"
+    ),
     login_user: UserPayload = Depends(get_login_user),
 ):
     try:
@@ -172,7 +175,9 @@ async def update_mcp_server(
             )
         else:
             await MCPService.update_mcp_server(
-                mcp_server_id=server_id, is_active=is_active
+                mcp_server_id=server_id,
+                is_active=is_active,
+                tools=tools,
             )
         return resp_200()
     except Exception as err:

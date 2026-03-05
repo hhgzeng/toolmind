@@ -75,7 +75,7 @@ export const deleteMCPServerAPI = (server_id: string) => {
 }
 
 // 更新MCP服务器
-export const updateMCPServerAPI = (data: { server_id: string; config?: any; is_active?: boolean }) => {
+export const updateMCPServerAPI = (data: { server_id: string; config?: any; is_active?: boolean; tools?: string[] }) => {
   return request<MCPServerSingleResponse>({
     url: '/api/v1/mcp_server',
     method: 'PUT',

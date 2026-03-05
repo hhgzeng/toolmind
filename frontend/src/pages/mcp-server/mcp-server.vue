@@ -20,6 +20,8 @@ const formLoading = ref(false)
 const editingServer = ref<MCPServer | null>(null)
 const selectedServerTools = ref<MCPServerTool[]>([])
 const selectedServerName = ref('')
+const selectedServerId = ref('')
+const enabledToolNames = ref<string[]>([])
 
 const deleteDialogVisible = ref(false)
 const serverToDelete = ref<MCPServer | null>(null)
@@ -250,6 +252,8 @@ const cancelDelete = () => {
 const viewTools = (server: MCPServer) => {
   selectedServerTools.value = server.params || []
   selectedServerName.value = server.server_name
+  selectedServerId.value = server.mcp_server_id
+  enabledToolNames.value = Array.isArray(server.tools) ? [...server.tools] : []
   toolsDialogVisible.value = true
   // 阻止背景滚动
   document.body.style.overflow = 'hidden'
@@ -257,6 +261,8 @@ const viewTools = (server: MCPServer) => {
 
 const closeToolsDialog = () => {
   toolsDialogVisible.value = false
+  selectedServerId.value = ''
+  enabledToolNames.value = []
   // 恢复背景滚动
   document.body.style.overflow = 'auto'
 }
@@ -287,6 +293,40 @@ const handleToggleActive = async (server: MCPServer, val: boolean) => {
   } catch (e) {
     server.is_active = !val // revert
     ElMessage.error('网络错误：状态切换失败')
+  }
+}
+
+const handleToggleTool = async (tool: MCPServerTool, val: boolean) => {
+  if (!selectedServerId.value) return
+
+  const server = servers.value.find(s => s.mcp_server_id === selectedServerId.value)
+  if (!server) return
+
+  const current = Array.isArray(server.tools) ? [...server.tools] : []
+  const exists = current.includes(tool.name)
+  let next: string[]
+
+  if (val) {
+    next = exists ? current : [...current, tool.name]
+  } else {
+    next = current.filter(name => name !== tool.name)
+  }
+
+  try {
+    const response = await updateMCPServerAPI({
+      server_id: server.mcp_server_id,
+      tools: next
+    })
+    if (response.data.status_code === 200) {
+      server.tools = next
+      if (selectedServerId.value === server.mcp_server_id) {
+        enabledToolNames.value = [...next]
+      }
+    } else {
+      ElMessage.error(response.data.status_message || '工具启用状态更新失败')
+    }
+  } catch (e) {
+    ElMessage.error('网络错误：工具启用状态更新失败')
   }
 }
 
@@ -567,6 +607,13 @@ onUnmounted(() => {
                         <h4 class="tool-name">{{ tool.name }}</h4>
                         <span class="tool-tag">Function</span>
                       </div>
+                    </div>
+                    <div class="tool-actions">
+                      <span class="tool-switch-label">启用</span>
+                      <el-switch
+                        :model-value="enabledToolNames.includes(tool.name)"
+                        @change="(val) => handleToggleTool(tool, val as boolean)"
+                      />
                     </div>
                   </div>
                   
@@ -1045,7 +1092,7 @@ onUnmounted(() => {
     }
     
     .tools-list {
-      .tool-card {
+        .tool-card {
         background: white;
         border: 1px solid #ebeef5;
         border-radius: 20px;
@@ -1061,6 +1108,8 @@ onUnmounted(() => {
         
         .tool-header {
           margin-bottom: 16px;
+          display: flex;
+          align-items: center;
           
           .tool-info {
             display: flex;
@@ -1096,6 +1145,18 @@ onUnmounted(() => {
                 font-weight: 500;
                 display: inline-block;
               }
+            }
+          }
+
+          .tool-actions {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .tool-switch-label {
+              font-size: 13px;
+              color: #606266;
             }
           }
         }

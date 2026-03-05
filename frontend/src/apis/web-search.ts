@@ -8,6 +8,7 @@ export interface ApiResponse<T> {
 
 export interface WebSearchSettings {
   api_key: string
+  enabled: boolean
 }
 
 export function getWebSearchAPI() {

@@ -69,8 +69,10 @@ const handleNewSessionEvent = (event: Event) => {
     sessionId,
     title: detail.title || '新对话',
     createTime: detail.createTime || new Date().toISOString(),
+    updateTime: detail.updateTime || detail.update_time || detail.createTime || new Date().toISOString(),
     agent: detail.agent || 'mind',
-    contexts: detail.contexts || []
+    contexts: detail.contexts || [],
+    isPinned: detail.is_pinned ?? detail.isPinned ?? false,
   }
   sessions.value.unshift(newSession)
   // 新会话创建后，侧边栏高亮该会话，效果等同于用户点击了它
@@ -88,7 +90,7 @@ const handleSessionUpdatedEvent = (event: Event) => {
   }
 }
 
-// 按时间分组的会话列表
+// 按时间分组的会话列表（含置顶分组）
 const groupedSessions = computed(() => {
   const now = new Date()
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -97,7 +99,9 @@ const groupedSessions = computed(() => {
   const weekStart = new Date(todayStart.getTime() - 7 * 86400000)
   const monthStart = new Date(todayStart.getTime() - 30 * 86400000)
 
-  // 固定分组
+  const pinnedSessions: any[] = []
+
+  // 固定分组（不含置顶，会话先过滤出未置顶的）
   const fixedGroups: { label: string; items: any[] }[] = [
     { label: '今天', items: [] },
     { label: '昨天', items: [] },
@@ -110,6 +114,11 @@ const groupedSessions = computed(() => {
   const monthGroups: Map<string, any[]> = new Map()
 
   for (const session of sessions.value) {
+    if (session.isPinned) {
+      pinnedSessions.push(session)
+      continue
+    }
+
     const date = new Date(session.createTime)
     if (isNaN(date.getTime())) {
       // 无效日期放到最后
@@ -136,8 +145,15 @@ const groupedSessions = computed(() => {
     }
   }
 
-  // 合并结果
+  // 合并结果：先置顶分组，再时间分组
   const result: { label: string; items: any[] }[] = []
+
+  if (pinnedSessions.length > 0) {
+    result.push({
+      label: '置顶',
+      items: pinnedSessions,
+    })
+  }
 
   // 先添加固定分组（有数据的）
   for (const g of fixedGroups) {
@@ -173,8 +189,10 @@ const fetchSessions = async () => {
         sessionId: session.session_id || session.id,
         title: session.title || '未命名会话',
         createTime: session.create_time || session.created_at || new Date().toISOString(),
+        updateTime: session.update_time || session.updateTime || session.create_time || session.created_at || new Date().toISOString(),
         agent: session.agent || 'mind',
-        contexts: session.contexts || []
+        contexts: session.contexts || [],
+        isPinned: session.is_pinned ?? session.isPinned ?? false
       }))
       console.log('工作区会话列表:', sessions.value)
     } else {
@@ -226,12 +244,38 @@ const executeDelete = async () => {
   }
 }
 
-// 置顶会话
-const handlePinSession = (session: any, event: Event) => {
+// 置顶 / 取消置顶会话
+const handlePinSession = async (session: any, event: Event) => {
   event.stopPropagation()
   activeMenuId.value = null
-  ElMessage.success('置顶功能已触发')
-  // 这里可以连接后端 pin 接口
+
+  const target = sessions.value.find(s => s.sessionId === session.sessionId)
+  if (!target) return
+
+  const nextPinned = !target.isPinned
+
+  try {
+    const response = await updateWorkspaceSessionAPI(session.sessionId, { is_pinned: nextPinned })
+    if (response.data.status_code === 200) {
+      // 更新置顶状态
+      target.isPinned = nextPinned
+      // 本地更新时间，使其在当前列表中排到最上面
+      const nowIso = new Date().toISOString()
+      target.updateTime = nowIso
+      // 根据更新时间重新排序（最新在最上）
+      sessions.value.sort((a, b) => {
+        const aTime = a.updateTime || a.createTime
+        const bTime = b.updateTime || b.createTime
+        return new Date(bTime).getTime() - new Date(aTime).getTime()
+      })
+      // ElMessage.success(nextPinned ? '已置顶该会话' : '已取消置顶')
+    } else {
+      ElMessage.error('置顶操作失败')
+    }
+  } catch (error) {
+    console.error('置顶会话出错:', error)
+    ElMessage.error('置顶操作失败')
+  }
 }
 
 // 开始重命名
@@ -269,7 +313,7 @@ const executeRename = async () => {
     const response = await updateWorkspaceSessionAPI(sessionId, { title })
     if (response.data.status_code === 200) {
       await fetchSessions()
-      ElMessage.success('重命名成功')
+      // ElMessage.success('重命名成功')
     } else {
       ElMessage.error('重命名失败')
     }
@@ -437,7 +481,7 @@ onBeforeUnmount(() => {
                           <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"></path>
                         </g>
                       </svg>
-                      置顶
+                      {{ session.isPinned ? '取消置顶' : '置顶' }}
                     </button>
                     <button class="menu-item" @click="startRename(session, $event)">
                       <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

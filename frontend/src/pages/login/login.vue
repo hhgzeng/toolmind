@@ -81,8 +81,8 @@ const goToRegister = () => {
 
 <template>
   <div class="login-container">
-    <!-- 左侧3D图形区域 -->
-    <div class="left-section">
+    <!-- 左侧 3D 图形 -->
+    <div class="side-section left-section">
       <div class="graphic-container">
         <div class="cube-3d">
           <div class="cube-face front"></div>
@@ -97,15 +97,17 @@ const goToRegister = () => {
       </div>
     </div>
 
-    <!-- 右侧登录表单区域 -->
-    <div class="right-section">
+    <!-- 中间登录表单区域 -->
+    <div class="center-section">
       <div class="login-form-container">
         <!-- Logo和标题 -->
         <div class="header">
           <div class="logo">
-            <span class="logo-text">ToolMind</span>
+            <div class="logo-inner">
+              <img class="logo-icon" src="../../assets/toolmind.png" alt="ToolMind" />
+              <span class="logo-title">ToolMind</span>
+            </div>
           </div>
-          <p class="subtitle">一个更懂你想法的工具智能体</p>
         </div>
 
         <!-- 登录表单 -->
@@ -149,6 +151,22 @@ const goToRegister = () => {
         </div>
       </div>
     </div>
+
+    <!-- 右侧 3D 图形（镜像展示） -->
+    <div class="side-section right-section">
+      <div class="graphic-container graphic-right">
+        <div class="cube-3d">
+          <div class="cube-face front"></div>
+          <div class="cube-face back"></div>
+          <div class="cube-face right"></div>
+          <div class="cube-face left"></div>
+          <div class="cube-face top"></div>
+          <div class="cube-face bottom"></div>
+        </div>
+        <div class="cylinder-3d"></div>
+        <div class="sphere-3d"></div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -159,13 +177,14 @@ const goToRegister = () => {
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
-.left-section {
+.side-section {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
+  background: #ffffff;
 
   .graphic-container {
     position: relative;
@@ -205,7 +224,6 @@ const goToRegister = () => {
       left: 50px;
       background: linear-gradient(180deg, #6b9eff, #4f81ff);
       border-radius: 40px;
-      box-shadow: 0 10px 30px rgba(79, 129, 255, 0.3);
       animation: floatUp 6s ease-in-out infinite;
     }
 
@@ -217,19 +235,20 @@ const goToRegister = () => {
       right: 80px;
       background: radial-gradient(circle at 30% 30%, #8bb6ff, #4f81ff);
       border-radius: 50%;
-      box-shadow: 0 8px 25px rgba(79, 129, 255, 0.4);
       animation: floatDown 8s ease-in-out infinite;
     }
   }
+.graphic-right {
+    transform: scaleX(-1);
+  }
 }
 
-.right-section {
+.center-section {
   width: 450px;
   background: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: -2px 0 20px rgba(0, 0, 0, 0.1);
 
   .login-form-container {
     width: 320px;
@@ -242,27 +261,25 @@ const goToRegister = () => {
       .logo {
         margin-bottom: 16px;
 
-        .logo-text {
-          display: inline-block;
-          background: linear-gradient(45deg, #4f81ff, #3b66db);
-          color: white;
-          padding: 14px 36px;
-          border-radius: 999px;
-          font-size: 24px;
-          font-weight: 700;
-          letter-spacing: 2px;
-          font-family: 'SF Pro Display', 'Helvetica Neue', 'Arial', sans-serif;
-          box-shadow: 0 8px 24px rgba(79, 129, 255, 0.25);
+        .logo-inner {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
         }
-      }
 
-      .subtitle {
-        color: #555;
-        font-size: 16px;
-        margin: 0;
-        line-height: 1.6;
-        font-weight: 400;
-        font-family: 'PingFang SC', 'Helvetica Neue', 'Arial', sans-serif;
+        .logo-icon {
+          width: 36px;
+          height: 36px;
+          object-fit: contain;
+        }
+
+        .logo-title {
+          font-size: 26px;
+          font-weight: 700;
+          letter-spacing: 1px;
+          font-family: 'SF Pro Display', 'Helvetica Neue', 'Arial', sans-serif;
+          color: #4D6BFE;
+        }
       }
     }
 
@@ -425,5 +442,121 @@ const goToRegister = () => {
 @keyframes floatDown {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(10px); }
+}
+
+/* 深色模式 */
+.theme-dark {
+  .login-container {
+    background: #18181b;
+  }
+
+  .side-section {
+    background: #18181b;
+    .graphic-container {
+      .cube-3d {
+        .cube-face {
+          background: linear-gradient(45deg, #4d6bfe, #1d4ed8);
+          border-color: rgba(255, 255, 255, 0.1);
+        }
+      }
+
+      .cylinder-3d {
+        background: linear-gradient(180deg, #4338ca, #1d4ed8);
+      }
+
+      .sphere-3d {
+        background: radial-gradient(circle at 30% 30%, #60a5fa, #1d4ed8);
+      }
+    }
+  }
+
+  .center-section {
+    background: #18181b;
+
+    .login-form-container {
+      .header {
+        .logo {
+          .logo-title {
+            color: #4D6BFE;
+          }
+        }
+      }
+
+      .login-form {
+        .login-input {
+          :deep(.el-input__wrapper) {
+            background: #18181b;
+            border-color: #27272a;
+
+            &:hover {
+              border-color: #4d6bfe;
+            }
+
+            &.is-focus {
+              border-color: #4d6bfe;
+              box-shadow: 0 0 0 1px rgba(77, 107, 254, 0.65);
+            }
+          }
+
+          :deep(.el-input__prefix) {
+            color: #a1a1aa;
+          }
+
+          :deep(.el-input__inner) {
+            color: #e5e7eb;
+
+            &::placeholder {
+              color: #6b7280;
+            }
+          }
+        }
+
+        .form-actions {
+          .register-link {
+            color: #a1a1aa;
+
+            a {
+              color: #93c5fd;
+
+              &:hover {
+                color: #bfdbfe;
+              }
+            }
+          }
+        }
+
+        .login-button {
+          background: linear-gradient(45deg, #4d6bfe, #2563eb);
+
+          &:hover {
+            box-shadow: 0 10px 28px rgba(37, 99, 235, 0.6);
+          }
+        }
+      }
+
+      .footer {
+        border-top-color: #27272a;
+        color: #9ca3af;
+
+        .version-badge {
+          background: rgba(37, 99, 235, 0.18);
+          border-color: rgba(59, 130, 246, 0.45);
+          color: #bfdbfe;
+        }
+
+        .footer-icons {
+          a {
+            background: #18181b;
+            border-color: #27272a;
+
+            &:hover {
+              border-color: rgba(59, 130, 246, 0.6);
+              box-shadow: 0 6px 18px rgba(37, 99, 235, 0.7);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 </style>

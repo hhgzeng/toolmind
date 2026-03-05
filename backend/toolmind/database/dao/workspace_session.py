@@ -59,8 +59,8 @@ class WorkSpaceSessionDao:
 
             if title is not None:
                 workspace_session.title = title
-            # if is_pinned is not None:
-            #     workspace_session.is_pinned = is_pinned
+            if is_pinned is not None:
+                workspace_session.is_pinned = is_pinned
 
             await session.commit()
             await session.refresh(workspace_session)

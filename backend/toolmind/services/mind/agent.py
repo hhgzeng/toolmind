@@ -25,6 +25,7 @@ from toolmind.schema.workspace import WorkSpaceAgents
 from toolmind.schema.usage_stats import UsageStatsAgentType
 from toolmind.core.agents.mcp_agent import MCPConfig
 from toolmind.services.web_search.action import tavily_search as web_search
+from toolmind.settings import app_settings
 from toolmind.core.models.manager import ModelManager
 from toolmind.utils.convert import mcp_tool_to_args_schema, convert_mcp_config
 from toolmind.utils.date_utils import get_beijing_time
@@ -121,11 +122,17 @@ class MindAgent:
             mind_task.mcp_servers, mind_task.web_search
         )
         tools_str = json.dumps(tools, ensure_ascii=False, indent=2)
+        attachments_str = json.dumps(
+            [attachment.model_dump() for attachment in mind_task.attachments],
+            ensure_ascii=False,
+            indent=2,
+        )
 
         mind_task_prompt = GenerateTaskPrompt.format(
             tools_str=tools_str,
             query=mind_task.query,
             current_time=get_beijing_time(),
+            attachments_str=attachments_str,
         )
 
         response_task = await self._generate_tasks(mind_task_prompt)
@@ -307,6 +314,11 @@ class MindAgent:
                     step_info=step_info.model_dump(),
                     step_context=json.dumps(step_context, ensure_ascii=False, indent=2),
                     user_query=mind_task.query,
+                    attachments_json=json.dumps(
+                        [a.model_dump() for a in mind_task.attachments],
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
                 )
                 step_messages: List[BaseMessage] = [
                     SystemMessage(content=step_prompt),
@@ -376,6 +388,7 @@ class MindAgent:
 
             # Evaluation check
             print(f"[{get_beijing_time()}] [MindAgent] Start _evaluate_result...")
+            yield {"event": "evaluating_result", "data": {}}
             eval_res = await self._evaluate_result(
                 query=mind_task.query,
                 answer=final_response,
@@ -389,9 +402,13 @@ class MindAgent:
             )
 
             if score >= 80 or loop_count == max_loop:
-                pass_msg = f"\n\n\n> **✅ 自我反馈通过** (匹配度: {score}/100)\n> **理由**: {reasoning}\n\n---\n\n"
+                # 自我反馈通过（或达到最大重试次数时），在答案末尾追加通过信息，并持久化当前轮次完整结果
+                pass_msg = (
+                    f"\n\n\n> **✅ 自我反馈通过** (匹配度: {score}/100)\n"
+                    f"> **理由**: {reasoning}\n\n---\n\n"
+                )
                 yield {"event": "task_result", "data": {"message": pass_msg}}
-                final_response += pass_msg
+                final_response_with_feedback = final_response + pass_msg
 
                 # 追加本次任务的上下文信息（task、task_graph、answer）
                 await WorkSpaceSessionService.update_workspace_session_contexts(
@@ -400,7 +417,7 @@ class MindAgent:
                         query=mind_task.query,
                         task=context_task,
                         task_graph=tasks_show,
-                        answer=final_response,
+                        answer=final_response_with_feedback,
                     ).model_dump(),
                 )
 
@@ -445,8 +462,24 @@ class MindAgent:
                 }
                 break
             else:
-                retry_msg = f"\n\n\n> **⚠️ 自我反馈未通过** (匹配度: {score}/100)\n> **理由**: {reasoning}\n> \n> __系统正在进行第 {loop_count + 1} 次重跑尝试...__\n\n---\n\n"
+                # 自我反馈未通过时，同样将该轮的完整答案（含失败原因）持久化为一次独立结果
+                retry_msg = (
+                    f"\n\n\n> **⚠️ 自我反馈未通过** (匹配度: {score}/100)\n"
+                    f"> **理由**: {reasoning}\n"
+                    f"> \n> __系统正在进行第 {loop_count + 1} 次重跑尝试...__\n\n---\n\n"
+                )
                 yield {"event": "task_result", "data": {"message": retry_msg}}
+                final_response_with_feedback = final_response + retry_msg
+
+                await WorkSpaceSessionService.update_workspace_session_contexts(
+                    workspace_session.session_id,
+                    WorkSpaceSessionContext(
+                        query=mind_task.query,
+                        task=context_task,
+                        task_graph=tasks_show,
+                        answer=final_response_with_feedback,
+                    ).model_dump(),
+                )
 
     async def _process_tools_result(self, tool_name, tool_args):
         def find_mcp_tool(tool_name):
@@ -457,10 +490,12 @@ class MindAgent:
             return None
 
         if tool := find_mcp_tool(tool_name):
-            mcp_config = await MCPUserConfigService.get_mcp_user_config(
-                self.user_id, self.tool_mcp_server_dict[tool_name]
-            )
-            tool_args.update(mcp_config)
+            server_id = self.tool_mcp_server_dict.get(tool_name)
+            if server_id:
+                mcp_config = await MCPUserConfigService.get_mcp_user_config(
+                    self.user_id, server_id
+                )
+                tool_args.update(mcp_config)
             try:
                 text_content, no_text_content = await tool.coroutine(**tool_args)
             except ToolException as e:
@@ -480,7 +515,13 @@ class MindAgent:
         tools = []
 
         # 内置搜索工具：按开关决定是否暴露给模型作为可选工具
-        if enable_web_search:
+        global_web_search_enabled = True
+        if getattr(app_settings, "tools", None) and getattr(
+            app_settings.tools, "tavily", None
+        ):
+            global_web_search_enabled = app_settings.tools.tavily.get("enabled", True)
+
+        if enable_web_search and global_web_search_enabled:
             tools.append(convert_to_openai_tool(web_search))
 
         async def get_mcp_tools():
@@ -488,19 +529,41 @@ class MindAgent:
                 return self.mcp_tools
 
             servers_config = []
+            # 记录每个 server 启用的工具名称，用于后续过滤
+            enabled_tools = set()
             for mcp_id in mcp_servers:
                 mcp_server = await MCPService.get_mcp_server_from_id(mcp_id)
                 mcp_config = MCPConfig(**mcp_server)
 
-                self.tool_mcp_server_dict.update(
-                    {tool: mcp_config.mcp_server_id for tool in mcp_config.tools}
-                )
+                # mcp_config.tools 为空时表示「未初始化」或「全部可用」，保持兼容旧数据
+                if mcp_config.tools:
+                    enabled_tools.update(mcp_config.tools)
+                    self.tool_mcp_server_dict.update(
+                        {tool: mcp_config.mcp_server_id for tool in mcp_config.tools}
+                    )
                 servers_config.append(convert_mcp_config(mcp_config.model_dump()))
             self.mcp_manager = MCPManager(servers_config)
-            mcp_tools = await self.mcp_manager.get_mcp_tools()
-            self.mcp_tools = mcp_tools
+            all_mcp_tools = await self.mcp_manager.get_mcp_tools()
 
-            return mcp_tools
+            # 如果有配置启用列表，则只暴露启用的工具；否则保持向后兼容，全部暴露
+            if enabled_tools:
+                filtered_tools = [
+                    tool for tool in all_mcp_tools if tool.name in enabled_tools
+                ]
+            else:
+                filtered_tools = all_mcp_tools
+                # 兼容旧数据：为所有工具建立映射，避免 KeyError
+                for mcp_id in mcp_servers:
+                    mcp_server = await MCPService.get_mcp_server_from_id(mcp_id)
+                    mcp_config = MCPConfig(**mcp_server)
+                    for tool in filtered_tools:
+                        self.tool_mcp_server_dict.setdefault(
+                            tool.name, mcp_config.mcp_server_id
+                        )
+
+            self.mcp_tools = filtered_tools
+
+            return filtered_tools
 
         mcp_tools = await get_mcp_tools()
         mcp_tools = [

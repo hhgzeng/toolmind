@@ -8,7 +8,8 @@ const loading = ref(false)
 const saving = ref(false)
 
 const websearch = ref<WebSearchSettings>({
-  api_key: ""
+  api_key: "",
+  enabled: true
 })
 
 const fetchConfig = async () => {
@@ -17,6 +18,7 @@ const fetchConfig = async () => {
     const res = await getWebSearchAPI()
     if (res.data.status_code === 200 && res.data.data) {
       websearch.value.api_key = res.data.data.api_key || ""
+      websearch.value.enabled = res.data.data.enabled ?? true
     } else {
       ElMessage.error(res.data.status_message || "获取联网搜索配置失败")
     }
@@ -34,6 +36,7 @@ const saveConfig = async () => {
     if (res.data.status_code === 200) {
       // ElMessage.success("已保存联网搜索配置")
       websearch.value.api_key = res.data.data.api_key || ""
+      websearch.value.enabled = res.data.data.enabled ?? true
     } else {
       ElMessage.error(res.data.status_message || "保存联网搜索配置失败")
     }
@@ -60,8 +63,21 @@ onMounted(() => {
 
     <div class="web-search-config-section" v-loading="loading || saving">
       <div class="section-title">
-        <h3>Tavily API Key</h3>
-        <p>请填入 Tavily API Key，以支持联网搜索功能。</p>
+        <div class="section-title-main">
+          <div>
+            <h3>Tavily API Key</h3>
+            <p>请填入 Tavily API Key，以支持联网搜索功能。</p>
+          </div>
+          <div class="switch-wrapper">
+            <span class="switch-label">联网搜索开关</span>
+            <el-switch
+              v-model="websearch.enabled"
+              active-text="已开启"
+              inactive-text="已关闭"
+              @change="saveConfig"
+            />
+          </div>
+        </div>
       </div>
 
       <el-form label-position="top" class="config-form">
@@ -136,6 +152,14 @@ onMounted(() => {
   .section-title {
     margin-bottom: 24px;
 
+    .section-title-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
     h3 {
       font-size: 22px;
       font-weight: 700;
@@ -147,6 +171,18 @@ onMounted(() => {
       color: #909399;
       font-size: 14px;
       margin: 0;
+    }
+
+    .switch-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .switch-label {
+      font-size: 14px;
+      color: #606266;
     }
   }
 
