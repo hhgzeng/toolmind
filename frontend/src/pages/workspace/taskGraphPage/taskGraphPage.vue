@@ -8,9 +8,14 @@ import {
   startMindTaskAPI 
 } from '../../../apis/mind'
 import { getWorkspaceSessionInfoAPI } from '../../../apis/workspace'
+import { taskSessionStore } from '../../../store/taskSessionStore'
+import type { TaskSessionState } from '../../../store/taskSessionStore'
 
 const route = useRoute()
 const router = useRouter()
+
+// 标记当前组件是否正在显示该 sessionId（活跃视图）
+const isActiveView = ref(true)
 
 interface GraphNode {
   start: string
@@ -43,10 +48,17 @@ const taskResultContent = ref('')
 const showTaskResult = ref(false)
 const resultContainer = ref<HTMLElement>()
 const currentContextIndex = ref(0)
+// 实时模式下的多轮结果分页（自我反馈未通过时会产生多轮）
+const liveResultPages = ref<string[]>([])
+const liveResultPageIndex = ref(0)
+// 最新一轮的实时生成内容（drain 始终写入此变量，避免与历史页浏览冲突）
+const liveLatestContent = ref('')
 // 标记当前是否处于任务执行阶段，用于推导“执行中”子任务
 const isTaskRunning = ref(false)
 // 标记任务流程是否已结束（用于判断何时进入“评判计算期”）
 const isTaskFinished = ref(false)
+// 加载状态，用于历史会话切换时防止闪烁
+const isLoading = ref(false)
 
 // 基于任务图推导严格串行的 To-dos 列表（用户问题 -> step_1 -> step_2 -> ...）
 const todos = computed(() => {
@@ -88,9 +100,46 @@ const todos = computed(() => {
 // 历史运行轮次信息
 const totalContexts = computed(() => historyContexts.value.length)
 const currentRunLabel = computed(() => {
+  // 实时模式下的多轮分页
+  if (!isHistoryMode.value && liveResultPages.value.length > 0) {
+    const total = liveResultPages.value.length + 1 // 已归档页 + 当前正在生成的页
+    return `${liveResultPageIndex.value + 1} / ${total}`
+  }
+  // 历史模式
   if (!totalContexts.value) return ''
   return `${currentContextIndex.value + 1} / ${totalContexts.value}`
 })
+
+// 是否显示分页控件
+const showPagination = computed(() => {
+  return (isHistoryMode.value && totalContexts.value > 1) ||
+    (!isHistoryMode.value && liveResultPages.value.length > 0)
+})
+
+/** 归档当前任务结果到 liveResultPages（自我反馈未通过重试时调用） */
+const archiveCurrentResult = () => {
+  // 将未排空的 buffer 和最新内容一并归入当前页面
+  const fullContent = liveLatestContent.value + resultBuffer.value
+  if (fullContent) {
+    liveResultPages.value.push(fullContent)
+  }
+  // 清空当前结果状态，为新一轮结果做准备
+  taskResultContent.value = ''
+  resultBuffer.value = ''
+  liveLatestContent.value = ''
+  isReceivingResult.value = false
+  isJudging.value = false
+  isJudgeSuccess.value = false
+  isTaskFinished.value = false
+  isDraining.value = false
+  showTaskResult.value = false
+  if (drainTimer !== null) {
+    window.clearInterval(drainTimer)
+    drainTimer = null
+  }
+  // 将分页索引指向新页面（即最后一个 + 1 = 当前正在生成的页）
+  liveResultPageIndex.value = liveResultPages.value.length
+}
 
 // 计算属性：分离 markdown 正文与自我反馈区块，独立呈现以自定义样式提取展示
 const parsedTaskResult = computed(() => {
@@ -226,8 +275,13 @@ const startDrain = () => {
     }
     const chunk = resultBuffer.value.slice(0, drainChunkSize)
     resultBuffer.value = resultBuffer.value.slice(drainChunkSize)
-    taskResultContent.value += chunk
-    console.log('📤 [tick] 输出块:', chunk.length, '字符，剩余缓冲:', resultBuffer.value.length, '，当前总内容:', taskResultContent.value.length)
+    // 始终写入 liveLatestContent（保留最新一轮的完整内容）
+    liveLatestContent.value += chunk
+    // 仅在用户正在查看最新页时，同步到 taskResultContent 以驱动视图
+    if (liveResultPageIndex.value === liveResultPages.value.length) {
+      taskResultContent.value += chunk
+    }
+    console.log('📤 [tick] 输出块:', chunk.length, '字符，剩余缓冲:', resultBuffer.value.length, '，当前总内容:', liveLatestContent.value.length)
     scrollResultToBottom()
   }
   drainTimer = window.setInterval(tick, drainIntervalMs)
@@ -236,6 +290,7 @@ const startDrain = () => {
 
 // 历史记录相关
 const isHistoryMode = ref(false)
+const isHistorySwitching = ref(false)
 const historyContexts = ref<HistoryContext[]>([])
 
 // 用户问题
@@ -309,10 +364,19 @@ onMounted(async () => {
   const sessionId = route.query.session_id as string
   
   if (sessionId) {
-    // 历史会话模式：加载历史数据
-    console.log('历史会话模式，session_id:', sessionId)
-    isHistoryMode.value = true
-    await loadSessionInfo(sessionId)
+    // 优先检查 store 中是否有保存的运行状态（组件销毁重建时，如"开启新对话"再点回）
+    if (taskSessionStore.hasSession(sessionId)) {
+      console.log('从 store 恢复运行中会话:', sessionId)
+      restoreStateFromStore(sessionId)
+      isActiveView.value = true
+    } else {
+      // 正常历史会话模式：加载后端数据
+      console.log('历史会话模式，session_id:', sessionId)
+      isLoading.value = true
+      isHistoryMode.value = true
+      await loadSessionInfo(sessionId)
+      isLoading.value = false
+    }
   } else {
     // 新任务模式：直接开始执行任务
     console.log('新任务模式')
@@ -360,38 +424,303 @@ onMounted(async () => {
   console.log('=== taskGraphPage onMounted 结束 ===')
 })
 
-// 监听 session_id 变化，切换会话时重新加载
+const resetPageState = () => {
+  taskGraph.value = []
+  nodeStatusMap.value.clear()
+  taskResultContent.value = ''
+  resultBuffer.value = ''
+  showGraph.value = false
+  showTaskResult.value = false
+  selectedNode.value = null
+  showNodeDetail.value = false
+  isReceivingResult.value = false
+  isJudging.value = false
+  isJudgeSuccess.value = false
+  isTaskFinished.value = false
+  isDraining.value = false
+  userQuery.value = ''
+  isHistorySwitching.value = false
+  liveResultPages.value = []
+  liveResultPageIndex.value = 0
+  liveLatestContent.value = ''
+  if (drainTimer !== null) {
+    window.clearInterval(drainTimer)
+    drainTimer = null
+  }
+  isTaskRunning.value = false
+}
+
+// ---- 会话状态保存/恢复工具方法 ----
+
+/** 将当前组件 ref 状态打包保存到 store（运行中会话切走时调用） */
+const saveCurrentStateToStore = (sessionId: string) => {
+  const state = taskSessionStore.getOrCreate(sessionId)
+  state.taskGraph = [...taskGraph.value]
+  state.nodeStatusMap = new Map(nodeStatusMap.value)
+  state.taskResultContent = taskResultContent.value
+  state.resultBuffer = resultBuffer.value
+  state.userQuery = userQuery.value
+  state.liveResultPages = [...liveResultPages.value]
+  state.liveResultPageIndex = liveResultPageIndex.value
+  state.liveLatestContent = liveLatestContent.value
+  state.showGraph = showGraph.value
+  state.showTaskResult = showTaskResult.value
+  state.isTaskRunning = isTaskRunning.value
+  state.isTaskFinished = isTaskFinished.value
+  state.isReceivingResult = isReceivingResult.value
+  state.isJudging = isJudging.value
+  state.isJudgeSuccess = isJudgeSuccess.value
+  state.isDraining = isDraining.value
+
+  // 关键：将 proxy callbacks 重绑定为写入 store 状态对象
+  // 这样 resetPageState() 清空 ref 后，后台 SSE 事件仍然正确写入 store
+  if (state.callbacks) {
+    const cb = state.callbacks
+    cb.onMessage = (data: any) => {
+      if (typeof data === 'string' && data) {
+        state.resultBuffer += data
+      }
+    }
+    cb.onTaskGraph = (graph: any) => {
+      // 检测 retry：如果已有结果内容，说明是第二轮重跑，归档当前结果
+      const fullContent = state.liveLatestContent + state.resultBuffer
+      if (fullContent) {
+        state.liveResultPages.push(fullContent)
+        state.taskResultContent = ''
+        state.resultBuffer = ''
+        state.liveLatestContent = ''
+        state.isReceivingResult = false
+        state.isJudging = false
+        state.isJudgeSuccess = false
+        state.isTaskFinished = false
+        state.isDraining = false
+        state.showTaskResult = false
+        state.liveResultPageIndex = state.liveResultPages.length
+      }
+      state.taskGraph = graph
+      const nodeSet = new Set<string>()
+      const endNodes = new Set<string>()
+      graph.forEach((item: GraphNode) => {
+        nodeSet.add(item.start)
+        nodeSet.add(item.end)
+        endNodes.add(item.end)
+      })
+      const startNodes = new Set<string>()
+      nodeSet.forEach((node: string) => {
+        if (!endNodes.has(node)) startNodes.add(node)
+      })
+      nodeSet.forEach((node: string) => {
+        if (startNodes.has(node)) {
+          state.nodeStatusMap.set(node, { status: 'completed', message: '用户问题已提交' })
+        } else {
+          state.nodeStatusMap.set(node, { status: 'pending' })
+        }
+      })
+      state.showGraph = true
+    }
+    cb.onStepResult = (stepData: { title: string; message: string }) => {
+      state.nodeStatusMap.set(stepData.title, { status: 'completed', message: stepData.message })
+    }
+    cb.onTaskResult = (messageChunk: string) => {
+      if (typeof messageChunk === 'string') {
+        state.resultBuffer += messageChunk
+      }
+      if (!state.isReceivingResult) {
+        state.isReceivingResult = true
+        state.showTaskResult = true
+      }
+      // 后台模式下直接将 buffer 追加到 content（无需 drain 动画）
+      state.liveLatestContent += state.resultBuffer
+      state.taskResultContent += state.resultBuffer
+      state.resultBuffer = ''
+    }
+    cb.onEvaluating = () => {
+      state.isJudging = true
+      if (!state.isReceivingResult && state.resultBuffer.length === 0) {
+        state.isReceivingResult = true
+      }
+    }
+    cb.onError = (error: any) => {
+      console.error('❌ [后台] 任务执行出错:', error)
+      state.isTaskRunning = false
+      state.isTaskFinished = true
+      taskSessionStore.removeSession(sessionId)
+    }
+    cb.onClose = () => {
+      console.log('✅ [后台] 任务执行完成')
+      // 后台模式：将剩余 buffer 全部追加到 content
+      if (state.resultBuffer.length > 0) {
+        state.liveLatestContent += state.resultBuffer
+        state.taskResultContent += state.resultBuffer
+        state.resultBuffer = ''
+      }
+      state.isReceivingResult = false
+      state.isTaskRunning = false
+      state.isTaskFinished = true
+      state.showTaskResult = true
+      // 注意：不在后台 removeSession——保留完成状态供切回时恢复
+    }
+  }
+
+  console.log('💾 已保存会话状态到 store:', sessionId)
+}
+
+/** 从 store 恢复会话状态到当前组件 ref */
+const restoreStateFromStore = (sessionId: string) => {
+  const state = taskSessionStore.getSession(sessionId)
+  if (!state) return
+  taskGraph.value = [...state.taskGraph]
+  nodeStatusMap.value = new Map(state.nodeStatusMap)
+  taskResultContent.value = state.taskResultContent
+  resultBuffer.value = state.resultBuffer
+  userQuery.value = state.userQuery
+  liveResultPages.value = [...state.liveResultPages]
+  liveResultPageIndex.value = state.liveResultPageIndex
+  liveLatestContent.value = state.liveLatestContent
+  showGraph.value = state.showGraph
+  showTaskResult.value = state.showTaskResult
+  isTaskRunning.value = state.isTaskRunning
+  isTaskFinished.value = state.isTaskFinished
+  isReceivingResult.value = state.isReceivingResult
+  isJudging.value = state.isJudging
+  isJudgeSuccess.value = state.isJudgeSuccess
+  isDraining.value = false // drain 定时器需要重新启动
+  isHistoryMode.value = false
+  currentSessionId.value = sessionId
+
+  // 如果 store 中仍有缓冲需要排空，重新启动 drain
+  if (state.isReceivingResult && state.resultBuffer.length > 0) {
+    startDrain()
+  }
+
+  // 重新绑定 SSE 回调到当前组件 ref
+  if (state.callbacks) {
+    rebindCallbacks(state.callbacks)
+  }
+
+  console.log('🔄 已从 store 恢复会话状态:', sessionId)
+
+  // 如果任务已在后台完成，恢复后清理 store，下次访问走正常历史模式
+  if (!state.isTaskRunning) {
+    taskSessionStore.removeSession(sessionId)
+  }
+}
+
+/** 将 store 中的 SSE 回调代理重新绑定到当前组件的 ref（切回活跃视图时调用） */
+const rebindCallbacks = (callbacks: NonNullable<TaskSessionState['callbacks']>) => {
+  callbacks.onMessage = (data: any) => {
+    if (typeof data === 'string' && data) {
+      exitJudging()
+      resultBuffer.value += data
+      if (isReceivingResult.value && !isDraining.value) {
+        startDrain()
+      }
+    }
+  }
+  callbacks.onTaskGraph = (graph: any) => {
+    // 检测 retry：如果已有结果内容，说明是第二轮重跑，归档当前结果
+    if (taskResultContent.value || resultBuffer.value) {
+      archiveCurrentResult()
+    }
+    taskGraph.value = graph
+    const nodeSet = new Set<string>()
+    const endNodes = new Set<string>()
+    graph.forEach((item: GraphNode) => {
+      nodeSet.add(item.start)
+      nodeSet.add(item.end)
+      endNodes.add(item.end)
+    })
+    const startNodes = new Set<string>()
+    nodeSet.forEach(node => {
+      if (!endNodes.has(node)) startNodes.add(node)
+    })
+    nodeSet.forEach(node => {
+      if (startNodes.has(node)) {
+        updateNodeStatus(node, 'completed', '用户问题已提交')
+      } else {
+        updateNodeStatus(node, 'pending')
+      }
+    })
+    showGraph.value = true
+  }
+  callbacks.onStepResult = (stepData: { title: string; message: string }) => {
+    updateNodeStatus(stepData.title, 'completed', stepData.message)
+  }
+  callbacks.onTaskResult = (messageChunk: string) => {
+    if (typeof messageChunk === 'string') {
+      exitJudging()
+      resultBuffer.value += messageChunk
+    }
+    if (!isReceivingResult.value) {
+      startReceivingResults()
+      return
+    }
+    if (isReceivingResult.value && !isDraining.value) {
+      startDrain()
+    }
+  }
+  callbacks.onEvaluating = () => {
+    isJudging.value = true
+    if (!isReceivingResult.value && resultBuffer.value.length === 0) {
+      isReceivingResult.value = true
+    }
+  }
+  callbacks.onError = (error: any) => {
+    console.error('❌ 任务执行出错:', error)
+    ElMessage.error('任务执行失败')
+    isTaskRunning.value = false
+    isTaskFinished.value = true
+  }
+  callbacks.onClose = () => {
+    console.log('✅ 任务执行完成')
+    startReceivingResults()
+    isTaskRunning.value = false
+    isTaskFinished.value = true
+    maybeEnterJudging()
+  }
+}
+
 watch(
   () => route.query.session_id,
   async (newSessionId, oldSessionId) => {
     if (newSessionId === oldSessionId) return
+    // 如果是当前运行中的任务首次获得 session_id（URL 更新），不要重置
+    if (isTaskRunning.value && newSessionId === currentSessionId.value) return
     console.log('🔄 会话切换:', oldSessionId, '->', newSessionId)
-    
-    // 重置所有状态
-    taskGraph.value = []
-    nodeStatusMap.value.clear()
-    taskResultContent.value = ''
-    resultBuffer.value = ''
-    showGraph.value = false
-    showTaskResult.value = false
-    selectedNode.value = null
-    showNodeDetail.value = false
-    isReceivingResult.value = false
-    isJudging.value = false
-    isJudgeSuccess.value = false
-    isTaskFinished.value = false
-    isDraining.value = false
-    userQuery.value = ''
-    isHistoryMode.value = false
-    if (drainTimer !== null) {
-      window.clearInterval(drainTimer)
-      drainTimer = null
+
+    // ---- 离开旧会话 ----
+    const leavingSessionId = currentSessionId.value || (oldSessionId as string)
+    if (leavingSessionId && isTaskRunning.value) {
+      // 运行中的会话：保存状态到 store，不清空
+      isActiveView.value = false
+      saveCurrentStateToStore(leavingSessionId)
+      // 停止本地 drain 定时器（store 中的回调会继续接收数据到 store）
+      if (drainTimer !== null) {
+        window.clearInterval(drainTimer)
+        drainTimer = null
+      }
     }
-    isTaskRunning.value = false
-    
+
+    // ---- 进入新会话 ----
     if (newSessionId) {
-      isHistoryMode.value = true
-      await loadSessionInfo(newSessionId as string)
+      const sid = newSessionId as string
+      // 检查是否有后台运行中的会话状态
+      if (taskSessionStore.hasSession(sid)) {
+        // 从 store 恢复
+        resetPageState()
+        restoreStateFromStore(sid)
+        isActiveView.value = true
+      } else {
+        // 正常历史会话模式
+        resetPageState()
+        isLoading.value = true
+        isHistoryMode.value = true
+        await loadSessionInfo(sid)
+        isLoading.value = false
+      }
+    } else {
+      resetPageState()
+      isHistoryMode.value = false
     }
   }
 )
@@ -415,8 +744,10 @@ const loadSessionInfo = async (sessionId: string) => {
         console.log('📦 contexts 数组:', historyContexts.value)
         applyContextByIndex(currentContextIndex.value)
       } else {
-        console.warn('⚠️ contexts 为空或不是数组')
-        ElMessage.warning('该会话暂无历史数据')
+        // contexts 为空：会话可能仍在运行（刷新页面后 SSE 断开），显示等待状态
+        console.warn('⚠️ contexts 为空，显示等待状态')
+        userQuery.value = sessionData.title || ''
+        isHistoryMode.value = false
       }
     } else {
       ElMessage.error('获取会话信息失败')
@@ -499,15 +830,50 @@ const applyContextByIndex = (index: number) => {
 
 // 历史运行结果切换
 const switchToPrevRun = () => {
+  if (!isHistoryMode.value && liveResultPages.value.length > 0) {
+    // 实时模式下切换分页
+    if (liveResultPageIndex.value <= 0) return
+    liveResultPageIndex.value -= 1
+    taskResultContent.value = liveResultPages.value[liveResultPageIndex.value]
+    return
+  }
   if (currentContextIndex.value <= 0) return
-  currentContextIndex.value -= 1
-  applyContextByIndex(currentContextIndex.value)
+  
+  isHistorySwitching.value = true
+  taskResultContent.value = ''
+  
+  setTimeout(() => {
+    currentContextIndex.value -= 1
+    applyContextByIndex(currentContextIndex.value)
+    setTimeout(() => { isHistorySwitching.value = false }, 300)
+  }, 50)
 }
 
 const switchToNextRun = () => {
+  if (!isHistoryMode.value && liveResultPages.value.length > 0) {
+    // 实时模式下切换分页
+    const maxIndex = liveResultPages.value.length
+    if (liveResultPageIndex.value >= maxIndex) return
+    liveResultPageIndex.value += 1
+    if (liveResultPageIndex.value < liveResultPages.value.length) {
+      // 查看已归档的历史页
+      taskResultContent.value = liveResultPages.value[liveResultPageIndex.value]
+    } else {
+      // 回到当前正在生成的最新页，从 liveLatestContent 恢复内容
+      taskResultContent.value = liveLatestContent.value
+    }
+    return
+  }
   if (currentContextIndex.value >= historyContexts.value.length - 1) return
-  currentContextIndex.value += 1
-  applyContextByIndex(currentContextIndex.value)
+  
+  isHistorySwitching.value = true
+  taskResultContent.value = ''
+  
+  setTimeout(() => {
+    currentContextIndex.value += 1
+    applyContextByIndex(currentContextIndex.value)
+    setTimeout(() => { isHistorySwitching.value = false }, 300)
+  }, 50)
 }
 
 // 更新节点状态
@@ -540,6 +906,11 @@ onBeforeUnmount(() => {
     window.clearInterval(drainTimer)
     drainTimer = null
   }
+  // 如果有运行中的任务，保存状态到 store（组件销毁但 SSE 继续在后台运行）
+  if (isTaskRunning.value && currentSessionId.value) {
+    isActiveView.value = false
+    saveCurrentStateToStore(currentSessionId.value)
+  }
 })
 
 // 滚动结果区域到底部（优化：使用 requestAnimationFrame 防抖）
@@ -564,6 +935,9 @@ const startTask = async () => {
   nodeStatusMap.value.clear()
   taskResultContent.value = ''
   resultBuffer.value = ''
+  liveLatestContent.value = ''
+  liveResultPages.value = []
+  liveResultPageIndex.value = 0
   showTaskResult.value = false
   isReceivingResult.value = false
   isJudging.value = false
@@ -571,147 +945,159 @@ const startTask = async () => {
   isTaskFinished.value = false
   showGraph.value = false
   isTaskRunning.value = true
+  isActiveView.value = true
   // 清理可能遗留的回放定时器
   if (drainTimer !== null) {
     window.clearInterval(drainTimer)
     drainTimer = null
   }
   isDraining.value = false
-  // 保持结果区“接收中”指示关闭，直到流程完成
 
-  try {
-    await startMindTaskAPI(
-      taskParams.value,
-      (data) => {
-        // 通用文本 chunk：统一进入缓冲；若处于接收阶段，确保排空
-        console.log('📨 接收到文本数据:', data)
-        if (typeof data === 'string' && data) {
-          // 一旦开始继续输出，说明评判结果（或后续内容）开始写出，结束评判动效
-          exitJudging()
-          resultBuffer.value += data
-          if (isReceivingResult.value && !isDraining.value) {
-            startDrain()
-          }
-        }
-      },
-      (graph) => {
-        // 处理任务图数据
-        console.log('📊 接收到任务图数据:', graph)
-        taskGraph.value = graph
-        
-        // 初始化所有节点状态
-        const nodeSet = new Set<string>()
-        const endNodes = new Set<string>()
-        
-        graph.forEach((item: GraphNode) => {
-          nodeSet.add(item.start)
-          nodeSet.add(item.end)
-          endNodes.add(item.end)
-        })
-        
-        // 找出所有起始节点（没有入边的节点，通常是用户问题）
-        const startNodes = new Set<string>()
-        nodeSet.forEach(node => {
-          if (!endNodes.has(node)) {
-            startNodes.add(node)
-          }
-        })
-        
-        // 设置节点状态：起始节点默认已完成，其他节点待执行
-        nodeSet.forEach(node => {
-          if (startNodes.has(node)) {
-            // 起始节点（用户问题）默认已完成
-            updateNodeStatus(node, 'completed', '用户问题已提交')
-          } else {
-            // 其他节点待执行
-            updateNodeStatus(node, 'pending')
-          }
-        })
-        
-        showGraph.value = true
-      },
-      (stepData) => {
-        // 处理步骤执行结果
-        console.log('✅ 收到步骤结果:', stepData)
-        updateNodeStatus(stepData.title, 'completed', stepData.message)
-      },
-      (messageChunk) => {
-        // 统一写入缓冲。若尚未开始接收（通常为首个 task_result 到达），立即启动接收与排空
-        if (typeof messageChunk === 'string') {
-          console.log('📄 收到任务结果数据块:', messageChunk)
-          
-          // 一旦开始继续输出，说明评判结果开始写出，结束评判动效
-          exitJudging()
-          resultBuffer.value += messageChunk
-        }
-        if (!isReceivingResult.value) {
-          startReceivingResults()
-          return
-        }
+  // 创建 proxy callbacks 对象：SSE 事件通过这些函数写入数据
+  // 活跃视图时指向组件 ref，切走后由 saveCurrentStateToStore 将后续数据写入 store
+  const proxyCallbacks: NonNullable<TaskSessionState['callbacks']> = {
+    onMessage: (data: any) => {
+      console.log('📨 接收到文本数据:', data)
+      if (typeof data === 'string' && data) {
+        exitJudging()
+        resultBuffer.value += data
         if (isReceivingResult.value && !isDraining.value) {
           startDrain()
         }
-      },
-      () => {
-        // 收到评判开始事件，明确进入评判计阶段
-        console.log('🔍 收到评判开始事件, isJudging变为true')
-        isJudging.value = true
-        // 结束其他可能存在的干扰
-        if (!isReceivingResult.value && resultBuffer.value.length === 0) {
-           isReceivingResult.value = true // 让 UI 展示出结果区
-        }
-      },
-      (error) => {
-        console.error('❌ 任务执行出错:', error)
-        ElMessage.error('任务执行失败')
-        isTaskRunning.value = false
-        isTaskFinished.value = true
-      },
-      () => {
-        console.log('✅ 任务执行完成')
-        // 任务流程结束时，开启接收阶段并以流式回放缓冲
-        startReceivingResults()
-        isTaskRunning.value = false
-        isTaskFinished.value = true
-        // 若结果已提前回放完（缓冲已空），这里补触发进入评判计算期
-        maybeEnterJudging()
-      },
-      // 会话创建完成（标题为「新对话」）时触发，立刻通知工作区左侧会话列表新增一条记录
-      (sessionInfo) => {
-        currentSessionId.value = sessionInfo.sessionId
-        window.dispatchEvent(
-          new CustomEvent('workspace:new-session', {
-            detail: {
-              sessionId: sessionInfo.sessionId,
-              title: sessionInfo.title,
-              createTime: sessionInfo.createTime,
-              agent: sessionInfo.agent
-            }
-          })
-        )
-      },
-      // 会话标题流式生成时触发，实时更新侧边栏中对应会话的标题
-      (sessionInfo) => {
-        window.dispatchEvent(
-          new CustomEvent('workspace:session-updated', {
-            detail: {
-              sessionId: sessionInfo.sessionId,
-              title: sessionInfo.title
-            }
-          })
-        )
-      },
-      // 会话最终命名完成时触发，确保标题为最终结果
-      (sessionInfo) => {
-        window.dispatchEvent(
-          new CustomEvent('workspace:session-updated', {
-            detail: {
-              sessionId: sessionInfo.sessionId,
-              title: sessionInfo.title
-            }
-          })
-        )
       }
+    },
+    onTaskGraph: (graph: any) => {
+      console.log('📊 接收到任务图数据:', graph)
+      // 检测 retry：如果已有结果内容，说明是第二轮重跑，归档当前结果
+      if (taskResultContent.value || resultBuffer.value) {
+        archiveCurrentResult()
+      }
+      taskGraph.value = graph
+      const nodeSet = new Set<string>()
+      const endNodes = new Set<string>()
+      graph.forEach((item: GraphNode) => {
+        nodeSet.add(item.start)
+        nodeSet.add(item.end)
+        endNodes.add(item.end)
+      })
+      const startNodes = new Set<string>()
+      nodeSet.forEach(node => {
+        if (!endNodes.has(node)) startNodes.add(node)
+      })
+      nodeSet.forEach(node => {
+        if (startNodes.has(node)) {
+          updateNodeStatus(node, 'completed', '用户问题已提交')
+        } else {
+          updateNodeStatus(node, 'pending')
+        }
+      })
+      showGraph.value = true
+    },
+    onStepResult: (stepData: { title: string; message: string }) => {
+      console.log('✅ 收到步骤结果:', stepData)
+      updateNodeStatus(stepData.title, 'completed', stepData.message)
+    },
+    onTaskResult: (messageChunk: string) => {
+      if (typeof messageChunk === 'string') {
+        console.log('📄 收到任务结果数据块:', messageChunk)
+        exitJudging()
+        resultBuffer.value += messageChunk
+      }
+      if (!isReceivingResult.value) {
+        startReceivingResults()
+        return
+      }
+      if (isReceivingResult.value && !isDraining.value) {
+        startDrain()
+      }
+    },
+    onEvaluating: () => {
+      console.log('🔍 收到评判开始事件, isJudging变为true')
+      isJudging.value = true
+      if (!isReceivingResult.value && resultBuffer.value.length === 0) {
+         isReceivingResult.value = true
+      }
+    },
+    onError: (error: any) => {
+      console.error('❌ 任务执行出错:', error)
+      ElMessage.error('任务执行失败')
+      isTaskRunning.value = false
+      isTaskFinished.value = true
+      // 任务出错，清理 store 中的运行状态
+      if (currentSessionId.value) {
+        taskSessionStore.removeSession(currentSessionId.value)
+      }
+    },
+    onClose: () => {
+      console.log('✅ 任务执行完成')
+      startReceivingResults()
+      isTaskRunning.value = false
+      isTaskFinished.value = true
+      maybeEnterJudging()
+      // 任务完成，清理 store 中的运行状态
+      if (currentSessionId.value) {
+        taskSessionStore.removeSession(currentSessionId.value)
+      }
+    },
+    onSessionStarted: (sessionInfo) => {
+      currentSessionId.value = sessionInfo.sessionId
+      // 将 session_id 更新到 URL
+      router.replace({
+        name: 'taskGraphPage',
+        query: { session_id: sessionInfo.sessionId }
+      })
+      window.dispatchEvent(
+        new CustomEvent('workspace:new-session', {
+          detail: {
+            sessionId: sessionInfo.sessionId,
+            title: sessionInfo.title,
+            createTime: sessionInfo.createTime,
+            agent: sessionInfo.agent
+          }
+        })
+      )
+      // 在 store 中注册这个会话（仅保存 callbacks 引用，供后台使用）
+      const state = taskSessionStore.getOrCreate(sessionInfo.sessionId)
+      state.callbacks = proxyCallbacks
+      state.isTaskRunning = true
+      state.userQuery = userQuery.value
+    },
+    onSessionTitleChunk: (sessionInfo) => {
+      window.dispatchEvent(
+        new CustomEvent('workspace:session-updated', {
+          detail: {
+            sessionId: sessionInfo.sessionId,
+            title: sessionInfo.title
+          }
+        })
+      )
+    },
+    onSessionUpdated: (sessionInfo) => {
+      window.dispatchEvent(
+        new CustomEvent('workspace:session-updated', {
+          detail: {
+            sessionId: sessionInfo.sessionId,
+            title: sessionInfo.title
+          }
+        })
+      )
+    },
+  }
+
+  try {
+    // SSE 回调全部通过 proxy 间接调用，支持后台状态切换
+    startMindTaskAPI(
+      taskParams.value,
+      (data) => proxyCallbacks.onMessage(data),
+      (graph) => proxyCallbacks.onTaskGraph(graph),
+      (stepData) => proxyCallbacks.onStepResult(stepData),
+      (messageChunk) => proxyCallbacks.onTaskResult(messageChunk),
+      () => proxyCallbacks.onEvaluating(),
+      (error) => proxyCallbacks.onError(error),
+      () => proxyCallbacks.onClose(),
+      (sessionInfo) => proxyCallbacks.onSessionStarted(sessionInfo),
+      (sessionInfo) => proxyCallbacks.onSessionUpdated(sessionInfo),
+      (sessionInfo) => proxyCallbacks.onSessionTitleChunk(sessionInfo),
     )
   } catch (error) {
     console.error('任务执行异常:', error)
@@ -722,13 +1108,13 @@ const startTask = async () => {
 </script>
 
 <template>
-  <div class="task-graph-page" :key="String(route.query.session_id || route.query.query || Date.now())">
+  <div class="task-graph-page">
     <!-- 两列布局容器 -->
     <div class="two-column-layout">
       <!-- 左侧容器 -->
       <div class="left-wrapper">
         <!-- 用户问题卡片独立出来 -->
-        <div v-if="userQuery" class="user-query-card column">
+        <div v-show="userQuery || isLoading" class="user-query-card column">
           <div class="column-header">
             <span class="header-icon">
               <!-- 统一的聊天图标 -->
@@ -739,7 +1125,8 @@ const startTask = async () => {
             <h2 class="header-title">用户问题</h2>
           </div>
           <div class="column-content query-card-body">
-            <p class="query-text">{{ userQuery }}</p>
+            <p v-if="userQuery" class="query-text">{{ userQuery }}</p>
+            <p v-else-if="isLoading" class="query-text" style="color: transparent; user-select: none;">加载中...</p>
           </div>
         </div>
 
@@ -783,10 +1170,11 @@ const startTask = async () => {
               </div>
             </div>
 
-          <div v-else class="empty-placeholder">
+          <div v-else-if="!isLoading" class="empty-placeholder">
             <span class="empty-icon">🔄</span>
             <p>等待任务流程生成...</p>
           </div>
+          <div v-else class="empty-placeholder"></div>
         </div>
       </div>
       <!-- 结束左侧容器 -->
@@ -807,12 +1195,12 @@ const startTask = async () => {
           </span>
           <h2 class="header-title">任务结果</h2>
           <div
-            v-if="isHistoryMode && totalContexts > 1"
+            v-if="showPagination"
             class="run-toggle"
           >
             <button
               class="run-arrow"
-              :disabled="currentContextIndex === 0"
+              :disabled="isHistoryMode ? currentContextIndex === 0 : liveResultPageIndex === 0"
               @click.stop="switchToPrevRun"
             >
               ‹
@@ -820,7 +1208,7 @@ const startTask = async () => {
             <span class="run-label">{{ currentRunLabel }}</span>
             <button
               class="run-arrow"
-              :disabled="currentContextIndex === totalContexts - 1"
+              :disabled="isHistoryMode ? currentContextIndex === totalContexts - 1 : liveResultPageIndex >= liveResultPages.length"
               @click.stop="switchToNextRun"
             >
               ›
@@ -831,7 +1219,6 @@ const startTask = async () => {
           <div
             v-if="showTaskResult"
             class="result-wrapper"
-            :class="{ 'with-judge-overlay': showJudgingAnimation }"
             ref="resultContainer"
           >
             <MdPreview
@@ -841,13 +1228,14 @@ const startTask = async () => {
             />
             
             <!-- 独立呈现的反馈卡片(从Markdown中抽离的iOS 26圆角风格卡片) -->
-            <Transition name="feedback-container">
+            <Transition :name="isHistorySwitching ? '' : 'feedback-container'">
               <div
                 v-if="parsedTaskResult.feedbacks.length > 0"
                 class="feedback-cards-container"
               >
+                <!-- 动态绑定 name，如果是历史上下轮次切换则取消入场动画避免闪烁 -->
                 <TransitionGroup
-                  name="feedback-reveal"
+                  :name="isHistorySwitching ? '' : 'feedback-reveal'"
                   tag="div"
                   class="feedback-cards-list"
                 >
@@ -872,11 +1260,10 @@ const startTask = async () => {
             <Transition name="judge-fade">
               <div v-if="showJudgingAnimation" class="judge-overlay" aria-live="polite">
                 <div class="judge-surface" :class="{ 'is-success': isJudgeSuccess }">
-                  <div class="judge-icon-wrapper">
-                    <svg v-if="isJudgeSuccess" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="success-icon">
+                  <div class="judge-icon-wrapper" v-if="isJudgeSuccess">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="success-icon">
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
-                    <div v-else class="loading-spinner"></div>
                   </div>
                   <div class="judge-text">
                     <div class="judge-title" :class="{ 'success-text': isJudgeSuccess }">{{ isJudgeSuccess ? '评判完成' : '正在评判任务结果' }}</div>
@@ -891,10 +1278,11 @@ const startTask = async () => {
               </div>
             </Transition>
           </div>
-          <div v-else class="empty-placeholder">
+          <div v-else-if="!isLoading" class="empty-placeholder">
             <span class="empty-icon">📝</span>
             <p>等待任务结果...</p>
           </div>
+          <div v-else class="empty-placeholder"></div>
         </div>
       </div>
     </div>
@@ -1423,16 +1811,9 @@ $error: #ef4444;
   }
 }
 
-/* 评判动效：底部悬浮层（Apple 风格：克制、细腻、低饱和） */
-.column-result .result-wrapper.with-judge-overlay {
-  padding-bottom: 88px; /* 预留空间，避免底部悬浮层遮挡内容 */
-}
-
+/* 评判动效：随文档流展示在文本底部 */
 .judge-overlay {
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 16px;
+  margin: 16px 0 24px 0;
   display: flex;
   justify-content: center;
   pointer-events: none; /* 不阻挡滚动、选择文本 */
@@ -1448,7 +1829,6 @@ $error: #ef4444;
   border-radius: 24px;
   background: var(--panel, #ffffff);
   border: 1px solid var(--border, #e5e7eb);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
 }
 
@@ -2222,9 +2602,43 @@ $error: #ef4444;
   .column-result .result-wrapper {
     :deep(.md-editor-preview) {
       background: transparent;
+      color: var(--text);
 
-      p {
+      p,
+      ul,
+      ol,
+      li,
+      strong,
+      b,
+      em,
+      i,
+      a,
+      span,
+      table,
+      th,
+      td {
         color: var(--text);
+      }
+
+      blockquote {
+        background: #2c2c2e;
+        border-left-color: var(--primary);
+        color: var(--text);
+        padding: 12px 16px;
+        border-radius: 4px;
+        
+        p,
+        span,
+        strong,
+        b,
+        em,
+        i,
+        a,
+        ul,
+        ol,
+        li {
+          color: var(--text);
+        }
       }
 
       h1,
@@ -2264,8 +2678,11 @@ $error: #ef4444;
 
     .modal-header {
       background: #242426;
-      color: var(--text);
       border-bottom-color: var(--border);
+
+      .modal-title {
+        color: var(--text);
+      }
 
       .modal-close {
         color: var(--muted);
@@ -2293,9 +2710,43 @@ $error: #ef4444;
             padding: 0;
             border: none;
             box-shadow: none;
+            color: var(--text);
 
-            p {
+            p,
+            ul,
+            ol,
+            li,
+            strong,
+            b,
+            em,
+            i,
+            a,
+            span,
+            table,
+            th,
+            td {
               color: var(--text);
+            }
+
+            blockquote {
+              background: #2c2c2e;
+              border-left-color: var(--primary);
+              color: var(--text);
+              padding: 12px 16px;
+              border-radius: 4px;
+              
+              p,
+              span,
+              strong,
+              b,
+              em,
+              i,
+              a,
+              ul,
+              ol,
+              li {
+                color: var(--text);
+              }
             }
 
             h1,
@@ -2376,9 +2827,6 @@ $error: #ef4444;
   .judge-surface {
     background: rgba(36, 36, 38, 0.78);
     border-color: rgba(245, 245, 247, 0.10);
-    box-shadow:
-      0 10px 30px rgba(0, 0, 0, 0.28),
-      0 2px 10px rgba(0, 0, 0, 0.18);
   }
 
   .judge-title {

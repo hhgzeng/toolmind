@@ -109,6 +109,8 @@ onMounted(() => {
             clearable
             no-data-text="无模型"
             :loading="loading || savingMind"
+            :teleported="false"
+            fit-input-width
             @change="saveMindConfig"
           >
             <el-option
@@ -135,6 +137,8 @@ onMounted(() => {
             clearable
             no-data-text="无模型"
             :loading="loading || savingMind"
+            :teleported="false"
+            fit-input-width
             @change="saveMindConfig"
           >
             <el-option
@@ -161,6 +165,8 @@ onMounted(() => {
             clearable
             no-data-text="无模型"
             :loading="loading || savingMind"
+            :teleported="false"
+            fit-input-width
             @change="saveMindConfig"
           >
             <el-option
@@ -226,7 +232,6 @@ onMounted(() => {
   padding: 32px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
   position: relative;
-  overflow: hidden;
   border: 1px solid #ebeef5;
 
   .section-title {
@@ -307,12 +312,12 @@ onMounted(() => {
         border-radius: 100px !important;
       }
       
-      :deep(.el-popper.is-light) {
-        border-radius: 16px !important;
+      :deep(.el-popper) {
+        border-radius: 24px !important;
       }
       
       :deep(.el-select-dropdown__item) {
-        border-radius: 8px !important;
+        border-radius: 24px !important;
         margin: 0 8px;
         width: calc(100% - 16px);
       }
@@ -402,10 +407,15 @@ onMounted(() => {
           color: #f5f5f7;
         }
 
-        :deep(.el-popper.is-light) {
-          background-color: #2c2c2e;
-          border-color: #3a3a3c;
-          color: #f5f5f7;
+        :deep(.el-popper) {
+          background-color: #2c2c2e !important;
+          border-color: #3a3a3c !important;
+          color: #f5f5f7 !important;
+        }
+
+        :deep(.el-popper__arrow::before) {
+          background-color: #2c2c2e !important;
+          border-color: #3a3a3c !important;
         }
 
         :deep(.el-select-dropdown__item) {

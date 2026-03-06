@@ -24,13 +24,14 @@ export const startMindTaskAPI = async (
   onClose?: () => void,
   onSessionStarted?: (session: { sessionId: string; title: string; createTime?: string; agent?: string }) => void,
   onSessionUpdated?: (session: { sessionId: string; title: string }) => void,
-  onSessionTitleChunk?: (session: { sessionId: string; title: string }) => void
-) => {
+  onSessionTitleChunk?: (session: { sessionId: string; title: string }) => void,
+  externalAbortController?: AbortController
+): Promise<AbortController> => {
   const token = localStorage.getItem('token')
 
   console.log('开始调用 task_start 接口，参数:', data)
 
-  const ctrl = new AbortController()
+  const ctrl = externalAbortController || new AbortController()
 
   try {
     await fetchEventSource(`${BASE_URL}/api/v1/workspace/mind/task_start`, {
@@ -132,4 +133,5 @@ export const startMindTaskAPI = async (
       onError?.(error)
     }
   }
+  return ctrl
 }

@@ -312,8 +312,19 @@ const executeRename = async () => {
   try {
     const response = await updateWorkspaceSessionAPI(sessionId, { title })
     if (response.data.status_code === 200) {
-      await fetchSessions()
-      // ElMessage.success('重命名成功')
+      // 本地更新重命名结果
+      const target = sessions.value.find(s => s.sessionId === sessionId)
+      if (target) {
+        target.title = title
+        const nowIso = new Date().toISOString()
+        target.updateTime = nowIso
+        // 根据更新时间重新排序
+        sessions.value.sort((a, b) => {
+          const aTime = a.updateTime || a.createTime
+          const bTime = b.updateTime || b.createTime
+          return new Date(bTime).getTime() - new Date(aTime).getTime()
+        })
+      }
     } else {
       ElMessage.error('重命名失败')
     }
@@ -431,11 +442,8 @@ onBeforeUnmount(() => {
 
       <!-- 会话列表 -->
       <div class="session-list">
-        <!-- 加载状态 -->
-        <div v-if="loading" class="loading-state">
-          <div class="loading-spinner"></div>
-          <div class="loading-text">加载中...</div>
-        </div>
+        <!-- 加载且无数据状态（避免一闪而过的空状态文本） -->
+        <div v-if="loading && sessions.length === 0"></div>
 
         <!-- 空状态 -->
         <div v-else-if="sessions.length === 0" class="empty-state">
@@ -947,7 +955,6 @@ onBeforeUnmount(() => {
         right: 0;
         background: #ffffff;
         border-radius: 24px;
-        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.06);
         z-index: 2000;
         overflow: hidden;
         padding: 4px;

@@ -69,11 +69,10 @@ onMounted(() => {
             <p>请填入 Tavily API Key，以支持联网搜索功能。</p>
           </div>
           <div class="switch-wrapper">
-            <span class="switch-label">联网搜索开关</span>
             <el-switch
               v-model="websearch.enabled"
-              active-text="已开启"
-              inactive-text="已关闭"
+              active-text="开启"
+              inactive-text="关闭"
               :loading="saving"
               @change="saveConfig"
             />
@@ -186,11 +185,6 @@ onMounted(() => {
       align-items: center;
       gap: 8px;
       white-space: nowrap;
-    }
-
-    .switch-label {
-      font-size: 14px;
-      color: #606266;
     }
   }
 

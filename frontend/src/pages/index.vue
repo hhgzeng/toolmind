@@ -42,7 +42,7 @@ watch(
   <div class="ai-body" :class="{ 'is-dark': theme === 'dark' }">
     <div class="ai-main">
       <div class="sidebar">
-        <!-- 导航菜单 -->
+        <!-- 系统设置侧边栏 -->
         <div class="sidebar-nav">
           <el-menu
             :active-text-color="menuActiveTextColor"
@@ -170,7 +170,7 @@ watch(
     &.is-active {
       background: #f0f0f4;
       color: #1a1a1a;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02), inset 0 1px 1px rgba(0, 0, 0, 0.04);
+      box-shadow: none;
       border: none;
       
       .el-icon {
@@ -247,7 +247,7 @@ watch(
       background: #2c2c2e;
       color: #f5f5f7;
       box-shadow: none;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: none;
 
       span {
         color: #f5f5f7 !important;

@@ -15,10 +15,11 @@
             placeholder="全部模型"
             clearable
             filterable
-            popper-class="dashboard-select-popper"
             class="filter-select"
+            :teleported="false"
+            fit-input-width
             @change="handleFilterChange"
-            style="width: 160px"
+            style="width: 250px"
           >
             <el-option label="全部模型" value="" />
             <el-option
@@ -33,10 +34,11 @@
         <div class="filter-group">
           <el-select
             v-model="filters.delta_days"
-            popper-class="dashboard-select-popper"
             class="filter-select"
+            :teleported="false"
+            fit-input-width
             @change="handleFilterChange"
-            style="width: 140px"
+            style="width: 130px"
           >
           <el-option label="全部时间" :value="10000" />
           <el-option label="周内" :value="7" />
@@ -500,7 +502,6 @@ onBeforeUnmount(() => {
   border-radius: 24px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   position: relative;
-  overflow: hidden;
 
   h2 {
     font-size: 26px;
@@ -562,25 +563,25 @@ onBeforeUnmount(() => {
 }
 
 /* 下拉项美化 */
-.dashboard-select-popper {
-  border-radius: 16px !important;
+.filter-select :deep(.el-popper) {
+  border-radius: 24px !important;
   box-shadow: 0 12px 32px rgba(0,0,0,.08) !important;
   border: 1px solid #eef0f4 !important;
-  padding: 6px !important;
 }
-.dashboard-select-popper :deep(.el-select-dropdown__item) {
-  padding: 10px 12px;
-  border-radius: 10px;
-  margin: 2px 4px;
-  font-weight: 500;
+.filter-select :deep(.el-select-dropdown__item) {
+  border-radius: 24px !important;
+  margin: 0 8px;
+  width: calc(100% - 16px);
   color: #475569;
 }
-.dashboard-select-popper :deep(.el-select-dropdown__item.hover),
-.dashboard-select-popper :deep(.el-select-dropdown__item:hover) {
+.filter-select :deep(.el-select-dropdown__item.is-hovering),
+.filter-select :deep(.el-select-dropdown__item.hover),
+.filter-select :deep(.el-select-dropdown__item:hover) {
   background: #f1f5f9;
   color: #1e293b;
 }
-.dashboard-select-popper :deep(.el-select-dropdown__item.selected) {
+.filter-select :deep(.el-select-dropdown__item.is-selected),
+.filter-select :deep(.el-select-dropdown__item.selected) {
   background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
   color: #2563eb;
   font-weight: 600;
@@ -729,25 +730,34 @@ onBeforeUnmount(() => {
       box-shadow: 0 0 0 1.5px #3b82f6 inset !important;
     }
 
-    .dashboard-select-popper {
-      background: #18181b;
-      border-color: #3f3f46 !important;
+    .filter-select :deep(.el-popper) {
+      background-color: #2c2c2e !important;
+      border-color: #3a3a3c !important;
+      color: #f5f5f7 !important;
       box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45) !important;
     }
 
-    .dashboard-select-popper :deep(.el-select-dropdown__item) {
-      color: #e5e7eb;
+    .filter-select :deep(.el-popper__arrow::before) {
+      background-color: #2c2c2e !important;
+      border-color: #3a3a3c !important;
     }
 
-    .dashboard-select-popper :deep(.el-select-dropdown__item.hover),
-    .dashboard-select-popper :deep(.el-select-dropdown__item:hover) {
-      background: #27272a;
-      color: #f9fafb;
+    .filter-select :deep(.el-select-dropdown__item) {
+      color: #f5f5f7;
     }
 
-    .dashboard-select-popper :deep(.el-select-dropdown__item.selected) {
-      background: linear-gradient(135deg, #1d283a 0%, #0f172a 100%);
-      color: #60a5fa;
+    .filter-select :deep(.el-select-dropdown__item.is-hovering),
+    .filter-select :deep(.el-select-dropdown__item.hover),
+    .filter-select :deep(.el-select-dropdown__item:hover) {
+      background-color: rgba(255, 255, 255, 0.06) !important;
+      color: #f5f5f7;
+    }
+
+    .filter-select :deep(.el-select-dropdown__item.is-selected),
+    .filter-select :deep(.el-select-dropdown__item.selected) {
+      background: rgba(77, 107, 254, 0.18);
+      color: #f5f5f7;
+      font-weight: normal;
     }
 
     .kpi-card {

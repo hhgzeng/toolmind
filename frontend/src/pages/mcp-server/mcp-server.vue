@@ -1903,12 +1903,12 @@ onUnmounted(() => {
   }
 
   .tools-content {
-    background: #18181b;
+    background: #1c1c1e;
 
     .no-tools {
       .empty-text {
         h3 {
-          color: #e5e5ea;
+          color: #f5f5f7;
         }
 
         p {
@@ -1920,12 +1920,12 @@ onUnmounted(() => {
     .tools-overview {
       .tools-stats {
         .stat-card {
-          background: #18181b;
-          border-color: #27272a;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+          background: #242426;
+          border-color: #3a3a3c;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 
           .stat-number {
-            color: #a5b4fc;
+            color: #409eff;
           }
 
           .stat-label {
@@ -1936,15 +1936,15 @@ onUnmounted(() => {
 
       .tools-list {
         .tool-card {
-          background: #18181b;
-          border-color: #27272a;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
+          background: #242426;
+          border-color: #3a3a3c;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 
           .tool-header {
             .tool-info {
               .tool-text {
                 .tool-name {
-                  color: #e5e5ea;
+                  color: #f5f5f7;
                 }
               }
             }
@@ -1955,23 +1955,28 @@ onUnmounted(() => {
           }
 
           .tool-schema {
-            background: #111827;
-            border-color: #1f2937;
+            background: #1c1c1e;
+            border-color: #3a3a3c;
 
             .schema-header {
-              color: #e5e5ea;
-              border-bottom-color: #374151;
+              color: #f5f5f7;
+              border-bottom-color: #3a3a3c;
             }
 
             .schema-content {
               .schema-meta {
                 .meta-item {
                   .meta-label {
-                    color: #a1a1aa;
+                    color: rgba(255, 255, 255, 0.55);
                   }
 
                   .meta-value {
-                    color: #e5e5ea;
+                    color: #f5f5f7;
+
+                    &.type {
+                      background: #2c2c2e;
+                      color: #f5f5f7;
+                    }
                   }
                 }
               }
@@ -1979,8 +1984,8 @@ onUnmounted(() => {
               .required-section {
                 .required-params {
                   .required-param {
-                    background: rgba(254, 242, 242, 0.08);
-                    border-color: rgba(254, 202, 202, 0.6);
+                    background: rgba(245, 108, 108, 0.1);
+                    border-color: rgba(245, 108, 108, 0.3);
                   }
                 }
               }
@@ -1988,24 +1993,30 @@ onUnmounted(() => {
               .properties-section {
                 .properties-grid {
                   .property-card {
-                    background: #020617;
-                    border-color: #111827;
+                    background: #2c2c2e;
+                    border-color: #3a3a3c;
 
                     .property-header {
                       .property-name {
-                        color: #e5e5ea;
+                        color: #f5f5f7;
+                      }
+
+                      .property-type {
+                        background: rgba(64, 158, 255, 0.15);
+                        color: #409eff;
                       }
                     }
 
                     .property-body {
                       .property-desc {
-                        color: rgba(209, 213, 219, 0.9);
+                        color: rgba(255, 255, 255, 0.65);
                       }
 
                       .property-default {
                         .default-value {
-                          background: rgba(15, 23, 42, 0.9);
-                          color: #e5e5ea;
+                          background: #1c1c1e;
+                          color: #f5f5f7;
+                          border: 1px solid #3a3a3c;
                         }
                       }
                     }
