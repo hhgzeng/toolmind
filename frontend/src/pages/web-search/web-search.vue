@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue"
 import { ElMessage } from "element-plus"
-import { Connection, Search, Loading } from "@element-plus/icons-vue"
+import { Connection, Search } from "@element-plus/icons-vue"
 import { getWebSearchAPI, updateWebSearchAPI, type WebSearchSettings } from "../../apis/web-search"
 
 const loading = ref(false)
@@ -9,7 +9,7 @@ const saving = ref(false)
 
 const websearch = ref<WebSearchSettings>({
   api_key: "",
-  enabled: true
+  enabled: false
 })
 
 const fetchConfig = async () => {
@@ -68,12 +68,12 @@ onMounted(() => {
             <h3>Tavily API Key</h3>
             <p>请填入 Tavily API Key，以支持联网搜索功能。</p>
           </div>
-          <div class="switch-wrapper">
+          <div class="switch-wrapper" style="min-height: 32px;">
             <el-switch
+              v-if="!loading"
               v-model="websearch.enabled"
               active-text="开启"
               inactive-text="关闭"
-              :loading="saving"
               @change="saveConfig"
             />
           </div>
@@ -90,12 +90,8 @@ onMounted(() => {
             show-password
             placeholder="请输入 Tavily API Key，例如 tvly-xxxxxx"
             autocomplete="off"
-            :disabled="saving"
             @change="saveConfig"
           >
-            <template #suffix>
-              <el-icon v-if="saving" class="is-loading"><Loading /></el-icon>
-            </template>
           </el-input>
         </el-form-item>
       </el-form>
@@ -294,6 +290,12 @@ onMounted(() => {
 
       p {
         color: rgba(255, 255, 255, 0.55);
+      }
+
+      .switch-wrapper {
+        :deep(.el-switch__label:not(.is-active)) {
+          color: rgba(255, 255, 255, 0.55);
+        }
       }
     }
 
