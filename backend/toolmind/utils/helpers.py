@@ -3,7 +3,6 @@ import os
 import re
 import requests
 from loguru import  logger
-from toolmind.settings import app_settings
 from datetime import datetime, timedelta, timezone
 
 
@@ -82,15 +81,6 @@ def check_input(user_input):
         return True
     else:
         return False
-
-def delete_img(logo: str):
-    try:
-        if os.path.exists(logo) and logo != app_settings.default_config.get("agent_logo_url"):
-            os.remove(logo)
-        else:
-            logger.info(f"The logo Path is no exist")
-    except Exception as err:
-        logger.error(f"delete img appear error: {err}")
 
 def filename_to_classname(filename):
     """

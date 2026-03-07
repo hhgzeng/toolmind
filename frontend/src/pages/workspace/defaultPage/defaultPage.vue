@@ -2,7 +2,6 @@
 import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { uploadFileAPI } from '../../../apis/file'
 
 const router = useRouter()
 const route = useRoute()
@@ -10,31 +9,9 @@ const inputMessage = ref('')
 const selectedMcpServers = ref<string[]>([])
 const mcpServers = ref<any[]>([])
 const webSearchEnabled = ref(true)
-const fileInputRef = ref<HTMLInputElement | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const currentSessionId = ref<string>('')  // 当前会话ID
 const isGenerating = ref(false)  // 是否正在生成回复
-const isUploading = ref(false)
-
-interface UploadedFileItem {
-  name: string
-  size: string
-  url: string
-}
-
-const uploadedFiles = ref<UploadedFileItem[]>([])
-
-const formatFileSize = (size: number) => {
-  if (!size) return '0B'
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let index = 0
-  let current = size
-  while (current >= 1024 && index < units.length - 1) {
-    current /= 1024
-    index++
-  }
-  return `${current.toFixed(2)}${units[index]}`
-}
 
 // 自动调整 textarea 高度（2行起，最多10行）
 const autoResize = () => {
@@ -46,54 +23,6 @@ const autoResize = () => {
   const maxHeight = lineHeight * 10 // 10行
   const scrollH = textarea.scrollHeight
   textarea.style.height = Math.min(Math.max(scrollH, minHeight), maxHeight) + 'px'
-}
-// 触发文件选择
-const triggerFileInput = () => {
-  fileInputRef.value?.click()
-}
-
-// 处理文件选择并上传到后端
-const onFileChange = async (e: Event) => {
-  const input = e.target as HTMLInputElement
-  const files = input.files
-
-  if (!files || files.length === 0) {
-    if (input) input.value = ''
-    return
-  }
-
-  try {
-    isUploading.value = true
-
-    for (const file of Array.from(files)) {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const res = await uploadFileAPI(formData)
-      const { data } = res
-
-      if (data && data.status_code === 200 && data.data) {
-        const fileUrl = data.data as string
-        uploadedFiles.value.push({
-          name: file.name,
-          size: formatFileSize(file.size),
-          url: fileUrl
-        })
-        ElMessage.success(`已上传 ${file.name}`)
-      } else {
-        ElMessage.error(data?.message || `上传 ${file.name} 失败`)
-      }
-    }
-  } catch (error) {
-    ElMessage.error('文件上传失败，请稍后重试')
-  } finally {
-    isUploading.value = false
-    if (input) input.value = ''
-  }
-}
-
-const removeUploadedFile = (url: string) => {
-  uploadedFiles.value = uploadedFiles.value.filter((item) => item.url !== url)
 }
 
 // 生成UUID（模拟Python的uuid4().hex）
@@ -131,9 +60,7 @@ const handleSend = async () => {
     query: {
       query: query,
       webSearch: webSearchEnabled.value.toString(),
-      mcp_servers: JSON.stringify(selectedMcpServers.value),
-      // 将已上传附件的元信息通过路由参数传递给任务页
-      attachments: JSON.stringify(uploadedFiles.value)
+      mcp_servers: JSON.stringify(selectedMcpServers.value)
     }
   })
 }
@@ -210,39 +137,6 @@ watch(
       <!-- 输入区域 -->
       <div class="input-section">
         <div class="input-wrapper">
-          <!-- 已上传文件预览（DeepSeek 风格） -->
-          <div v-if="uploadedFiles.length" class="uploaded-file-list">
-            <div
-              v-for="file in uploadedFiles"
-              :key="file.url"
-              class="uploaded-file-item"
-            >
-              <div class="file-icon-wrapper">
-                <div class="file-icon-bg">
-                  <span class="file-icon-text">
-                    {{ file.name.split('.').pop()?.toUpperCase() || 'FILE' }}
-                  </span>
-                </div>
-              </div>
-              <div class="file-info">
-                <div class="file-name" :title="file.name">
-                  {{ file.name }}
-                </div>
-                <div class="file-meta">
-                  <span class="file-size">{{ file.size }}</span>
-                  <span class="file-status">已上传</span>
-                </div>
-              </div>
-              <button
-                class="file-remove-btn"
-                type="button"
-                aria-label="移除附件"
-                @click="removeUploadedFile(file.url)"
-              >
-                ×
-              </button>
-            </div>
-          </div>
           <textarea
             ref="textareaRef"
             v-model="inputMessage"
@@ -256,23 +150,6 @@ watch(
           <!-- 底部控制栏 -->
           <div class="input-footer">
             <div class="footer-left">
-              <!-- 附件按钮 -->
-              <button
-                class="attach-btn"
-                :class="{ 'is-uploading': isUploading }"
-                :disabled="isUploading"
-                title="上传附件"
-                @click="triggerFileInput"
-              >
-                <el-icon class="attach-icon"><Paperclip /></el-icon>
-              </button>
-              <input
-                type="file"
-                ref="fileInputRef"
-                class="hidden-file-input"
-                multiple
-                @change="onFileChange"
-              />
             </div>
             
             <div class="footer-right">
@@ -479,126 +356,6 @@ watch(
 
     &:focus-within {
       background: #f4f4f4;
-    }
-
-    .uploaded-file-list {
-      margin-bottom: 10px;
-      border-radius: 18px;
-      background: #ffffff;
-      padding: 10px 12px;
-      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 180px;
-      overflow-y: auto;
-
-      &::-webkit-scrollbar {
-        width: 6px;
-      }
-
-      &::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background: #e5e7eb;
-        border-radius: 3px;
-      }
-    }
-
-    .uploaded-file-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
-      border-radius: 12px;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-    }
-
-    .file-icon-wrapper {
-      flex-shrink: 0;
-    }
-
-    .file-icon-bg {
-      width: 32px;
-      height: 32px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #f97373, #ef4444);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-weight: 600;
-      font-size: 11px;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-    }
-
-    .file-icon-text {
-      max-width: 26px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .file-info {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .file-name {
-      font-size: 13px;
-      font-weight: 500;
-      color: #111827;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .file-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-    }
-
-    .file-size {
-      color: #6b7280;
-    }
-
-    .file-status {
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      color: #16a34a;
-      background: rgba(22, 163, 74, 0.08);
-      border: 1px solid rgba(22, 163, 74, 0.2);
-    }
-
-    .file-remove-btn {
-      flex-shrink: 0;
-      width: 22px;
-      height: 22px;
-      border-radius: 999px;
-      border: none;
-      background: transparent;
-      color: #9ca3af;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      transition: all 0.15s ease;
-
-      &:hover {
-        background: rgba(239, 68, 68, 0.06);
-        color: #ef4444;
-      }
     }
 
     .message-input {
@@ -1005,42 +762,6 @@ watch(
       .footer-left {
         display: flex;
         align-items: center;
-
-        .attach-btn {
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: transparent;
-          border: none;
-          border-radius: 50%;
-          cursor: pointer;
-          color: #374151;
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-          .attach-icon {
-            font-size: 20px;
-            color: inherit;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-          }
-
-          &:hover {
-            color: #111827;
-            background: rgba(0, 0, 0, 0.06);
-          }
-
-          &:active {
-            transform: scale(0.92);
-          }
-        }
-
-        .hidden-file-input {
-          display: none;
-        }
       }
 
       .footer-right {
@@ -1242,47 +963,6 @@ watch(
         background: #2c2c2e;
       }
 
-      .uploaded-file-list {
-        background: #1f1f21;
-        box-shadow: none;
-
-        &::-webkit-scrollbar-thumb {
-          background: #3a3a3c;
-        }
-      }
-
-      .uploaded-file-item {
-        background: #2c2c2e;
-        border-color: #3a3a3c;
-      }
-
-      .file-icon-bg {
-        background: linear-gradient(135deg, #fb7185, #f97316);
-      }
-
-      .file-name {
-        color: #f5f5f7;
-      }
-
-      .file-size {
-        color: rgba(235, 235, 245, 0.7);
-      }
-
-      .file-status {
-        color: #4ade80;
-        background: rgba(34, 197, 94, 0.16);
-        border-color: rgba(34, 197, 94, 0.4);
-      }
-
-      .file-remove-btn {
-        color: rgba(235, 235, 245, 0.6);
-
-        &:hover {
-          background: rgba(248, 113, 113, 0.2);
-          color: #fecaca;
-        }
-      }
-
       .message-input {
         color: #f5f5f7;
 
@@ -1404,17 +1084,6 @@ watch(
                   color: #f5f5f7;
                 }
               }
-            }
-          }
-        }
-
-        .footer-left {
-          .attach-btn {
-            color: rgba(255, 255, 255, 0.8);
-
-            &:hover {
-              color: #ffffff;
-              background: rgba(255, 255, 255, 0.1);
             }
           }
         }

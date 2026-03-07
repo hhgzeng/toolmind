@@ -8,12 +8,6 @@ export const startMindTaskAPI = async (
     query: string
     web_search?: boolean
     mcp_servers?: string[]
-    // 前端上传到 OSS 的附件元信息，会一并传给后端 MindTask
-    attachments?: {
-      name: string
-      url: string
-      size?: string
-    }[]
   },
   onMessage: (data: any) => void,
   onTaskGraph?: (graph: any) => void,  // 处理任务图数据

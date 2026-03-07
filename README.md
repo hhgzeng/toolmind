@@ -184,7 +184,7 @@ npm install
 - **Redis 配置**（`redis`）：`endpoint`
 - **多模型配置**（`multi_models`）：`conversation_model`、`tool_call_model` 等
 - **工具配置**（`tools`）：如 Tavily API Key（用于 `web_search` 工具）
-- **对象存储 / 资源配置**（`aliyun_oss` / `default_config`）：按需配置
+- **资源与默认配置**（`default_config`）：如默认图标、内置集合名称等
 
 > 生产环境请务必通过环境变量或安全配置方式注入敏感信息，不要直接提交到版本库。
 

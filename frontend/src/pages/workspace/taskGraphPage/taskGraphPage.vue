@@ -302,12 +302,6 @@ const taskParams = ref({
   web_search: false,
   plugins: [] as string[],
   mcp_servers: [] as string[],
-  // 从默认页传入的附件元信息
-  attachments: [] as {
-    name: string
-    url: string
-    size?: string
-  }[]
 })
 
 // 保存原始参数（用于重新生成）
@@ -317,11 +311,6 @@ const originalParams = ref({
   web_search: false,
   plugins: [] as string[],
   mcp_servers: [] as string[],
-  attachments: [] as {
-    name: string
-    url: string
-    size?: string
-  }[]
 })
 
 // 获取当前选中节点的详情
@@ -390,17 +379,11 @@ onMounted(async () => {
     originalParams.value.plugins = originalParams.value.tools
     const mcpQuery = route.query.mcp_servers as string
     originalParams.value.mcp_servers = mcpQuery ? JSON.parse(mcpQuery) : []
-
-    const attachmentsQuery = route.query.attachments as string
-    originalParams.value.attachments = attachmentsQuery
-      ? JSON.parse(attachmentsQuery)
-      : []
     
     taskParams.value.query = originalParams.value.query
     taskParams.value.web_search = originalParams.value.web_search
     taskParams.value.plugins = originalParams.value.plugins
     taskParams.value.mcp_servers = originalParams.value.mcp_servers
-    taskParams.value.attachments = originalParams.value.attachments
     
     // 保存用户问题用于显示
     userQuery.value = originalParams.value.query

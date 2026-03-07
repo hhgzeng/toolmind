@@ -1,16 +1,13 @@
 import json
-import random
 
 import rsa
 import hashlib
 from fastapi_jwt_auth import AuthJWT
 
-from toolmind.services.aliyun_oss import aliyun_oss
 from toolmind.services.redis import redis_client
 from toolmind.database.dao.user_role import UserRoleDao
 from toolmind.database.models.role import AdminRole
 from toolmind.api.errcode.user import UserNameAlreadyExistError
-from toolmind.settings import app_settings
 from toolmind.utils.hash import md5_hash
 from base64 import b64decode
 from fastapi import Request, Depends, HTTPException
@@ -83,11 +80,11 @@ class UserService:
 
     @classmethod
     def get_random_user_avatar(cls):
-        files_url = aliyun_oss.list_files_in_folder("icons/user")
-        avatars_url = []
-        for file_url in files_url:
-            avatars_url.append(f"{app_settings.aliyun_oss['base_url']}/{file_url}")
-        return random.choice(avatars_url) if avatars_url else ""
+        """
+        返回一个默认的用户头像地址。
+        目前不再使用默认头像文件，统一返回空字符串。
+        """
+        return ""
 
     @classmethod
     def get_user_info_by_id(cls, user_id):

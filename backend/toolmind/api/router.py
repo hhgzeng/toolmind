@@ -8,7 +8,6 @@ from toolmind.api.v1 import (
     mcp_user_config,
     mind,
     model_config,
-    upload,
     usage_stats,
     user,
     workspace,
@@ -27,6 +26,5 @@ router.include_router(mcp_user_config.router)
 router.include_router(workspace.router)
 router.include_router(mind.router)
 router.include_router(usage_stats.router)
-router.include_router(upload.router)
 router.include_router(model_config.router)
 router.include_router(web_search.router)

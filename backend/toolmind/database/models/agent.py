@@ -4,7 +4,6 @@ from datetime import datetime
 from uuid import uuid4
 from sqlalchemy import JSON, Column, text, DateTime
 
-from toolmind.settings import app_settings
 from toolmind.database.models.base import SQLModelSerializable
 
 
@@ -14,7 +13,7 @@ class AgentTable(SQLModelSerializable, table=True):
     id: str = Field(default_factory=lambda: uuid4().hex, primary_key=True)
     name: str = Field(default="", description="Agent 的名称")
     description: str = Field(default="", description="Agent 的描述")
-    logo_url: str = Field(default=app_settings.default_config.get("agent_logo_url"))
+    logo_url: str = Field(default="", description="Agent 的 Logo 地址")
     user_id: Optional[str] = Field(index=True, description="Agent绑定的用户ID")
     is_custom: bool = Field(default=True, description="Agent是否为用户自定义")
     system_prompt: str = Field(default="", description="Agent设定的系统提示词")

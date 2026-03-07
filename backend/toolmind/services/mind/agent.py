@@ -125,17 +125,11 @@ class MindAgent:
             mind_task.mcp_servers, mind_task.web_search
         )
         tools_str = json.dumps(tools, ensure_ascii=False, indent=2)
-        attachments_str = json.dumps(
-            [attachment.model_dump() for attachment in mind_task.attachments],
-            ensure_ascii=False,
-            indent=2,
-        )
 
         mind_task_prompt = GenerateTaskPrompt.format(
             tools_str=tools_str,
             query=mind_task.query,
             current_time=get_beijing_time(),
-            attachments_str=attachments_str,
         )
 
         response_task = await self._generate_tasks(mind_task_prompt)
@@ -242,9 +236,11 @@ class MindAgent:
                 "session_id": workspace_session.session_id,
                 "title": workspace_session.title,
                 "agent": workspace_session.agent,
-                "create_time": workspace_session.create_time.isoformat()
-                if workspace_session.create_time
-                else None,
+                "create_time": (
+                    workspace_session.create_time.isoformat()
+                    if workspace_session.create_time
+                    else None
+                ),
             },
         }
 
@@ -314,11 +310,6 @@ class MindAgent:
                     step_info=step_info.model_dump(),
                     step_context=json.dumps(step_context, ensure_ascii=False, indent=2),
                     user_query=mind_task.query,
-                    attachments_json=json.dumps(
-                        [a.model_dump() for a in mind_task.attachments],
-                        ensure_ascii=False,
-                        indent=2,
-                    ),
                 )
                 step_messages: List[BaseMessage] = [
                     SystemMessage(content=step_prompt),
@@ -506,10 +497,12 @@ class MindAgent:
             if tool_name == "web_search":
                 from toolmind.services.web_search.action import _tavily_search
                 from toolmind.database.dao.web_search_config import WebSearchConfigDao
-                
-                user_config = await WebSearchConfigDao.get_config_by_user_id(self.user_id)
+
+                user_config = await WebSearchConfigDao.get_config_by_user_id(
+                    self.user_id
+                )
                 api_key = user_config.api_key if user_config else None
-                
+
                 text_content = _tavily_search(**tool_args, api_key=api_key)
             else:
                 text_content = f"[工具执行失败] 未知内置工具 {tool_name}"
@@ -520,8 +513,9 @@ class MindAgent:
 
         # 内置搜索工具：按开关决定是否暴露给模型作为可选工具
         from toolmind.database.dao.web_search_config import WebSearchConfigDao
+
         user_config = await WebSearchConfigDao.get_config_by_user_id(self.user_id)
-        
+
         if user_config:
             global_web_search_enabled = user_config.enabled
         else:
@@ -529,7 +523,9 @@ class MindAgent:
             if getattr(app_settings, "tools", None) and getattr(
                 app_settings.tools, "tavily", None
             ):
-                global_web_search_enabled = app_settings.tools.tavily.get("enabled", True)
+                global_web_search_enabled = app_settings.tools.tavily.get(
+                    "enabled", True
+                )
 
         if enable_web_search and global_web_search_enabled:
             tools.append(convert_to_openai_tool(web_search))
