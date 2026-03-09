@@ -20,7 +20,6 @@ router = APIRouter(tags=["User"])
 
 @router.post('/user/register', response_model=UnifiedResponseModel)
 async def register(user_name: str = Body(description='用户名'),
-                   user_email: Optional[str] = Body(description='用户邮箱'),
                    user_password: str = Body(description='用户密码')):
 
     exist_user = UserDao.get_user_by_username(user_name)
@@ -34,10 +33,10 @@ async def register(user_name: str = Body(description='用户名'),
         admin = UserDao.get_user(AdminUser)
 
         if admin:
-            UserDao.add_user_and_default_role(user_name, user_email, user_password, user_avatar)
+            UserDao.add_user_and_default_role(user_name, user_password, user_avatar)
         else:
             user_id = AdminUser
-            UserDao.add_user_and_admin_role(user_id, user_name, user_email, user_password, user_avatar)
+            UserDao.add_user_and_admin_role(user_id, user_name, user_password, user_avatar)
     except Exception as e:
         logger.error(f'register user is appear error: {e}')
         raise HTTPException(status_code=500, detail=f'register user is appear error: {e}')

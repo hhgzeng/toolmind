@@ -1,4 +1,5 @@
-"""Client for connecting to multiple MCP servers and loading LangChain tools/resources.
+"""
+Client for connecting to multiple MCP servers and loading LangChain tools/resources.
 
 This module provides the MultiServerMCPClient class for managing connections to multiple
 MCP servers and loading tools, prompts, and resources from them.

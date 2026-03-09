@@ -1,6 +1,5 @@
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
-from toolmind.core.models.tool_call import ToolCallModel
 from toolmind.core.models.reason_model import ReasoningModel
 from toolmind.settings import app_settings
 from toolmind.database.dao.mind_config import MindModelConfigDao

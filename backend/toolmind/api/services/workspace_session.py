@@ -1,5 +1,3 @@
-from typing import List
-
 from toolmind.database.dao.workspace_session import WorkSpaceSession, WorkSpaceSessionDao
 from toolmind.database.models.workspace_session import WorkSpaceSessionCreate
 

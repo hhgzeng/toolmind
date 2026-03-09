@@ -23,10 +23,11 @@ from toolmind.database.models.workspace_session import (
 )
 from toolmind.schema.workspace import WorkSpaceAgents
 from toolmind.schema.usage_stats import UsageStatsAgentType
+from toolmind.schema.mind import MindTask, MindTaskStep
 from toolmind.core.agents.mcp_agent import MCPConfig
+from toolmind.core.models.manager import ModelManager
 from toolmind.services.web_search.action import tavily_search as web_search
 from toolmind.settings import app_settings
-from toolmind.core.models.manager import ModelManager
 from toolmind.utils.convert import mcp_tool_to_args_schema, convert_mcp_config
 from toolmind.utils.date_utils import get_beijing_time
 from toolmind.services.mcp.manager import MCPManager
@@ -39,7 +40,6 @@ from toolmind.prompts.mind import (
     FinalSynthesisPrompt,
     EvaluateResultPrompt,
 )
-from toolmind.schema.mind import MindTask, MindTaskStep
 
 
 class MindAgent:

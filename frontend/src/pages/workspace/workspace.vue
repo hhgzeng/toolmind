@@ -391,22 +391,7 @@ const goToHomepage = () => {
 
 onMounted(async () => {
   userStore.initUserState()
-  
-  if (userStore.isLoggedIn && userStore.userInfo && !userStore.userInfo.avatar) {
-    try {
-      const response = await getUserInfoAPI(userStore.userInfo.id)
-      if (response.data.status_code === 200 && response.data.data) {
-        const userData = response.data.data
-        userStore.updateUserInfo({
-          avatar: userData.user_avatar || userData.avatar || '/src/assets/user.svg',
-          description: userData.user_description || userData.description
-        })
-      }
-    } catch (error) {
-      console.error('初始化时获取用户信息失败:', error)
-    }
-  }
-  
+
   await fetchSessions()
   document.addEventListener('click', handleGlobalClick)
   window.addEventListener('workspace:new-session', handleNewSessionEvent)
@@ -524,7 +509,7 @@ onBeforeUnmount(() => {
             <div v-if="showUserMenu" class="user-popup-menu">
               <div class="popup-user-info">
                 <img
-                  :src="userStore.userInfo?.avatar || '/src/assets/user.svg'"
+                  src="/src/assets/user.svg"
                   alt="头像"
                   class="popup-avatar"
                   @error="handleAvatarError"
@@ -556,7 +541,7 @@ onBeforeUnmount(() => {
           <!-- 用户资料区域（可点击） -->
           <div class="user-profile" @click="toggleUserMenu">
             <img
-              :src="userStore.userInfo?.avatar || '/src/assets/user.svg'"
+            src="/src/assets/user.svg"
               alt="头像"
               class="profile-avatar"
               @error="handleAvatarError"

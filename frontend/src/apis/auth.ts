@@ -7,7 +7,6 @@ export interface LoginForm {
 
 export interface RegisterForm {
   user_name: string
-  user_email?: string
   user_password: string
 }
 
@@ -26,8 +25,6 @@ export interface LoginResponse {
   userInfo?: {
     id: string
     username: string
-    nickname?: string
-    avatar?: string
   }
 }
 

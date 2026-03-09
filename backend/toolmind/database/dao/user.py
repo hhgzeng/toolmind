@@ -25,9 +25,9 @@ class UserDao:
             return session.exec(statement).first()
 
     @classmethod
-    def update_user(cls, user_id: str, user_name: str, user_email: str, user_password: str) :
+    def update_user(cls, user_id: str, user_name: str, user_password: str) :
         with session_getter() as session:
-            session.add(UserTable(user_id=user_id, user_email=user_email,
+            session.add(UserTable(user_id=user_id,
                                   user_name=user_name, user_password=user_password))
             session.commit()
 
@@ -54,14 +54,14 @@ class UserDao:
             return session.exec(statement).first()
 
     @classmethod
-    def create_user(cls, user_id: str, user_name: str, user_email: str, user_password: str):
+    def create_user(cls, user_id: str, user_name: str, user_password: str):
         with session_getter() as session:
             session.add(UserTable(user_id=user_id, user_name=user_name,
-                                  user_email=user_email, user_password=user_password))
+                                  user_password=user_password))
             session.commit()
 
     @classmethod
-    def add_user_and_default_role(cls, user_name: str, user_email: str, user_password: str, user_avatar: str):
+    def add_user_and_default_role(cls, user_name: str, user_password: str, user_avatar: str):
         """
         新增用户，并添加默认角色
         用户的ID以此递增
@@ -69,17 +69,17 @@ class UserDao:
         user_number = len(cls.get_user_number()) + 1
         with session_getter() as session:
             session.add(UserTable(user_id=str(user_number), user_name=user_name, user_avatar=user_avatar,
-                                  user_email=user_email, user_password=user_password))
+                                  user_password=user_password))
             session.commit()
 
     @classmethod
     def add_user_and_admin_role(cls, user_id: str, user_name: str,
-                                user_email: str, user_password: str, user_avatar: str):
+                                user_password: str, user_avatar: str):
         """
         新增用户，并添加超级管理员角色
         """
         with session_getter() as session:
-            session.add(UserTable(user_email=user_email, user_id=user_id, user_avatar=user_avatar,
+            session.add(UserTable(user_id=user_id, user_avatar=user_avatar,
                                   user_name=user_name, user_password=user_password))
             session.commit()
 

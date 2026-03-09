@@ -10,7 +10,6 @@ const router = useRouter()
 
 const registerForm = reactive<RegisterForm>({
   user_name: '',
-  user_email: '',
   user_password: ''
 })
 
@@ -40,11 +39,6 @@ const validateForm = () => {
   
   if (registerForm.user_password !== confirmPassword.value) {
     ElMessage.warning('两次输入的密码不一致')
-    return false
-  }
-  
-  if (registerForm.user_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registerForm.user_email)) {
-    ElMessage.warning('请输入有效的邮箱地址')
     return false
   }
   

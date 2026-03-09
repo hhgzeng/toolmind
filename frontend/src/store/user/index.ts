@@ -4,9 +4,6 @@ import { ref } from 'vue'
 export interface UserInfo {
   id: string
   username: string
-  nickname?: string
-  avatar?: string
-  description?: string
 }
 
 export const useUserStore = defineStore('user', () => {

@@ -37,22 +37,6 @@ const handleLogin = async () => {
           id: userData.user_id,
           username: loginForm.username
         })
-        
-        // 立即获取完整的用户信息（包括头像等）
-        try {
-          const userInfoResponse = await getUserInfoAPI(userData.user_id)
-          const userInfoData = userInfoResponse.data
-          if (userInfoData.status_code === 200) {
-            const completeUserData = userInfoData.data || {}
-            // 更新用户信息，包含头像
-            userStore.updateUserInfo({
-              avatar: completeUserData.user_avatar || completeUserData.avatar,
-              description: completeUserData.user_description || completeUserData.description
-            })
-          }
-        } catch (error) {
-          console.error('获取用户详细信息失败:', error)
-        }
       }
       
       // 跳转到主页
