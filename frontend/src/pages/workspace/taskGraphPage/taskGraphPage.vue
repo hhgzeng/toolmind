@@ -1035,7 +1035,6 @@ const startTask = async () => {
             sessionId: sessionInfo.sessionId,
             title: sessionInfo.title,
             createTime: sessionInfo.createTime,
-            agent: sessionInfo.agent
           }
         })
       )

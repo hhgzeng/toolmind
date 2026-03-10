@@ -9,7 +9,7 @@ from langchain_core.messages.ai import UsageMetadata, add_usage
 from langchain_core.outputs import ChatGeneration, LLMResult
 
 from toolmind.api.services.usage_stats import UsageStatsService
-from toolmind.utils.contexts import get_user_id_context, get_agent_name_context
+from toolmind.utils.contexts import get_user_id_context
 
 
 class UsageMetadataCallbackHandler(BaseCallbackHandler):
@@ -60,11 +60,9 @@ class UsageMetadataCallbackHandler(BaseCallbackHandler):
 
     def record_token_usage(self, model_name, usage_metadata):
         user_id = get_user_id_context()
-        agent_name = get_agent_name_context()
 
         record = {
             'model': model_name,
-            "agent": agent_name,
             "user_id": user_id,
             'input_tokens': usage_metadata.get("input_tokens", 0),
             'output_tokens': usage_metadata.get("output_tokens", 0),

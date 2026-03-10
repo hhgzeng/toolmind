@@ -109,7 +109,6 @@ import {
 // 筛选条件
 const filters = ref<UsageStatsRequest>({
   model: '',
-  agent: '',
   delta_days: 10000
 })
 
@@ -300,8 +299,8 @@ const updateCallCountChart = (data: UsageCountByDate) => {
   const dates = Object.keys(data).sort()
   const seriesMap = new Map<string, number[]>()
   
-  // 根据筛选条件确定数据来源（agent或model）
-  const dataKey = filters.value.agent ? 'agent' : 'model'
+  // 仅按模型维度统计
+  const dataKey = 'model'
   
   // 收集所有系列数据
   dates.forEach(date => {
@@ -348,8 +347,8 @@ const updateTokenUsageChart = (data: UsageDataByDate) => {
   
   const dates = Object.keys(data).sort()
   
-  // 根据筛选条件确定数据来源（agent或model）
-  const dataKey = filters.value.agent ? 'agent' : 'model'
+  // 仅按模型维度统计
+  const dataKey = 'model'
   
   const inputTokens: number[] = []
   const outputTokens: number[] = []
@@ -398,7 +397,6 @@ const fetchUsageData = async () => {
   
   try {
     const params: UsageStatsRequest = {
-      agent: filters.value.agent || undefined,
       model: filters.value.model || undefined,
       delta_days: filters.value.delta_days
     }

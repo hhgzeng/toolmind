@@ -31,8 +31,7 @@ const createForm = ref<CreateLLMRequest>({
   model: '',
   api_key: '',
   base_url: '',
-  provider: '',
-  llm_type: 'LLM'
+  provider: ''
 })
 
 // 编辑相关
@@ -43,8 +42,7 @@ const editForm = ref<UpdateLLMRequest>({
   model: '',
   api_key: '',
   base_url: '',
-  provider: '',
-  llm_type: 'LLM'
+  provider: ''
 })
 
 // 获取模型列表
@@ -102,15 +100,14 @@ const openCreateDialog = () => {
     model: '',
     api_key: '',
     base_url: '',
-    provider: '',
-    llm_type: 'LLM'
+    provider: ''
   })
 }
 
 // 创建模型
 const handleCreate = async () => {
   // 检查必填字段
-  if (!createForm.value.model || !createForm.value.api_key || !createForm.value.base_url || !createForm.value.provider || !createForm.value.llm_type) {
+  if (!createForm.value.model || !createForm.value.api_key || !createForm.value.base_url || !createForm.value.provider) {
     ElMessage.error('请填写所有必填字段')
     return
   }
@@ -140,8 +137,7 @@ const openEditDialog = (model: LLMResponse) => {
     model: model.model || '',
     api_key: '', // 不回显原有 API 密钥
     base_url: model.base_url || '',
-    provider: model.provider || '',
-    llm_type: model.llm_type || 'LLM'
+    provider: model.provider || ''
   })
 }
 
@@ -283,7 +279,7 @@ onMounted(() => {
             <!-- 模型信息列 -->
             <div class="cell col-model">
               <div class="model-info-cell">
-                <div class="model-avatar" :class="row.llm_type ? row.llm_type.toLowerCase() : ''">
+                <div class="model-avatar">
                   <span v-if="row.provider === 'OpenAI'" class="provider-icon">O</span>
                   <span v-else-if="row.provider === 'Anthropic'" class="provider-icon">A</span>
                   <span v-else-if="row.provider === 'Google'" class="provider-icon">G</span>
@@ -702,19 +698,7 @@ onMounted(() => {
           color: white;
           font-weight: bold;
           font-size: 20px;
-          
-          &.llm {
-            background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
-          }
-          &.embedding {
-            background: linear-gradient(135deg, #67c23a 0%, #529b2e 100%);
-          }
-          &.rerank {
-            background: linear-gradient(135deg, #e6a23c 0%, #d9b55b 100%);
-          }
-          &:not(.llm):not(.embedding):not(.rerank) {
-             background: linear-gradient(135deg, #909399 0%, #606266 100%);
-          }
+          background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
         }
         
         .model-title {

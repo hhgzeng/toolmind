@@ -1,23 +1,22 @@
 from sqlmodel import Session, select, and_, update, desc, delete
 from toolmind.database.session import session_getter
 from toolmind.database.models.llm import LLMTable
-from datetime import datetime
 
 
 class LLMDao:
 
     @classmethod
-    async def _create_llm(cls, model: str, base_url: str, llm_type: str,
+    async def _create_llm(cls, model: str, base_url: str,
                           api_key: str, provider: str, user_id: str):
         llm = LLMTable(model=model, base_url=base_url,
                        api_key=api_key, provider=provider, user_id=user_id)
         return llm
 
     @classmethod
-    async def create_llm(cls, model: str, base_url: str, llm_type: str,
+    async def create_llm(cls, model: str, base_url: str,
                          api_key: str, provider: str, user_id: str):
         with session_getter() as session:
-            llm = await cls._create_llm(model=model, base_url=base_url, llm_type=llm_type,
+            llm = await cls._create_llm(model=model, base_url=base_url,
                                         api_key=api_key, provider=provider, user_id=user_id)
             session.add(llm)
             session.commit()
@@ -30,7 +29,7 @@ class LLMDao:
             session.commit()
 
     @classmethod
-    async def update_llm(cls, llm_id: str, base_url: str, llm_type: str,
+    async def update_llm(cls, llm_id: str, base_url: str,
                          model: str, api_key: str, provider: str):
         with session_getter() as session:
             update_values = {}
@@ -42,8 +41,6 @@ class LLMDao:
                 update_values['api_key'] = api_key
             if provider:
                 update_values['provider'] = provider
-            if llm_type:
-                update_values['llm_type'] = llm_type
 
             sql = update(LLMTable).where(LLMTable.llm_id == llm_id).values(**update_values)
             session.exec(sql)
@@ -76,13 +73,6 @@ class LLMDao:
             sql = select(LLMTable).where(LLMTable.llm_id == llm_id)
             llm = session.exec(sql).first()
             return llm
-
-    @classmethod
-    async def get_llm_by_type(cls, llm_type: str):
-        with session_getter() as session:
-            sql = select(LLMTable).where(LLMTable.llm_type == llm_type)
-            result = session.exec(sql).all()
-            return result
 
     @classmethod
     async def get_llm_id_from_name(cls, llm_name, user_id):

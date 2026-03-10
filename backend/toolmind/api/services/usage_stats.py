@@ -7,9 +7,8 @@ from toolmind.database.dao.usage_stats import UsageStatsDao, UsageStats
 class UsageStatsService:
 
     @classmethod
-    async def create_usage_stats(cls, agent, model, user_id, input_tokens=0, output_tokens=0):
+    async def create_usage_stats(cls, model, user_id, input_tokens=0, output_tokens=0):
         usage_stats = UsageStats(
-            agent=agent,
             model=model,
             user_id=user_id,
             input_tokens=input_tokens,
@@ -19,9 +18,8 @@ class UsageStatsService:
         await UsageStatsDao.create_usage_stats(usage_stats)
 
     @classmethod
-    def sync_create_usage_stats(cls, agent, model, user_id, input_tokens=0, output_tokens=0):
+    def sync_create_usage_stats(cls, model, user_id, input_tokens=0, output_tokens=0):
         usage_stats = UsageStats(
-            agent=agent,
             model=model,
             user_id=user_id,
             input_tokens=input_tokens,
@@ -58,20 +56,6 @@ class UsageStatsService:
         for item in results:
             # 提取日期字符串（仅保留年-月-日，作为第一层key）
             date_key = item.create_time.date().isoformat() if item.create_time else "未知日期"
-
-            # 处理agent相关统计
-            agent_key = item.agent or "未指定agent"
-            # 初始化agent的token数据
-            if not date_usage_dict[date_key]["agent"][agent_key]:
-                date_usage_dict[date_key]["agent"][agent_key] = {
-                    "input_tokens": 0,
-                    "output_tokens": 0,
-                    "total_tokens": 0
-                }
-            # 累加agent的token数量
-            date_usage_dict[date_key]["agent"][agent_key]["input_tokens"] += item.input_tokens
-            date_usage_dict[date_key]["agent"][agent_key]["output_tokens"] += item.output_tokens
-            date_usage_dict[date_key]["agent"][agent_key]["total_tokens"] += item.input_tokens + item.output_tokens
 
             # 处理model相关统计
             model_key = item.model or "未指定model"
@@ -113,10 +97,6 @@ class UsageStatsService:
         for item in results:
             # 提取日期字符串（仅保留年-月-日，作为第一层key）
             date_key = item.create_time.date().isoformat() if item.create_time else "未知日期"
-
-            # 处理agent相关统计 - 统计调用次数
-            agent_key = item.agent or "未指定agent"
-            date_usage_dict[date_key]["agent"][agent_key] += 1
 
             # 处理model相关统计 - 统计调用次数
             model_key = item.model or "未指定model"

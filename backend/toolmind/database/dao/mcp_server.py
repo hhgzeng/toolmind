@@ -11,7 +11,6 @@ class MCPServerDao:
         cls,
         server_name: str,
         user_id: str,
-        user_name: str,
         mcp_as_tool_name: str,
         description: str,
         url: str,
@@ -20,14 +19,11 @@ class MCPServerDao:
         tools: list,
         params: dict,
         is_active: bool,
-        logo_url: str,
     ):
         with session_getter() as session:
             mcp_server = MCPServerTable(
                 server_name=server_name,
                 user_id=user_id,
-                logo_url=logo_url,
-                user_name=user_name,
                 url=url,
                 type=type,
                 config=config,
@@ -70,7 +66,6 @@ class MCPServerDao:
         config: dict,
         tools: list,
         params: dict = None,
-        logo_url: str = None,
         is_active: bool = None,
     ):
         with session_getter() as session:
@@ -88,8 +83,6 @@ class MCPServerDao:
                 update_values["tools"] = tools
             if params:
                 update_values["params"] = params
-            if logo_url:
-                update_values["logo_url"] = logo_url
             if mcp_as_tool_name is not None:
                 update_values["mcp_as_tool_name"] = mcp_as_tool_name
             if description is not None:

@@ -5,13 +5,7 @@ __pycache__/
 .vscode/
 .cursor/
 
-chat.html
-
-.env
-
-chroma_db/
-memory_db/
-vector_db/
+.envrc
 
 node_modules/
 

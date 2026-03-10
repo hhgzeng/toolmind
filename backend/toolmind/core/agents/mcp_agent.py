@@ -8,7 +8,6 @@ from langgraph.prebuilt.tool_node import ToolCallRequest
 from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage
 from langchain.agents.middleware import AgentState, wrap_tool_call, before_agent
 
-from toolmind.api.services.mcp_user_config import MCPUserConfigService
 from toolmind.core.models.manager import ModelManager
 from toolmind.prompts.chat import CALL_END_PROMPT
 from toolmind.services.mcp.manager import MCPManager
@@ -76,10 +75,6 @@ class MCPAgent:
                     "messages": f"正在调用工具 {request.tool_call["name"]}..."
                 }
             )
-
-            # 针对鉴权的MCP Server需要用户的单独配置，例如飞书、邮箱
-            mcp_config = await MCPUserConfigService.get_mcp_user_config(self.user_id, self.mcp_config.mcp_server_id)
-            request.tool_call["args"].update(mcp_config)
 
             tool_result = await handler(request)
 

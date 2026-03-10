@@ -1,33 +1,25 @@
 """
-Client for connecting to multiple MCP servers and loading LangChain tools/resources.
+Client for connecting to multiple MCP servers and loading LangChain tools.
 
 This module provides the MultiServerMCPClient class for managing connections to multiple
-MCP servers and loading tools, prompts, and resources from them.
+MCP servers and loading tools from them.
 """
 
 import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from types import TracebackType
-from typing import Any
 
-from langchain_core.documents.base import Blob
-from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.tools import BaseTool
 from mcp import ClientSession
 
-from toolmind.services.mcp.load_mcp.prompts import load_mcp_prompt
-from toolmind.services.mcp.load_mcp.resources import load_mcp_resources
 from toolmind.services.mcp.sessions import (
     Connection,
     McpHttpClientFactory,
     SSEConnection,
-    StdioConnection,
-    StreamableHttpConnection,
-    WebsocketConnection,
     create_session,
 )
-from toolmind.services.mcp.load_mcp.tools import load_mcp_tools
+from toolmind.services.mcp.tools import load_mcp_tools
 
 ASYNC_CONTEXT_MANAGER_ERROR = (
     "context manager (e.g., async with MultiServerMCPClient(...)). "
@@ -43,7 +35,7 @@ ASYNC_CONTEXT_MANAGER_ERROR = (
 class MultiServerMCPClient:
     """Client for connecting to multiple MCP servers.
 
-    Loads LangChain-compatible tools, prompts and resources from MCP servers.
+    Loads LangChain-compatible tools from MCP servers.
     """
 
     def __init__(self, connections: dict[str, Connection] | None = None) -> None:
@@ -56,21 +48,13 @@ class MultiServerMCPClient:
         Example: basic usage (starting a new session on each tool call)
 
         ```python
-        from mars_agent.core.mcp.client import MultiServerMCPClient
+        from toolmind.services.mcp.multi_client import MultiServerMCPClient
 
         client = MultiServerMCPClient(
             {
-                "math": {
-                    "command": "python",
-                    # Make sure to update to the full absolute path to your
-                    # math_server.py file
-                    "args": ["/path/to/math_server.py"],
-                    "transport": "stdio",
-                },
-                "weather": {
-                    # Make sure you start your weather server on port 8000
-                    "url": "http://localhost:8000/mcp",
-                    "transport": "streamable_http",
+                "my-mcp-server": {
+                    "url": "http://localhost:3000",
+                    "transport": "sse",
                 }
             }
         )
@@ -80,8 +64,8 @@ class MultiServerMCPClient:
         Example: explicitly starting a session
 
         ```python
-        from mars_agent.core.mcp.client import MultiServerMCPClient
-        from mars_agent.core.mcp.tools import load_mcp_tools
+        from toolmind.services.mcp.multi_client import MultiServerMCPClient
+        from toolmind.services.mcp.tools import load_mcp_tools
 
         client = MultiServerMCPClient({...})
         async with client.session("math") as session:
@@ -159,37 +143,6 @@ class MultiServerMCPClient:
             all_tools.extend(tools)
         return all_tools
 
-    async def get_prompt(
-        self,
-        server_name: str,
-        prompt_name: str,
-        *,
-        arguments: dict[str, Any] | None = None,
-    ) -> list[HumanMessage | AIMessage]:
-        """Get a prompt from a given MCP server."""
-        async with self.session(server_name) as session:
-            return await load_mcp_prompt(session, prompt_name, arguments=arguments)
-
-    async def get_resources(
-        self,
-        server_name: str,
-        *,
-        uris: str | list[str] | None = None,
-    ) -> list[Blob]:
-        """Get resources from a given MCP server.
-
-        Args:
-            server_name: Name of the server to get resources from
-            uris: Optional resource URI or list of URIs to load. If not provided,
-                all resources will be loaded.
-
-        Returns:
-            A list of LangChain Blobs
-
-        """
-        async with self.session(server_name) as session:
-            return await load_mcp_resources(session, uris=uris)
-
     async def __aenter__(self) -> "MultiServerMCPClient":
         """Async context manager entry point.
 
@@ -221,7 +174,4 @@ __all__ = [
     "McpHttpClientFactory",
     "MultiServerMCPClient",
     "SSEConnection",
-    "StdioConnection",
-    "StreamableHttpConnection",
-    "WebsocketConnection",
 ]

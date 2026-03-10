@@ -16,7 +16,7 @@ export const startMindTaskAPI = async (
   onEvaluating?: () => void,  // 处理开始评判事件
   onError?: (error: any) => void,
   onClose?: () => void,
-  onSessionStarted?: (session: { sessionId: string; title: string; createTime?: string; agent?: string }) => void,
+  onSessionStarted?: (session: { sessionId: string; title: string; createTime?: string }) => void,
   onSessionUpdated?: (session: { sessionId: string; title: string }) => void,
   onSessionTitleChunk?: (session: { sessionId: string; title: string }) => void,
   externalAbortController?: AbortController
@@ -62,7 +62,6 @@ export const startMindTaskAPI = async (
                 sessionId: d.session_id,
                 title: d.title || '新对话',
                 createTime: d.create_time,
-                agent: d.agent
               })
               return
             } else if (parsedData.event === 'session_title_chunk' && parsedData.data?.session_id) {

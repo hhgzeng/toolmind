@@ -101,8 +101,8 @@ const fetchServers = async () => {
         if (aIsOfficial && !bIsOfficial) return -1
         if (!aIsOfficial && bIsOfficial) return 1
         
-        // 如果都是官方或都不是官方，按创建时间排序（新的在前）
-        return new Date(b.create_time).getTime() - new Date(a.create_time).getTime()
+        // 如果都是官方或都不是官方，保持原有顺序
+        return 0
       })
     } else {
       ElMessage.error(response?.data?.status_message || '获取MCP服务器列表失败')

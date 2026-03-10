@@ -17,8 +17,7 @@ async def create_llm(*,
     try:
         await LLMService.create_llm(model=llm_request.model, api_key=llm_request.api_key,
                                     base_url=llm_request.base_url,
-                                    user_id=login_user.user_id, provider=llm_request.provider,
-                                    llm_type=llm_request.llm_type)
+                                    user_id=login_user.user_id, provider=llm_request.provider)
         return resp_200()
     except Exception as err:
         logger.error(err)
@@ -49,7 +48,7 @@ async def update_llm(*,
 
         await LLMService.update_llm(model=llm_request.model, api_key=llm_request.api_key,
                                     llm_id=llm_request.llm_id, provider=llm_request.provider,
-                                    base_url=llm_request.base_url, llm_type=llm_request.llm_type)
+                                    base_url=llm_request.base_url)
 
         return resp_200()
     except Exception as err:

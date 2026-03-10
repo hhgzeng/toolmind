@@ -5,12 +5,9 @@ export interface LLMResponse {
   llm_id: string
   model: string
   provider: string
-  llm_type: string
   base_url: string
   api_key: string
   user_id: string
-  update_time: string
-  create_time: string
 }
 
 export interface CreateLLMRequest {
@@ -18,7 +15,6 @@ export interface CreateLLMRequest {
   api_key: string
   base_url: string
   provider: string
-  llm_type: string
 }
 
 export interface UpdateLLMRequest {
@@ -27,7 +23,6 @@ export interface UpdateLLMRequest {
   api_key?: string
   base_url?: string
   provider?: string
-  llm_type?: string
 }
 
 export interface MindModelConfig {

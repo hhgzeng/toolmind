@@ -70,7 +70,6 @@ const handleNewSessionEvent = (event: Event) => {
     title: detail.title || '新对话',
     createTime: detail.createTime || new Date().toISOString(),
     updateTime: detail.updateTime || detail.update_time || detail.createTime || new Date().toISOString(),
-    agent: detail.agent || 'mind',
     contexts: detail.contexts || [],
     isPinned: detail.is_pinned ?? detail.isPinned ?? false,
   }
@@ -190,7 +189,6 @@ const fetchSessions = async () => {
         title: session.title || '未命名会话',
         createTime: session.create_time || session.created_at || new Date().toISOString(),
         updateTime: session.update_time || session.updateTime || session.create_time || session.created_at || new Date().toISOString(),
-        agent: session.agent || 'mind',
         contexts: session.contexts || [],
         isPinned: session.is_pinned ?? session.isPinned ?? false
       }))
@@ -344,7 +342,7 @@ const selectSession = (sessionId: string) => {
     console.error('未找到会话:', sessionId)
     return
   }
-  console.log('选择会话:', sessionId, '类型:', session.agent)
+  console.log('选择会话:', sessionId)
   router.push({
     name: 'taskGraphPage',
     query: { session_id: sessionId }

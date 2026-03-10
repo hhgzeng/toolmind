@@ -13,7 +13,6 @@ from langchain_core.tools.base import ToolException
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
 from toolmind.api.services.mcp_server import MCPService
-from toolmind.api.services.mcp_user_config import MCPUserConfigService
 from toolmind.api.services.usage_stats import UsageStatsService
 from toolmind.api.services.workspace_session import WorkSpaceSessionService
 from toolmind.core.callbacks import usage_metadata_callback
@@ -22,7 +21,6 @@ from toolmind.database.models.workspace_session import (
     WorkSpaceSessionContext,
 )
 from toolmind.schema.workspace import WorkSpaceAgents
-from toolmind.schema.usage_stats import UsageStatsAgentType
 from toolmind.schema.mind import MindTask, MindTaskStep
 from toolmind.core.agents.mcp_agent import MCPConfig
 from toolmind.core.models.manager import ModelManager
@@ -99,7 +97,6 @@ class MindAgent:
                 title=title,
                 user_id=self.user_id,
                 contexts=[contexts.model_dump()],
-                agent=WorkSpaceAgents.MindAgent.value,
             )
         )
 
@@ -226,7 +223,6 @@ class MindAgent:
                 title="新对话",
                 user_id=self.user_id,
                 contexts=[],
-                agent=WorkSpaceAgents.MindAgent.value,
             )
         )
         # 将新会话的基础信息通过 SSE 推送给前端，便于侧边栏立即展示
@@ -235,7 +231,6 @@ class MindAgent:
             "data": {
                 "session_id": workspace_session.session_id,
                 "title": workspace_session.title,
-                "agent": workspace_session.agent,
                 "create_time": (
                     workspace_session.create_time.isoformat()
                     if workspace_session.create_time
@@ -481,12 +476,6 @@ class MindAgent:
             return None
 
         if tool := find_mcp_tool(tool_name):
-            server_id = self.tool_mcp_server_dict.get(tool_name)
-            if server_id:
-                mcp_config = await MCPUserConfigService.get_mcp_user_config(
-                    self.user_id, server_id
-                )
-                tool_args.update(mcp_config)
             try:
                 text_content, no_text_content = await tool.coroutine(**tool_args)
             except ToolException as e:
@@ -587,7 +576,6 @@ class MindAgent:
             await UsageStatsService.create_usage_stats(
                 model=model,
                 user_id=self.user_id,
-                agent=UsageStatsAgentType.mind_agent,
                 input_tokens=response.usage_metadata.get("input_tokens"),
                 output_tokens=response.usage_metadata.get("output_tokens"),
             )

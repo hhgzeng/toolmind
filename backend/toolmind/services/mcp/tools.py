@@ -61,17 +61,7 @@ def _convert_call_tool_result(
 
 
 async def _list_all_tools(session: ClientSession) -> list[MCPTool]:
-    """List all available tools from an MCP session with pagination support.
-
-    Args:
-        session: The MCP client session.
-
-    Returns:
-        A list of all available MCP tools.
-
-    Raises:
-        RuntimeError: If maximum iterations exceeded while listing tools.
-    """
+    """List all available tools from an MCP session with pagination support."""
     current_cursor: str | None = None
     all_tools: list[MCPTool] = []
 
@@ -106,16 +96,6 @@ def convert_mcp_tool_to_langchain_tool(
     """Convert an MCP tool to a LangChain tool.
 
     NOTE: this tool can be executed only in a context of an active MCP client session.
-
-    Args:
-        session: MCP client session
-        tool: MCP tool to convert
-        connection: Optional connection config to use to create a new session
-                    if a `session` is not provided
-
-    Returns:
-        a LangChain tool
-
     """
     if session is None and connection is None:
         msg = "Either a session or a connection config must be provided"
@@ -151,19 +131,7 @@ async def load_mcp_tools(
     *,
     connection: Connection | None = None,
 ) -> list[BaseTool]:
-    """Load all available MCP tools and convert them to LangChain tools.
-
-    Args:
-        session: The MCP client session. If None, connection must be provided.
-        connection: Connection config to create a new session if session is None.
-
-    Returns:
-        List of LangChain tools. Tool annotations are returned as part
-        of the tool metadata object.
-
-    Raises:
-        ValueError: If neither session nor connection is provided.
-    """
+    """Load all available MCP tools and convert them to LangChain tools."""
     if session is None and connection is None:
         msg = "Either a session or a connection config must be provided"
         raise ValueError(msg)
@@ -183,14 +151,7 @@ async def load_mcp_tools(
 
 
 def _get_injected_args(tool: BaseTool) -> list[str]:
-    """Get the list of injected argument names from a LangChain tool.
-
-    Args:
-        tool: The LangChain tool to inspect.
-
-    Returns:
-        A list of injected argument names.
-    """
+    """Get the list of injected argument names from a LangChain tool."""
 
     def _is_injected_arg_type(type_: type) -> bool:
         return any(
@@ -207,18 +168,7 @@ def _get_injected_args(tool: BaseTool) -> list[str]:
 
 
 def to_fastmcp(tool: BaseTool) -> FastMCPTool:
-    """Convert a LangChain tool to a FastMCP tool.
-
-    Args:
-        tool: The LangChain tool to convert.
-
-    Returns:
-        A FastMCP tool equivalent of the LangChain tool.
-
-    Raises:
-        TypeError: If the tool's args_schema is not a BaseModel subclass.
-        NotImplementedError: If the tool has injected arguments.
-    """
+    """Convert a LangChain tool to a FastMCP tool."""
     if not issubclass(tool.args_schema, BaseModel):
         msg = (
             "Tool args_schema must be a subclass of pydantic.BaseModel. "
@@ -236,8 +186,6 @@ def to_fastmcp(tool: BaseTool) -> FastMCPTool:
     )
     fn_metadata = FuncMetadata(arg_model=arg_model)
 
-    # We'll use an Any type for the function return type.
-    # We're providing the parameters separately
     async def fn(**arguments: dict[str, Any]) -> Any:  # noqa: ANN401
         return await tool.ainvoke(arguments)
 
@@ -254,3 +202,7 @@ def to_fastmcp(tool: BaseTool) -> FastMCPTool:
         fn_metadata=fn_metadata,
         is_async=True,
     )
+
+
+__all__ = ["convert_mcp_tool_to_langchain_tool", "load_mcp_tools", "to_fastmcp"]
+

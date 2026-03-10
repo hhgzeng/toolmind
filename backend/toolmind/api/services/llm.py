@@ -10,10 +10,10 @@ class LLMService:
 
     @classmethod
     async def create_llm(cls, user_id: str, api_key: str, model: str,
-                         base_url: str, provider: str, llm_type: str = 'LLM'):
+                         base_url: str, provider: str):
         try:
             await LLMDao.create_llm(base_url=base_url, api_key=api_key,
-                                    model=model, provider=provider, user_id=user_id, llm_type='LLM')
+                                    model=model, provider=provider, user_id=user_id)
         except Exception as err:
             raise ValueError(f'Create LLM Appear Err: {err}')
 
@@ -40,9 +40,9 @@ class LLMService:
             raise ValueError(f'Get User Id By LLM Appear Err: {err}')
 
     @classmethod
-    async def update_llm(cls, llm_id: str, model: str, base_url: str, api_key: str, provider: str, llm_type: str = 'LLM'):
+    async def update_llm(cls, llm_id: str, model: str, base_url: str, api_key: str, provider: str):
         try:
-            await LLMDao.update_llm(llm_id=llm_id, model=model, llm_type='LLM',
+            await LLMDao.update_llm(llm_id=llm_id, model=model,
                                     base_url=base_url, api_key=api_key, provider=provider)
         except Exception as err:
             raise ValueError(f'Update LLM Appear Err: {err}')
@@ -108,7 +108,7 @@ class LLMService:
     @classmethod
     async def get_llm_type(cls):
         try:
-            llms = await LLMDao.get_llm_by_type(llm_type='LLM')
+            llms = await LLMDao.get_all_llm()
             return [llm.to_dict() for llm in llms]
         except Exception as err:
             raise ValueError(f'Get LLM Type Appear Err: {err}')

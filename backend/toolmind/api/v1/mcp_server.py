@@ -41,7 +41,6 @@ async def create_mcp_server(
                 tools_name_str.append(tool["name"])
 
         is_active = True
-        logo_url = server_details.get("logo_url", "")
 
         structured_agent = StructuredResponseAgent(
             MCPResponseFormat, user_id=login_user.user_id
@@ -53,14 +52,12 @@ async def create_mcp_server(
         await MCPService.create_mcp_server(
             server_name,
             login_user.user_id,
-            login_user.user_name,
             url_str,
             type_str,
             config,
             tools_name_str,
             tools_params.get(server_name, []),
             is_active,
-            logo_url,
             structured_response.mcp_as_tool_name,
             structured_response.description,
         )
@@ -158,8 +155,6 @@ async def update_mcp_server(
                 McpAsToolPrompt.format(tools_info=json.dumps(tools_params, indent=4))
             )
 
-            logo_url = server_details.get("logo_url", mcp_server.get("logo_url", ""))
-
             await MCPService.update_mcp_server(
                 mcp_server_id=server_id,
                 server_name=server_name,
@@ -170,7 +165,6 @@ async def update_mcp_server(
                 config=config,
                 tools=tools_str,
                 params=tools_params.get(server_name, []),
-                logo_url=logo_url,
                 is_active=is_active,
             )
         else:

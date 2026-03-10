@@ -170,7 +170,7 @@ onMounted(() => {
             @change="saveMindConfig"
           >
             <el-option
-              v-for="m in models.filter(m => m.llm_type === 'LLM' || m.llm_type === 'Rerank')"
+              v-for="m in models"
               :key="m.llm_id"
               :label="m.model + ' (' + m.provider + ')'"
               :value="m.llm_id"

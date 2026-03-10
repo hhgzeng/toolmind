@@ -28,7 +28,6 @@ class UsageStatsDao:
         async with async_session_getter() as session:
             statement = select(UsageStats).where(
                 UsageStats.user_id == user_id,
-                UsageStats.agent == agent
             )
 
             result = await session.exec(statement)
@@ -41,7 +40,6 @@ class UsageStatsDao:
 
         async with async_session_getter() as session:
             statement = select(UsageStats).where(
-                UsageStats.agent == agent,
                 UsageStats.user_id == user_id,
                 UsageStats.create_time >= one_month_ago,
                 UsageStats.create_time <= current_time
@@ -57,7 +55,6 @@ class UsageStatsDao:
 
         async with async_session_getter() as session:
             statement = select(UsageStats).where(
-                UsageStats.agent == agent,
                 UsageStats.user_id == user_id,
                 UsageStats.create_time >= one_week_ago,
                 UsageStats.create_time <= current_time
@@ -125,9 +122,7 @@ class UsageStatsDao:
             UsageStats.create_time >= ago_time
         ]
 
-        # 追加条件（根据agent和model是否存在）
-        if agent is not None:
-            conditions.append(UsageStats.agent == agent)
+        # 追加条件（根据 model 是否存在）
         if model is not None:
             conditions.append(UsageStats.model == model)
 

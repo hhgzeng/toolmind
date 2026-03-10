@@ -29,14 +29,13 @@ async def register(user_name: str = Body(description='用户名'),
         raise HTTPException(status_code=500, detail='用户名长度不应该超过20')
     try:
         user_password = UserService.encrypt_sha256_password(user_password)
-        user_avatar = UserService.get_random_user_avatar()
         admin = UserDao.get_user(AdminUser)
 
         if admin:
-            UserDao.add_user_and_default_role(user_name, user_password, user_avatar)
+            UserDao.add_user_and_default_role(user_name, user_password)
         else:
             user_id = AdminUser
-            UserDao.add_user_and_admin_role(user_id, user_name, user_password, user_avatar)
+            UserDao.add_user_and_admin_role(user_id, user_name, user_password)
     except Exception as e:
         logger.error(f'register user is appear error: {e}')
         raise HTTPException(status_code=500, detail=f'register user is appear error: {e}')

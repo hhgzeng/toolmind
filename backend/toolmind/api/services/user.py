@@ -79,14 +79,6 @@ class UserService:
         return user
 
     @classmethod
-    def get_random_user_avatar(cls):
-        """
-        返回一个默认的用户头像地址。
-        目前不再使用默认头像文件，统一返回空字符串。
-        """
-        return ""
-
-    @classmethod
     def get_user_info_by_id(cls, user_id):
         user_info = UserDao.get_user(user_id)
         return user_info.to_dict()

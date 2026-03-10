@@ -10,7 +10,6 @@ from toolmind.database.models.base import SQLModelSerializable
 
 class WorkSpaceSessionBase(SQLModelSerializable):
     title: str = Field(..., description="工作台会话的标题")
-    agent: str = Field(..., description="工作台中选用的智能体")
     user_id: str = Field(..., description="工作台会话对应的User ID")
     contexts: List[dict] = Field([], sa_column=Column(JSON), description="JSON, 含 tasks、questions、answers 等字段的结构化对话上下文")
     is_pinned: bool = Field(
@@ -52,7 +51,6 @@ class WorkSpaceSession(WorkSpaceSessionBase, table=True):
 
 class WorkSpaceSessionCreate(BaseModel):
     title: str
-    agent: str
     user_id: str
     session_id: str = None  # 允许传入session_id，如果为None则自动生成
     contexts: list[dict] = []

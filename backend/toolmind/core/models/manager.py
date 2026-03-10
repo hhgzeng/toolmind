@@ -118,14 +118,6 @@ class ModelManager:
         )
 
     @classmethod
-    def get_qwen_vl_model(cls) -> BaseChatModel:
-        return ChatOpenAI(
-            model=app_settings.multi_models.qwen_vl.model_name,
-            api_key=app_settings.multi_models.qwen_vl.api_key,
-            base_url=app_settings.multi_models.qwen_vl.base_url,
-        )
-
-    @classmethod
     def get_user_model(cls, **kwargs) -> BaseChatModel:
         return ChatOpenAI(
             stream_usage=True,

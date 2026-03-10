@@ -1,18 +1,5 @@
-from sqlmodel import SQLModel, create_engine
+from sqlmodel import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine
-from toolmind.database.models.agent import AgentTable
-from toolmind.database.models.history import HistoryTable
-from toolmind.database.models.user import SystemUser
-from toolmind.database.models.tool import ToolTable
-from toolmind.database.models.dialog import DialogTable
-from toolmind.database.models.mcp_server import MCPServerTable
-from toolmind.database.models.mcp_user_config import MCPUserConfigTable
-from toolmind.database.models.user_role import UserRole
-from toolmind.database.models.llm import LLMTable
-from toolmind.database.models.role import Role
-from toolmind.database.models.workspace_session import WorkSpaceSession
-from toolmind.database.models.usage_stats import UsageStats
-from toolmind.database.models.mind_config import MindModelConfigTable
 
 from toolmind.settings import app_settings
 

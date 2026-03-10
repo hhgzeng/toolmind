@@ -7,8 +7,6 @@ from openai.types.chat import ChatCompletionMessageToolCall
 from pydantic import create_model
 from toolmind.schema.mcp import (
     MCPSSEConfig,
-    MCPWebsocketConfig,
-    MCPStreamableHttpConfig,
 )
 
 
@@ -33,31 +31,18 @@ def convert_mcp_config(servers_info: dict | list):
 
     def convert_single_mcp(server_info):
         if isinstance(server_info, dict):
-            # 'remote' or 'sse'
-            if server_info.get("type") in ["sse", "remote"]:
+            # 当前产品只支持 SSE（前端也只暴露 sse 配置）。
+            # 兼容历史字段：remote 视为 sse。
+            type_ = server_info.get("type")
+            if type_ in ["sse", "remote", None, ""]:
                 return MCPSSEConfig(
                     url=server_info.get("url", ""),
                     server_name=server_info.get("server_name"),
                 )
-            elif server_info.get("type") == "websocket":
-                return MCPWebsocketConfig(
-                    url=server_info.get("url", ""),
-                    server_name=server_info.get("server_name"),
-                )
-            elif server_info.get("type") == "streamable_http":
-                return MCPStreamableHttpConfig(
-                    url=server_info.get("url", ""),
-                    server_name=server_info.get("server_name"),
-                )
-            elif server_info.get("type") in ["stdio", "studio"]:
-                from toolmind.schema.mcp import MCPStdioConfig
 
-                return MCPStdioConfig(
-                    command=server_info.get("command", ""),
-                    args=server_info.get("args", []),
-                    env=server_info.get("env", None),
-                    server_name=server_info.get("server_name"),
-                )
+            raise ValueError(
+                f"Unsupported MCP server type '{type_}'. Only 'sse' is supported."
+            )
 
     if isinstance(servers_info, dict):
         return convert_single_mcp(servers_info)
