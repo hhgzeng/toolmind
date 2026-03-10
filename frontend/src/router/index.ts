@@ -9,8 +9,8 @@ import Model from '../pages/model'
 import MindConfig from '../pages/mind-config'
 import WebSearchPage from '../pages/web-search'
 import GeneralSettings from '../pages/general-settings'
-import Workspace from '../pages/workspace/workspace.vue'
-import WorkspaceDefaultPage from '../pages/workspace/defaultPage/defaultPage.vue'
+import Session from '../pages/workspace/workspace.vue'
+import SessionDefaultPage from '../pages/workspace/defaultPage/defaultPage.vue'
 import TaskGraphPage from '../pages/workspace/taskGraphPage/taskGraphPage.vue'
 import Dashboard from '../pages/dashboard'
 import type { RouteRecordRaw } from 'vue-router'
@@ -33,17 +33,17 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/workspace',
-    name: 'workspace',
-    component: Workspace,
+    path: '/session',
+    name: 'session',
+    component: Session,
     meta: {
       requiresAuth: true
     },
     children: [
       {
         path: '',
-        name: 'workspaceDefaultPage',
-        component: WorkspaceDefaultPage,
+        name: 'sessionDefaultPage',
+        component: SessionDefaultPage,
       },
       {
         path: 'taskGraph',
@@ -54,7 +54,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
-    redirect: '/workspace',
+    redirect: '/session',
     name: 'index',
     component: Index,
     meta: {

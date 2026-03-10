@@ -9,7 +9,7 @@ from toolmind.schema.usage_stats import UsageStatsAgentType
 from toolmind.services.mind.agent import MindAgent
 from toolmind.utils.contexts import set_user_id_context, set_agent_name_context
 
-router = APIRouter(prefix="/workspace/mind", tags=["Mind"])
+router = APIRouter(prefix="/session/mind", tags=["Mind"])
 
 
 @router.post("/task_start", summary="Mind 开始执行任务")

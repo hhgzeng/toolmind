@@ -7,7 +7,7 @@ import 'md-editor-v3/lib/style.css'
 import { 
   startMindTaskAPI 
 } from '../../../apis/mind'
-import { getWorkspaceSessionInfoAPI } from '../../../apis/workspace'
+import { getSessionInfoAPI } from '../../../apis/session'
 import { taskSessionStore } from '../../../store/taskSessionStore'
 import type { TaskSessionState } from '../../../store/taskSessionStore'
 
@@ -393,7 +393,7 @@ onMounted(async () => {
     console.log('✅ 联网搜索:', originalParams.value.web_search)
     
     // 清理 URL 参数（保留功能，隐藏参数）
-    router.replace({ path: '/workspace/taskGraph' })
+    router.replace({ path: '/session/taskGraph' })
     
     // 直接开始执行任务（AI 自行分解）
     if (originalParams.value.query) {
@@ -712,7 +712,7 @@ watch(
 const loadSessionInfo = async (sessionId: string) => {
   try {
     isHistoryMode.value = true
-    const response = await getWorkspaceSessionInfoAPI(sessionId)
+    const response = await getSessionInfoAPI(sessionId)
     
     console.log('📦 会话信息响应:', response.data)
     
@@ -1030,7 +1030,7 @@ const startTask = async () => {
         query: { session_id: sessionInfo.sessionId }
       })
       window.dispatchEvent(
-        new CustomEvent('workspace:new-session', {
+        new CustomEvent('session:new-session', {
           detail: {
             sessionId: sessionInfo.sessionId,
             title: sessionInfo.title,
@@ -1046,7 +1046,7 @@ const startTask = async () => {
     },
     onSessionTitleChunk: (sessionInfo) => {
       window.dispatchEvent(
-        new CustomEvent('workspace:session-updated', {
+        new CustomEvent('session:session-updated', {
           detail: {
             sessionId: sessionInfo.sessionId,
             title: sessionInfo.title
@@ -1056,7 +1056,7 @@ const startTask = async () => {
     },
     onSessionUpdated: (sessionInfo) => {
       window.dispatchEvent(
-        new CustomEvent('workspace:session-updated', {
+        new CustomEvent('session:session-updated', {
           detail: {
             sessionId: sessionInfo.sessionId,
             title: sessionInfo.title

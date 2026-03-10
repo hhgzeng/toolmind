@@ -5,10 +5,10 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '../../store/user'
 import { logoutAPI, getUserInfoAPI } from '../../apis/auth'
 import { 
-  getWorkspaceSessionsAPI, 
-  deleteWorkspaceSessionAPI,
-  updateWorkspaceSessionAPI
-} from '../../apis/workspace'
+  getSessionsAPI,
+  deleteSessionAPI,
+  updateSessionAPI
+} from '../../apis/session'
 
 const router = useRouter()
 const route = useRoute()
@@ -182,7 +182,7 @@ const groupedSessions = computed(() => {
 const fetchSessions = async () => {
   try {
     loading.value = true
-    const response = await getWorkspaceSessionsAPI()
+    const response = await getSessionsAPI()
     if (response.data.status_code === 200) {
       sessions.value = response.data.data.map((session: any) => ({
         sessionId: session.session_id || session.id,
@@ -223,13 +223,13 @@ const executeDelete = async () => {
   const sessionId = sessionToDelete.value
   
   try {
-    const response = await deleteWorkspaceSessionAPI(sessionId)
+    const response = await deleteSessionAPI(sessionId)
     if (response.data.status_code === 200) {
       await fetchSessions()
       
       if (selectedSession.value === sessionId) {
         selectedSession.value = ''
-        router.push('/workspace')
+        router.push('/session')
       }
     } else {
       ElMessage.error('删除会话失败')
@@ -253,7 +253,7 @@ const handlePinSession = async (session: any, event: Event) => {
   const nextPinned = !target.isPinned
 
   try {
-    const response = await updateWorkspaceSessionAPI(session.sessionId, { is_pinned: nextPinned })
+    const response = await updateSessionAPI(session.sessionId, { is_pinned: nextPinned })
     if (response.data.status_code === 200) {
       // 更新置顶状态
       target.isPinned = nextPinned
@@ -308,7 +308,7 @@ const executeRename = async () => {
   }
 
   try {
-    const response = await updateWorkspaceSessionAPI(sessionId, { title })
+    const response = await updateSessionAPI(sessionId, { title })
     if (response.data.status_code === 200) {
       // 本地更新重命名结果
       const target = sessions.value.find(s => s.sessionId === sessionId)
@@ -384,7 +384,7 @@ const handleAvatarError = (event: Event) => {
 // 开启新对话
 const goToHomepage = () => {
   selectedSession.value = ''
-  router.push('/workspace')
+  router.push('/session')
 }
 
 onMounted(async () => {
@@ -392,14 +392,14 @@ onMounted(async () => {
 
   await fetchSessions()
   document.addEventListener('click', handleGlobalClick)
-  window.addEventListener('workspace:new-session', handleNewSessionEvent)
-  window.addEventListener('workspace:session-updated', handleSessionUpdatedEvent)
+  window.addEventListener('session:new-session', handleNewSessionEvent)
+  window.addEventListener('session:session-updated', handleSessionUpdatedEvent)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleGlobalClick)
-  window.removeEventListener('workspace:new-session', handleNewSessionEvent)
-  window.removeEventListener('workspace:session-updated', handleSessionUpdatedEvent)
+  window.removeEventListener('session:new-session', handleNewSessionEvent)
+  window.removeEventListener('session:session-updated', handleSessionUpdatedEvent)
 })
 </script>
 

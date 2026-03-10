@@ -28,7 +28,7 @@ export const startMindTaskAPI = async (
   const ctrl = externalAbortController || new AbortController()
 
   try {
-    await fetchEventSource(`${BASE_URL}/api/v1/workspace/mind/task_start`, {
+    await fetchEventSource(`${BASE_URL}/api/v1/session/mind/task_start`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

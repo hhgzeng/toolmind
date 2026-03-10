@@ -15,7 +15,7 @@ const menuActiveTextColor = computed(() => (theme.value === "dark" ? "#f5f5f7" :
 
 const goCurrent = (item: string) => {
   const routes: Record<string, string> = {
-    "workspace": "/workspace",
+    "session": "/session",
     "model": "/model",
     "mind-config": "/mind-config",
     "web-search": "/web-search",
@@ -51,7 +51,7 @@ watch(
             :default-active="current"
             :text-color="menuTextColor"
           >
-            <el-menu-item index="workspace" @click="goCurrent('workspace')">
+            <el-menu-item index="session" @click="goCurrent('session')">
               <template #title>
                 <el-icon><Back /></el-icon>
                 <span>返回</span>

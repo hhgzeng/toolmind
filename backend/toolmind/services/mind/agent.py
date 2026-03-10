@@ -14,13 +14,12 @@ from langchain_core.utils.function_calling import convert_to_openai_tool
 
 from toolmind.api.services.mcp_server import MCPService
 from toolmind.api.services.usage_stats import UsageStatsService
-from toolmind.api.services.workspace_session import WorkSpaceSessionService
+from toolmind.api.services.session import SessionService
 from toolmind.core.callbacks import usage_metadata_callback
-from toolmind.database.models.workspace_session import (
-    WorkSpaceSessionCreate,
-    WorkSpaceSessionContext,
+from toolmind.database.models.session import (
+    SessionCreate,
+    SessionContext,
 )
-from toolmind.schema.workspace import WorkSpaceAgents
 from toolmind.schema.mind import MindTask, MindTaskStep
 from toolmind.core.agents.mcp_agent import MCPConfig
 from toolmind.core.models.manager import ModelManager
@@ -90,10 +89,10 @@ class MindAgent:
         )
         return response.content
 
-    async def _add_workspace_session(self, query, contexts: WorkSpaceSessionContext):
+    async def _add_session(self, query, contexts: SessionContext):
         title = await self._generate_title(query)
-        await WorkSpaceSessionService.create_workspace_session(
-            WorkSpaceSessionCreate(
+        await SessionService.create_session(
+            SessionCreate(
                 title=title,
                 user_id=self.user_id,
                 contexts=[contexts.model_dump()],
@@ -218,8 +217,8 @@ class MindAgent:
 
     async def submit_mind_task(self, mind_task: MindTask):
         # 首次收到用户问题时，先创建一个临时工作区会话，标题固定为「新对话」
-        workspace_session = await WorkSpaceSessionService.create_workspace_session(
-            WorkSpaceSessionCreate(
+        session_model = await SessionService.create_session(
+            SessionCreate(
                 title="新对话",
                 user_id=self.user_id,
                 contexts=[],
@@ -229,11 +228,11 @@ class MindAgent:
         yield {
             "event": "session_started",
             "data": {
-                "session_id": workspace_session.session_id,
-                "title": workspace_session.title,
+                "session_id": session_model.session_id,
+                "title": session_model.title,
                 "create_time": (
-                    workspace_session.create_time.isoformat()
-                    if workspace_session.create_time
+                    session_model.create_time.isoformat()
+                    if session_model.create_time
                     else None
                 ),
             },
@@ -397,9 +396,9 @@ class MindAgent:
                 final_response_with_feedback = final_response + pass_msg
 
                 # 追加本次任务的上下文信息（task、task_graph、answer）
-                await WorkSpaceSessionService.update_workspace_session_contexts(
-                    workspace_session.session_id,
-                    WorkSpaceSessionContext(
+                await SessionService.update_session_contexts(
+                    session_model.session_id,
+                    SessionContext(
                         query=mind_task.query,
                         task=context_task,
                         task_graph=tasks_show,
@@ -423,7 +422,7 @@ class MindAgent:
                     yield {
                         "event": "session_title_chunk",
                         "data": {
-                            "session_id": workspace_session.session_id,
+                            "session_id": session_model.session_id,
                             "title": streamed_title,
                         },
                     }
@@ -431,8 +430,8 @@ class MindAgent:
                 final_title = streamed_title.strip() or "新对话"
 
                 # 持久化最终标题
-                await WorkSpaceSessionService.update_workspace_session(
-                    workspace_session.session_id,
+                await SessionService.update_session(
+                    session_model.session_id,
                     self.user_id,
                     title=final_title,
                     is_pinned=None,
@@ -442,7 +441,7 @@ class MindAgent:
                 yield {
                     "event": "session_updated",
                     "data": {
-                        "session_id": workspace_session.session_id,
+                        "session_id": session_model.session_id,
                         "title": final_title,
                     },
                 }
@@ -457,9 +456,9 @@ class MindAgent:
                 yield {"event": "task_result", "data": {"message": retry_msg}}
                 final_response_with_feedback = final_response + retry_msg
 
-                await WorkSpaceSessionService.update_workspace_session_contexts(
-                    workspace_session.session_id,
-                    WorkSpaceSessionContext(
+                await SessionService.update_session_contexts(
+                    session_model.session_id,
+                    SessionContext(
                         query=mind_task.query,
                         task=context_task,
                         task_graph=tasks_show,
