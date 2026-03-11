@@ -13,6 +13,7 @@ export interface RegisterForm {
 export interface LoginResponseData {
   access_token: string
   user_id: string
+  role?: string | string[]
 }
 
 export interface LoginResponse {

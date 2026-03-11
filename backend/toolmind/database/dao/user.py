@@ -1,9 +1,10 @@
-
+import uuid
 from toolmind.database.models.user import UserTable
+from toolmind.database.models.user_role import UserRole
+from toolmind.database.models.role import DefaultRole, AdminRole
 from typing import List
 from sqlmodel import Session, select, func
 from toolmind.database.session import session_getter
-
 class UserDao:
 
     @classmethod
@@ -68,9 +69,11 @@ class UserDao:
         """
         user_number = len(cls.get_user_number()) + 1
         with session_getter() as session:
-            session.add(UserTable(user_id=str(user_number),
+            user_id = str(user_number)
+            session.add(UserTable(user_id=user_id,
                                   user_name=user_name,
                                   user_password=user_password))
+            session.add(UserRole(id=uuid.uuid4().hex, user_id=user_id, role_id=DefaultRole))
             session.commit()
 
     @classmethod
@@ -83,6 +86,7 @@ class UserDao:
             session.add(UserTable(user_id=user_id,
                                   user_name=user_name,
                                   user_password=user_password))
+            session.add(UserRole(id=uuid.uuid4().hex, user_id=user_id, role_id=AdminRole))
             session.commit()
 
     @classmethod

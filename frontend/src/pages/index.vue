@@ -2,11 +2,13 @@
 import { ref, watch, computed } from "vue"
 import { useRouter } from "vue-router"
 import { useRoute } from "vue-router"
-import { Setting } from "@element-plus/icons-vue"
+import { Setting, User } from "@element-plus/icons-vue"
 import { theme as useTheme } from "../apis/theme"
+import { useUserStore } from "../store/user"
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
 const { theme } = useTheme()
 
 const current = ref(route.meta.current)
@@ -21,7 +23,8 @@ const goCurrent = (item: string) => {
     "web-search": "/web-search",
     "mcp-server": "/mcp-server",
     "dashboard": "/dashboard",
-    "general-settings": "/general-settings"
+    "general-settings": "/general-settings",
+    "user-management": "/user-management"
   }
   
   router.push(routes[item] || "/")
@@ -61,6 +64,12 @@ watch(
               <template #title>
                 <el-icon><Setting /></el-icon>
                 <span>通用设置</span>
+              </template>
+            </el-menu-item>
+            <el-menu-item v-if="userStore.userInfo?.role === 'admin'" index="user-management" @click="goCurrent('user-management')">
+              <template #title>
+                <el-icon><User /></el-icon>
+                <span>用户管理</span>
               </template>
             </el-menu-item>
             <el-menu-item index="mind-config" @click="goCurrent('mind-config')">

@@ -11,7 +11,7 @@ from toolmind.api.errcode.user import UserNameAlreadyExistError
 from toolmind.utils.hash import md5_hash
 from base64 import b64decode
 from fastapi import Request, Depends, HTTPException
-from toolmind.database.models.user import UserTable
+from toolmind.database.models.user import UserTable, AdminUser
 from toolmind.database.dao.user import UserDao
 from toolmind.utils.constants import RSA_KEY
 from toolmind.schema.schemas import CreateUserReq
@@ -94,7 +94,7 @@ async def get_login_user(request: Request, authorize: AuthJWT = Depends()) -> Us
     """
     if request.state.is_whitelisted:
         # 白名单路径：直接返回Admin
-        return UserPayload(user_id="1", user_name="Admin")
+        return UserPayload(user_id=AdminUser, user_name="Admin")
 
     # 非白名单路径：执行 JWT 验证
     try:
@@ -110,7 +110,7 @@ def get_user_role(db_user: UserTable):
     role = ""
     role_ids = []
     for user_role in db_user_role:
-        if user_role.role_id == '1':
+        if user_role.role_id == AdminRole:
             # 是管理员，忽略其他的角色
             role = 'admin'
         else:

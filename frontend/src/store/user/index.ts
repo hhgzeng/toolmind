@@ -4,6 +4,7 @@ import { ref } from 'vue'
 export interface UserInfo {
   id: string
   username: string
+  role?: string
 }
 
 export const useUserStore = defineStore('user', () => {
@@ -15,12 +16,12 @@ export const useUserStore = defineStore('user', () => {
   const initUserState = () => {
     const storedToken = localStorage.getItem('token')
     const storedUserInfo = localStorage.getItem('userInfo')
-    
+
     if (storedToken) {
       token.value = storedToken
       isLoggedIn.value = true
     }
-    
+
     if (storedUserInfo) {
       try {
         userInfo.value = JSON.parse(storedUserInfo)
@@ -35,7 +36,7 @@ export const useUserStore = defineStore('user', () => {
     token.value = newToken
     userInfo.value = newUserInfo
     isLoggedIn.value = true
-    
+
     // 存储到localStorage
     localStorage.setItem('token', newToken)
     localStorage.setItem('userInfo', JSON.stringify(newUserInfo))
@@ -54,7 +55,7 @@ export const useUserStore = defineStore('user', () => {
     token.value = ''
     userInfo.value = null
     isLoggedIn.value = false
-    
+
     // 清除localStorage
     localStorage.removeItem('token')
     localStorage.removeItem('userInfo')

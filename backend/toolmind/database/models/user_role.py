@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
+import uuid
 
 from pydantic import BaseModel
 from sqlalchemy import Column, DateTime, text
@@ -22,11 +23,11 @@ class UserRoleBase(SQLModel):
 
 class UserRole(UserRoleBase, table=True):
     __tablename__ = "user_role"
-    id: Optional[str] = Field(default=None, primary_key=True)
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
 
 
 class UserRoleRead(UserRoleBase):
-    id: Optional[str]
+    id: str
 
 
 class UserRoleCreate(BaseModel):

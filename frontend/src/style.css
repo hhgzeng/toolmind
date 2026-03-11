@@ -161,14 +161,7 @@ body {
     position: relative !important;
 }
 
-/* 强制移除所有可能的遮罩层 */
-.el-overlay {
-    display: none !important;
-}
 
-.el-loading-mask.is-fullscreen {
-    display: none !important;
-}
 
 /* 确保主要容器可交互 */
 .ai-body, .ai-main, .ai-nav {

@@ -64,7 +64,7 @@ async def login(user_name: str = Body(description='用户名'),
     # 设置登录用户当前的cookie, 比jwt有效期多一个小时
     redis_client.set(USER_CURRENT_SESSION.format(db_user.user_id), access_token, ACCESS_TOKEN_EXPIRE_TIME + 3600)
 
-    return resp_200(data={'user_id': db_user.user_id, 'access_token': access_token})
+    return resp_200(data={'user_id': db_user.user_id, 'access_token': access_token, 'role': role})
 
 
 @router.get("/user/info", response_model=UnifiedResponseModel)
@@ -72,3 +72,55 @@ async def get_user_info(user_id: str):
     result = UserService.get_user_info_by_id(user_id)
 
     return resp_200(result)
+
+from toolmind.api.services.user_management import UserManagementService
+from toolmind.schema.schemas import UpdateUserPasswordReq, UpdateUserRoleReq, ToggleUserStatusReq, resp_500
+from toolmind.api.services.user import UserPayload, get_login_user
+
+
+def require_admin(user: UserPayload = Depends(get_login_user)):
+    """验证当前用户是否是管理员"""
+    if not user.is_admin():
+        raise HTTPException(status_code=403, detail="需要管理员权限")
+    return user
+
+@router.get('/user/list', response_model=UnifiedResponseModel)
+async def get_user_list(
+    page: int = 1, 
+    limit: int = 20, 
+    admin_user: UserPayload = Depends(require_admin)
+):
+    """管理员获取用户列表"""
+    data = UserManagementService.get_user_list(page, limit)
+    return resp_200(data)
+
+@router.post('/user/reset_password', response_model=UnifiedResponseModel)
+async def reset_user_password(
+    req: UpdateUserPasswordReq,
+    admin_user: UserPayload = Depends(require_admin)
+):
+    """管理员修改任意用户密码"""
+    return UserManagementService.update_user_password(req.user_id, req.new_password)
+
+
+@router.post('/user/role', response_model=UnifiedResponseModel)
+async def update_user_role(
+    req: UpdateUserRoleReq,
+    admin_user: UserPayload = Depends(require_admin)
+):
+    """分配或取消管理员角色"""
+    if req.user_id == admin_user.user_id:
+        return resp_500(message="你不能修改你自己的角色")
+        
+    return UserManagementService.update_user_role(req.user_id, req.role)
+
+@router.post('/user/toggle_status', response_model=UnifiedResponseModel)
+async def toggle_user_status(
+    req: ToggleUserStatusReq,
+    admin_user: UserPayload = Depends(require_admin)
+):
+    """启用或禁用应用层账号"""
+    if req.user_id == admin_user.user_id:
+        return resp_500(message="你不能禁用你自己的账号")
+        
+    return UserManagementService.toggle_user_status(req.user_id, req.enable)

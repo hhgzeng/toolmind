@@ -9,6 +9,7 @@ import Model from '../pages/model'
 import MindConfig from '../pages/mind-config'
 import WebSearchPage from '../pages/web-search'
 import GeneralSettings from '../pages/general-settings'
+import UserManagement from '../pages/user-management'
 import Session from '../pages/workspace/workspace.vue'
 import SessionDefaultPage from '../pages/workspace/defaultPage/defaultPage.vue'
 import TaskGraphPage from '../pages/workspace/taskGraphPage/taskGraphPage.vue'
@@ -108,6 +109,14 @@ const routes: RouteRecordRaw[] = [
           current: 'general-settings'
         },
         component: GeneralSettings,
+      },
+      {
+        path: '/user-management',
+        name: 'user-management',
+        meta: {
+          current: 'user-management'
+        },
+        component: UserManagement,
       }
     ]
   },

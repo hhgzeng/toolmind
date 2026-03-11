@@ -1,4 +1,5 @@
-from toolmind.database.models.user import AdminUser, SystemUser
+from toolmind.database.dao.user_role import UserRoleDao
+from toolmind.database.models.role import AdminRole
 from toolmind.database.dao.llm import LLMDao
 from loguru import logger
 
@@ -7,6 +8,11 @@ LLM_TYPE_LIST = ['LLM']
 
 
 class LLMService:
+
+    @classmethod
+    def _is_admin(cls, user_id: str) -> bool:
+        roles = UserRoleDao.get_user_roles(user_id)
+        return any(one.role_id == AdminRole for one in roles)
 
     @classmethod
     async def create_llm(cls, user_id: str, api_key: str, model: str,
@@ -26,7 +32,7 @@ class LLMService:
 
     @classmethod
     async def verify_user_permission(cls, llm_id, user_id):
-        if user_id == AdminUser or user_id == await cls.get_user_id_by_llm(llm_id):
+        if cls._is_admin(user_id) or user_id == await cls.get_user_id_by_llm(llm_id):
             pass
         else:
             raise ValueError(f"没有权限访问")
@@ -51,28 +57,16 @@ class LLMService:
     async def get_personal_llm(cls, user_id: str):
         try:
             llm_data = await LLMDao.get_llm_by_user(user_id)
-            result = []
-            for data in llm_data:
-                d = data.to_dict()
-                if d["user_id"] == SystemUser:
-                    d["api_key"] = "************"
-                result.append(d)
-            return {"LLM": result}
+            return {"LLM": [data.to_dict() for data in llm_data]}
         except Exception as err:
             raise ValueError(f'Get Personal LLM Appear Err: {err}')
 
     @classmethod
     async def get_visible_llm(cls, user_id: str):
         try:
+            # 当前系统无共享 LLM：可见列表即个人列表
             user_data = await LLMDao.get_llm_by_user(user_id)
-            system_data = await LLMDao.get_llm_by_user(SystemUser)
-            result = []
-            for data in (user_data + system_data):
-                d = data.to_dict()
-                if d["user_id"] == SystemUser:
-                    d["api_key"] = "************"
-                result.append(d)
-            return {"LLM": result}
+            return {"LLM": [data.to_dict() for data in user_data]}
         except Exception as err:
             raise ValueError(f'Get Visible LLM Appear Err: {err}')
 
@@ -120,7 +114,6 @@ class LLMService:
             if llm:
                 return llm.llm_id
             else:
-                llm = await LLMDao.get_llm_id_from_name(llm_name, SystemUser)
-                return llm.llm_id
+                return None
         except Exception as err:
             raise ValueError(f'Get LLM ID Err: {err}')

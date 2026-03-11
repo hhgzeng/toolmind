@@ -9,10 +9,10 @@ from sqlmodel import Field, SQLModel
 
 from toolmind.database.models.base import SQLModelSerializable
 
-# 系统用户
-SystemUser = '0'
-# 管理员
-AdminUser = '1'
+
+# 兼容旧逻辑：部分服务层仍会引用管理员账号的 user_id 常量
+# - AdminUser: 第一个管理员账号的 user_id（通常为 "1"）
+AdminUser = "1"
 
 
 class UserTable(SQLModelSerializable, table=True):

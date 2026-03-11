@@ -35,7 +35,8 @@ const handleLogin = async () => {
         // 先保存基础用户信息
         userStore.setUserInfo(userData.access_token, {
           id: userData.user_id,
-          username: loginForm.username
+          username: loginForm.username,
+          role: userData.role === 'admin' ? 'admin' : 'user'
         })
       }
       
