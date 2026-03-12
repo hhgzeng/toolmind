@@ -5,7 +5,7 @@ from toolmind.api.services.user import get_login_user, UserPayload
 from toolmind.schema.common import CreateLLMRequest, UpdateLLMRequest
 from toolmind.schema.schemas import UnifiedResponseModel, resp_200, resp_500
 
-from toolmind.api.services.llm import LLMService, LLM_TYPE_LIST
+from toolmind.api.services.llm import LLMService
 
 router = APIRouter(tags=["LLM"])
 
@@ -55,27 +55,6 @@ async def update_llm(*,
         logger.error(err)
         return resp_500(message=str(err))
 
-
-@router.get('/llm/all', response_model=UnifiedResponseModel)
-async def get_all_llm(login_user: UserPayload = Depends(get_login_user)):
-    try:
-        result = await LLMService.get_all_llm(login_user.user_id)
-        return resp_200(data=result)
-    except Exception as err:
-        logger.error(err)
-        return resp_500(message=str(err))
-
-
-@router.post('/llm/personal', response_model=UnifiedResponseModel)
-async def get_personal_llm(login_user: UserPayload = Depends(get_login_user)):
-    try:
-        result = await LLMService.get_personal_llm(user_id=login_user.user_id)
-        return resp_200(data=result)
-    except Exception as err:
-        logger.error(err)
-        return resp_500(message=str(err))
-
-
 @router.post('/llm/visible', response_model=UnifiedResponseModel)
 async def get_visible_llm(login_user: UserPayload = Depends(get_login_user)):
     try:
@@ -84,17 +63,3 @@ async def get_visible_llm(login_user: UserPayload = Depends(get_login_user)):
     except Exception as err:
         logger.error(err)
         return resp_500(message=str(err))
-
-@router.get("/agent/models", response_model=UnifiedResponseModel)
-async def get_all_agent_models(login_user: UserPayload = Depends(get_login_user)):
-    try:
-        result = await LLMService.get_visible_llm(user_id=login_user.user_id)
-        return resp_200(data=result["LLM"])
-    except Exception as err:
-        logger.error(err)
-        return resp_500(message=str(err))
-
-
-@router.get('llm/schema', response_model=UnifiedResponseModel)
-async def get_llm_type(login_user: UserPayload = Depends(get_login_user)):
-    return resp_200(data=LLM_TYPE_LIST)

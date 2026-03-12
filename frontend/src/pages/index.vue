@@ -11,7 +11,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const { theme } = useTheme()
 
-const current = ref(route.meta.current)
+const current = ref<string>((route.meta.current as string) || "general-settings")
 const menuTextColor = computed(() => (theme.value === "dark" ? "rgba(255, 255, 255, 0.6)" : "#333"))
 const menuActiveTextColor = computed(() => (theme.value === "dark" ? "#f5f5f7" : "#1a1a1a"))
 
@@ -33,7 +33,7 @@ const goCurrent = (item: string) => {
 watch(
   route,
   (val) => {
-    current.value = route.meta.current
+    current.value = (route.meta.current as string) || "general-settings"
   },
   {
     immediate: true

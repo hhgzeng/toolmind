@@ -69,5 +69,3 @@ export function getUsageModelsAPI() {
     method: 'GET'
   })
 }
-
-

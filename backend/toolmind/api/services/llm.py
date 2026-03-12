@@ -3,9 +3,6 @@ from toolmind.database.models.role import AdminRole
 from toolmind.database.dao.llm import LLMDao
 from loguru import logger
 
-# 仅支持 LLM 类型（已不做 RAG，无 Embedding/Reranker）
-LLM_TYPE_LIST = ['LLM']
-
 
 class LLMService:
 
@@ -54,14 +51,6 @@ class LLMService:
             raise ValueError(f'Update LLM Appear Err: {err}')
 
     @classmethod
-    async def get_personal_llm(cls, user_id: str):
-        try:
-            llm_data = await LLMDao.get_llm_by_user(user_id)
-            return {"LLM": [data.to_dict() for data in llm_data]}
-        except Exception as err:
-            raise ValueError(f'Get Personal LLM Appear Err: {err}')
-
-    @classmethod
     async def get_visible_llm(cls, user_id: str):
         try:
             # 当前系统无共享 LLM：可见列表即个人列表
@@ -69,19 +58,6 @@ class LLMService:
             return {"LLM": [data.to_dict() for data in user_data]}
         except Exception as err:
             raise ValueError(f'Get Visible LLM Appear Err: {err}')
-
-    @classmethod
-    async def get_all_llm(cls, user_id: str = None):
-        try:
-            llm_data = await LLMDao.get_all_llm()
-            result = []
-            for data in llm_data:
-                d = data.to_dict()
-                d["api_key"] = "************"
-                result.append(d)
-            return {"LLM": result}
-        except Exception as err:
-            raise ValueError(f'Get All LLM Appear Err: {err}')
 
     @classmethod
     async def get_llm_by_id(cls, llm_id: str):

@@ -44,4 +44,3 @@ export const updateSessionAPI = async (sessionId: string, data: { title?: string
     data
   })
 }
-
