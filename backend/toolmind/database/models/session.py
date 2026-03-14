@@ -1,11 +1,9 @@
 from datetime import datetime
 from typing import Optional, List
-
 from sqlmodel import Field
 from uuid import uuid4
 from pydantic import BaseModel
 from sqlalchemy import Column, JSON, DateTime, Boolean, text
-
 from toolmind.database.models.base import SQLModelSerializable
 
 
@@ -37,7 +35,6 @@ class Session(SessionBase, table=True):
         primary_key=True,
         description="会话 ID",
     )
-
     update_time: Optional[datetime] = Field(
         sa_column=Column(
             DateTime,
@@ -70,4 +67,3 @@ class SessionContext(BaseModel):
     task: list[dict] = []
     task_graph: list[dict] = []
     answer: str
-

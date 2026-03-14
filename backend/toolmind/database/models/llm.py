@@ -14,4 +14,3 @@ class LLMTable(SQLModelSerializable, table=True):
     provider: str = Field(description='大模型的提供商')
     user_id: str = Field(description='大模型创建者的ID')
 
-

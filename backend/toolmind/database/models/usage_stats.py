@@ -11,12 +11,9 @@ from toolmind.database.models.base import SQLModelSerializable
 
 class UsageStatsBase(SQLModelSerializable):
     model: Optional[str] = Field(description="使用统计的模型")
-
     user_id: str = Field(..., description="发起请求的用户唯一标识（UUID 或系统用户 ID）")
-
     input_tokens: int = Field(0, description="输入（prompt）所消耗的 token 数量")
     output_tokens: int = Field(0, description="模型生成（completion）所消耗的 token 数量")
-
     create_time: Optional[datetime] = Field(
         sa_column=Column(
             DateTime,

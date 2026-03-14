@@ -138,11 +138,6 @@ class MindAgent:
         mcp_servers: List[str],
         enable_web_search: bool = True,
     ) -> dict:
-        """
-        使用推理模型（ReasoningModel）对生成结果进行多轮工具调用评估。
-        ReasoningModel 在序列化时会正确携带 reasoning_content，
-        因此支持 DeepSeek Reasoner 等推理模型的多轮对话。
-        """
         import re
 
         eval_prompt = EvaluateResultPrompt.format(query=query, answer=answer)
