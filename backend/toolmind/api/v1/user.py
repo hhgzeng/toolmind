@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, Body
 from fastapi_jwt_auth import AuthJWT
 
-from toolmind.services.redis import redis_client
+from toolmind.api.services.redis import redis_client
 from toolmind.database.dao.user import UserDao
 from toolmind.api.errcode.user import UserValidateError
 from toolmind.schema.schemas import resp_200

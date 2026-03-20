@@ -3,7 +3,7 @@ import logging
 from typing import List, Dict, Any
 
 from langchain_core.tools import BaseTool
-from toolmind.services.mcp.multi_client import MultiServerMCPClient
+from toolmind.core.mcp.multi_client import MultiServerMCPClient
 from toolmind.schema.mcp import MCPBaseConfig
 
 logger = logging.getLogger(__name__)

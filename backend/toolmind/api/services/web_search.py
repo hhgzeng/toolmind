@@ -2,7 +2,7 @@ from typing import Type, Optional, Literal
 from langchain.tools import tool
 from tavily import TavilyClient
 
-from toolmind.settings import app_settings
+
 
 @tool("web_search", parse_docstring=True)
 def tavily_search(query: str,
@@ -28,7 +28,8 @@ def tavily_search(query: str,
 def _tavily_search(query, topic, max_results, time_range, api_key: str = None):
     """使用Tavily搜索工具给用户进行搜索"""
     if not api_key:
-        api_key = app_settings.tools.tavily.get("api_key")
+        raise ValueError("Tavily API key is required")
+
     
     tavily_client = TavilyClient(api_key=api_key)
     response = tavily_client.search(

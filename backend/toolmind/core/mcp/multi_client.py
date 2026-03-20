@@ -13,13 +13,13 @@ from types import TracebackType
 from langchain_core.tools import BaseTool
 from mcp import ClientSession
 
-from toolmind.services.mcp.sessions import (
+from toolmind.core.mcp.sessions import (
     Connection,
     McpHttpClientFactory,
     SSEConnection,
     create_session,
 )
-from toolmind.services.mcp.tools import load_mcp_tools
+from toolmind.core.mcp.tools import load_mcp_tools
 
 ASYNC_CONTEXT_MANAGER_ERROR = (
     "context manager (e.g., async with MultiServerMCPClient(...)). "
@@ -48,7 +48,7 @@ class MultiServerMCPClient:
         Example: basic usage (starting a new session on each tool call)
 
         ```python
-        from toolmind.services.mcp.multi_client import MultiServerMCPClient
+        from toolmind.core.mcp.multi_client import MultiServerMCPClient
 
         client = MultiServerMCPClient(
             {
@@ -64,8 +64,8 @@ class MultiServerMCPClient:
         Example: explicitly starting a session
 
         ```python
-        from toolmind.services.mcp.multi_client import MultiServerMCPClient
-        from toolmind.services.mcp.tools import load_mcp_tools
+        from toolmind.core.mcp.multi_client import MultiServerMCPClient
+        from toolmind.core.mcp.tools import load_mcp_tools
 
         client = MultiServerMCPClient({...})
         async with client.session("math") as session:

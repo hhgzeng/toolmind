@@ -6,7 +6,7 @@ from starlette.responses import StreamingResponse
 from toolmind.api.services.user import UserPayload, get_login_user
 from toolmind.schema.mind import MindTask
 from toolmind.schema.usage_stats import UsageStatsAgentType
-from toolmind.services.mind.agent import MindAgent
+from toolmind.core.mind.agent import MindAgent
 from toolmind.utils.contexts import set_user_id_context, set_agent_name_context
 
 router = APIRouter(prefix="/session/mind", tags=["Mind"])

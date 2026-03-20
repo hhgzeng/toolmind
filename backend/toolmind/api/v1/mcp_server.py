@@ -8,7 +8,7 @@ from toolmind.prompts.mcp import McpAsToolPrompt
 from toolmind.schema.mcp import MCPResponseFormat
 from toolmind.schema.schemas import resp_500, resp_200
 from toolmind.core.agents.structured_response_agent import StructuredResponseAgent
-from toolmind.services.mcp.manager import MCPManager
+from toolmind.core.mcp.manager import MCPManager
 from loguru import logger
 
 from toolmind.utils.convert import convert_mcp_config

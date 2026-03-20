@@ -1,4 +1,6 @@
 import json
+import re
+import openai
 from typing import List, Optional
 
 from langchain_core.messages import (
@@ -23,11 +25,11 @@ from toolmind.database.models.session import (
 from toolmind.schema.mind import MindTask, MindTaskStep
 from toolmind.core.agents.mcp_agent import MCPConfig
 from toolmind.core.models.manager import ModelManager
-from toolmind.services.web_search.action import tavily_search as web_search
+from toolmind.api.services.web_search import tavily_search as web_search
 from toolmind.settings import app_settings
 from toolmind.utils.convert import mcp_tool_to_args_schema, convert_mcp_config
 from toolmind.utils.date_utils import get_beijing_time
-from toolmind.services.mcp.manager import MCPManager
+from toolmind.core.mcp.manager import MCPManager
 from toolmind.prompts.mind import (
     GenerateTitlePrompt,
     GenerateTaskPrompt,
@@ -60,14 +62,12 @@ class MindAgent:
     async def _generate_tasks(self, mind_task_prompt):
         model = await self.get_conversation_model()
         conversation_json_model = model.bind(response_format={"type": "json_object"})
-
         response = await conversation_json_model.ainvoke(
             input=mind_task_prompt, config={"callbacks": [usage_metadata_callback]}
         )
 
         try:
-            content = json.loads(response.content)
-            return content
+            return self._extract_and_parse_json(response.content)
         except Exception as err:
             fix_message = FixJsonPrompt.format(
                 json_content=response.content, json_error=str(err)
@@ -76,10 +76,9 @@ class MindAgent:
                 input=fix_message, config={"callbacks": [usage_metadata_callback]}
             )
             try:
-                fix_content = json.loads(fix_response.content)
-                return fix_content
+                return self._extract_and_parse_json(fix_response.content)
             except Exception as fix_err:
-                raise ValueError(fix_err)
+                raise ValueError(f"JSON 修复失败: {fix_err}")
 
     async def _generate_title(self, query):
         title_prompt = GenerateTitlePrompt.format(query=query)
@@ -138,8 +137,6 @@ class MindAgent:
         mcp_servers: List[str],
         enable_web_search: bool = True,
     ) -> dict:
-        import re
-
         eval_prompt = EvaluateResultPrompt.format(query=query, answer=answer)
         messages: List[BaseMessage] = [
             SystemMessage(content="你是一个专业的结果评判助手。"),
@@ -150,65 +147,26 @@ class MindAgent:
         model = await self.get_reasoning_model()
         eval_model = model.bind_tools(tools) if len(tools) else model
 
-        content = ""
-        try:
-            while True:
-                response = await eval_model.ainvoke(
-                    input=messages, config={"callbacks": [usage_metadata_callback]}
-                )
-                messages.append(response)
+        while True:
+            response = await eval_model.ainvoke(
+                input=messages, config={"callbacks": [usage_metadata_callback]}
+            )
+            messages.append(response)
 
-                if response.tool_calls:
-                    tool_messages = await self._parse_function_call_response(response)
-                    messages.extend(tool_messages)
-                else:
-                    break
+            if response.tool_calls:
+                tool_messages = await self._parse_function_call_response(response)
+                messages.extend(tool_messages)
+            else:
+                break
 
-            content = response.content.strip()
-            print(f"[DEBUG _evaluate_result] Raw LLM response: {content}")
+        content = response.content.strip()
+        return self._extract_and_parse_json(content)
 
-            json_match = re.search(r"\{.*\}", content, re.DOTALL)
-            json_str = json_match.group(0) if json_match else content
-
-            parsed_json = json.loads(json_str)
-            print(f"[DEBUG _evaluate_result] Parsed JSON data: {parsed_json}")
-            return parsed_json
-        except Exception as err:
-            import openai
-
-            print(f"[DEBUG _evaluate_result] Exception occurred first time: {err}")
-            if (
-                isinstance(err, openai.RateLimitError)
-                or "insufficient_quota" in str(err)
-                or "429" in str(err)
-            ):
-                return {
-                    "score": 80,
-                    "reasoning": "评判模型触发限流或余额不足 (RateLimitError/Insufficient Quota)，默认算作通过。",
-                }
-
-            try:
-                # 尝试修复一般的 JSON 格式错误
-                json_content_to_fix = content or locals().get("content", "")
-                fix_message = FixJsonPrompt.format(
-                    json_content=json_content_to_fix, json_error=str(err)
-                )
-                fix_model = await self.get_conversation_model()
-                fix_response = await fix_model.ainvoke(
-                    input=fix_message, config={"callbacks": [usage_metadata_callback]}
-                )
-                fix_content = fix_response.content.strip()
-
-                json_match = re.search(r"\{.*\}", fix_content, re.DOTALL)
-                if json_match:
-                    fix_content = json_match.group(0)
-
-                return json.loads(fix_content)
-            except Exception as e:
-                return {
-                    "score": 100,
-                    "reasoning": f"评判执行异常: {str(e)}，默认放行。",
-                }
+    def _extract_and_parse_json(self, text: str) -> dict:
+        """从字符串中提取并解析第一个 JSON 对象"""
+        json_match = re.search(r"\{.*\}", text, re.DOTALL)
+        json_str = json_match.group(0) if json_match else text
+        return json.loads(json_str)
 
     async def submit_mind_task(self, mind_task: MindTask):
         # 首次收到用户问题时，先创建一个临时工作区会话，标题固定为「新对话」
@@ -478,7 +436,7 @@ class MindAgent:
                 text_content = f"[工具执行失败] {tool_name}: {type(e).__name__} - {e}"
         else:
             if tool_name == "web_search":
-                from toolmind.services.web_search.action import _tavily_search
+                from toolmind.api.services.web_search import _tavily_search
                 from toolmind.database.dao.web_search_config import WebSearchConfigDao
 
                 user_config = await WebSearchConfigDao.get_config_by_user_id(
@@ -503,12 +461,7 @@ class MindAgent:
             global_web_search_enabled = user_config.enabled
         else:
             global_web_search_enabled = True
-            if getattr(app_settings, "tools", None) and getattr(
-                app_settings.tools, "tavily", None
-            ):
-                global_web_search_enabled = app_settings.tools.tavily.get(
-                    "enabled", True
-                )
+
 
         if enable_web_search and global_web_search_enabled:
             tools.append(convert_to_openai_tool(web_search))

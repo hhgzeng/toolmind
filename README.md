@@ -149,8 +149,8 @@ toolmind/
 
 ### 环境要求
 
-- **Python**：推荐 3.10 及以上
-- **Node.js**：推荐 18 及以上
+- **Python**：推荐 3.13 及以上
+- **Node.js**：推荐 20 及以上
 - **数据库**：MySQL / Redis（如需持久化和缓存）
 - **可选组件**：
   - 向量数据库（ChromaDB / Milvus）
@@ -163,6 +163,10 @@ toolmind/
 # 克隆项目
 git clone https://github.com/hhgzeng/toolmind.git
 cd toolmind
+
+# 创建并激活虚拟环境
+conda create -n toolmind python=3.13
+conda activate toolmind
 
 # 安装后端依赖
 pip install -r requirements.txt

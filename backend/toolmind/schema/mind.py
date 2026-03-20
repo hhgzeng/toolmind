@@ -1,4 +1,5 @@
-from typing import List, Any
+from typing import Any, List
+
 from pydantic import BaseModel
 
 
@@ -17,5 +18,4 @@ class MindTaskStep(BaseModel):
     precautions: str
     input_thought: str
     input: List[str] = []
-
     result: str = ""

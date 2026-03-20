@@ -39,20 +39,14 @@ class ModelManager:
     ) -> BaseChatModel:
         model_config = await cls._get_model_config(user_id, "tool_call")
 
-        if model_config:
-            return ChatOpenAI(
-                stream_usage=True,
-                model=model_config["model"],
-                api_key=model_config["api_key"],
-                base_url=model_config["base_url"],
-            )
+        if not model_config:
+             raise ValueError(f"User {user_id} has no tool_call model configuration in database")
 
-        # Fallback to local config if not set
         return ChatOpenAI(
             stream_usage=True,
-            model=app_settings.multi_models.tool_call_model.model_name,
-            api_key=app_settings.multi_models.tool_call_model.api_key,
-            base_url=app_settings.multi_models.tool_call_model.base_url,
+            model=model_config["model"],
+            api_key=model_config["api_key"],
+            base_url=model_config["base_url"],
         )
 
     @classmethod
@@ -61,40 +55,28 @@ class ModelManager:
     ) -> BaseChatModel:
         model_config = await cls._get_model_config(user_id, "conversation")
 
-        if model_config:
-            return ChatOpenAI(
-                stream_usage=True,
-                model=model_config["model"],
-                api_key=model_config["api_key"],
-                base_url=model_config["base_url"],
-            )
+        if not model_config:
+            raise ValueError(f"User {user_id} has no conversation model configuration in database")
 
         return ChatOpenAI(
             stream_usage=True,
-            model=app_settings.multi_models.conversation_model.model_name,
-            api_key=app_settings.multi_models.conversation_model.api_key,
-            base_url=app_settings.multi_models.conversation_model.base_url,
+            model=model_config["model"],
+            api_key=model_config["api_key"],
+            base_url=model_config["base_url"],
         )
 
     @classmethod
     async def get_reasoning_model(cls, user_id: str = None) -> ReasoningModel:
         model_config = await cls._get_model_config(user_id, "reasoning")
 
-        if model_config:
-            return ReasoningModel(
-                model_name=model_config["model"],
-                api_key=model_config["api_key"],
-                base_url=model_config["base_url"],
-            )
+        if not model_config:
+            raise ValueError(f"User {user_id} has no reasoning model configuration in database")
 
         return ReasoningModel(
-            model_name=app_settings.multi_models.reasoning_model.model_name,
-            api_key=app_settings.multi_models.reasoning_model.api_key,
-            base_url=app_settings.multi_models.reasoning_model.base_url,
+            model_name=model_config["model"],
+            api_key=model_config["api_key"],
+            base_url=model_config["base_url"],
         )
-
-
-
 
     @classmethod
     async def get_mind_intent_model(
@@ -102,19 +84,14 @@ class ModelManager:
     ) -> BaseChatModel:
         model_config = await cls._get_model_config(user_id, "tool_call")
 
-        if model_config:
-            return ChatOpenAI(
-                stream_usage=True,
-                model=model_config["model"],
-                api_key=model_config["api_key"],
-                base_url=model_config["base_url"],
-            )
+        if not model_config:
+            raise ValueError(f"User {user_id} has no tool_call model configuration in database")
 
         return ChatOpenAI(
             stream_usage=True,
-            model=app_settings.multi_models.tool_call_model.model_name,
-            api_key=app_settings.multi_models.tool_call_model.api_key,
-            base_url=app_settings.multi_models.tool_call_model.base_url,
+            model=model_config["model"],
+            api_key=model_config["api_key"],
+            base_url=model_config["base_url"],
         )
 
     @classmethod

@@ -23,7 +23,6 @@ class UsageStatsBase(SQLModelSerializable):
         description="创建时间",
     )
 
-
 class UsageStats(UsageStatsBase, table=True):
     __tablename__ = "usage_stats"
 

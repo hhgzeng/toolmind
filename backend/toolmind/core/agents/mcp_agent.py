@@ -10,7 +10,7 @@ from langchain.agents.middleware import AgentState, wrap_tool_call, before_agent
 
 from toolmind.core.models.manager import ModelManager
 from toolmind.prompts.chat import CALL_END_PROMPT
-from toolmind.services.mcp.manager import MCPManager
+from toolmind.core.mcp.manager import MCPManager
 from toolmind.utils.convert import convert_mcp_config
 
 
@@ -52,10 +52,10 @@ class MCPAgent:
 
     async def setup_language_model(self):
         # 普通对话模型
-        self.conversation_model = ModelManager.get_conversation_model()
+        self.conversation_model = await ModelManager.get_conversation_model(user_id=self.user_id)
 
         # 工具调用模型
-        self.tool_invocation_model = ModelManager.get_tool_invocation_model()
+        self.tool_invocation_model = await ModelManager.get_tool_invocation_model(user_id=self.user_id)
 
     async def setup_mcp_tools(self):
         mcp_tools = await self.mcp_manager.get_mcp_tools()

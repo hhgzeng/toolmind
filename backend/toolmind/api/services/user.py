@@ -4,7 +4,7 @@ import rsa
 import hashlib
 from fastapi_jwt_auth import AuthJWT
 
-from toolmind.services.redis import redis_client
+from toolmind.api.services.redis import redis_client
 from toolmind.database.dao.user_role import UserRoleDao
 from toolmind.database.models.role import AdminRole
 from toolmind.api.errcode.user import UserNameAlreadyExistError

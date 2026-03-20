@@ -25,7 +25,6 @@ class SessionBase(SQLModelSerializable):
         description="是否置顶该会话",
     )
 
-
 class Session(SessionBase, table=True):
     # 保持表名不变，避免隐式引入数据库迁移
     __tablename__ = "workspace_session"
