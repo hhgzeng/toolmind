@@ -1,8 +1,9 @@
-from typing import Optional, List
-from sqlmodel import select, and_
 from datetime import datetime, timedelta
-from toolmind.database.session import async_session_getter, session_getter
+from typing import List, Optional
+
+from sqlmodel import and_, select
 from toolmind.database.models.usage_stats import UsageStats
+from toolmind.database.session import async_session_getter, session_getter
 
 
 class UsageStatsDao:
@@ -42,7 +43,7 @@ class UsageStatsDao:
             statement = select(UsageStats).where(
                 UsageStats.user_id == user_id,
                 UsageStats.create_time >= one_month_ago,
-                UsageStats.create_time <= current_time
+                UsageStats.create_time <= current_time,
             )
 
             result = await session.exec(statement)
@@ -57,7 +58,7 @@ class UsageStatsDao:
             statement = select(UsageStats).where(
                 UsageStats.user_id == user_id,
                 UsageStats.create_time >= one_week_ago,
-                UsageStats.create_time <= current_time
+                UsageStats.create_time <= current_time,
             )
 
             result = await session.exec(statement)
@@ -68,8 +69,7 @@ class UsageStatsDao:
     async def get_model_all_usage(cls, user_id, model):
         async with async_session_getter() as session:
             statement = select(UsageStats).where(
-                UsageStats.user_id == user_id,
-                UsageStats.model == model
+                UsageStats.user_id == user_id, UsageStats.model == model
             )
 
             result = await session.exec(statement)
@@ -85,7 +85,7 @@ class UsageStatsDao:
                 UsageStats.model == model,
                 UsageStats.user_id == user_id,
                 UsageStats.create_time >= one_month_ago,
-                UsageStats.create_time <= current_time
+                UsageStats.create_time <= current_time,
             )
 
             result = await session.exec(statement)
@@ -101,7 +101,7 @@ class UsageStatsDao:
                 UsageStats.model == model,
                 UsageStats.user_id == user_id,
                 UsageStats.create_time >= one_week_ago,
-                UsageStats.create_time <= current_time
+                UsageStats.create_time <= current_time,
             )
 
             result = await session.exec(statement)
@@ -113,14 +113,11 @@ class UsageStatsDao:
         user_id: str,
         agent: Optional[str] = None,
         model: Optional[str] = None,
-        delta_days: int = 10000 # 默认值可视为所有数据
+        delta_days: int = 10000,  # 默认值可视为所有数据
     ):
         ago_time = datetime.now() - timedelta(days=delta_days)
 
-        conditions = [
-            UsageStats.user_id == user_id,
-            UsageStats.create_time >= ago_time
-        ]
+        conditions = [UsageStats.user_id == user_id, UsageStats.create_time >= ago_time]
 
         # 追加条件（根据 model 是否存在）
         if model is not None:
@@ -135,9 +132,9 @@ class UsageStatsDao:
     @classmethod
     async def get_usage_models(cls, user_id):
         async with async_session_getter() as session:
-            statement = select(UsageStats.model).where(
-                UsageStats.user_id == user_id
-            ).distinct()
+            statement = (
+                select(UsageStats.model).where(UsageStats.user_id == user_id).distinct()
+            )
 
             result = await session.exec(statement)
             return result.all()

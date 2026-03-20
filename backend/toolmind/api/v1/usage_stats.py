@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException
-
 from toolmind.api.services.usage_stats import UsageStatsService
 from toolmind.api.services.user import UserPayload, get_login_user
 from toolmind.schema.schemas import resp_200
@@ -7,32 +6,30 @@ from toolmind.schema.usage_stats import UsageStatsRequest
 
 router = APIRouter(tags=["Usage-Stats"])
 
+
 @router.post("/usage", summary="根据不同的参数获取用量统计")
-async def get_toolmind_usage(usage_stats: UsageStatsRequest,
-                              login_user: UserPayload = Depends(get_login_user)):
+async def get_toolmind_usage(
+    usage_stats: UsageStatsRequest, login_user: UserPayload = Depends(get_login_user)
+):
     try:
         result = await UsageStatsService.get_usage_by_agent_model(
-            user_id=login_user.user_id,
-            **usage_stats.model_dump()
+            user_id=login_user.user_id, **usage_stats.model_dump()
         )
-        return resp_200(
-            data=result
-        )
+        return resp_200(data=result)
 
     except Exception as err:
         return HTTPException(status_code=500, detail=str(err))
 
+
 @router.post("/usage_count", summary="统计每个Agent、Model统计次数")
-async def get_toolmind_usage_count(usage_stats: UsageStatsRequest,
-                                    login_user: UserPayload = Depends(get_login_user)):
+async def get_toolmind_usage_count(
+    usage_stats: UsageStatsRequest, login_user: UserPayload = Depends(get_login_user)
+):
     try:
         result = await UsageStatsService.get_usage_count_by_agent_model(
-            user_id=login_user.user_id,
-            **usage_stats.model_dump()
+            user_id=login_user.user_id, **usage_stats.model_dump()
         )
-        return resp_200(
-            data=result
-        )
+        return resp_200(data=result)
 
     except Exception as err:
         return HTTPException(status_code=500, detail=str(err))
@@ -42,8 +39,6 @@ async def get_toolmind_usage_count(usage_stats: UsageStatsRequest,
 async def get_usage_models(login_user: UserPayload = Depends(get_login_user)):
     try:
         models = await UsageStatsService.get_usage_models(login_user.user_id)
-        return resp_200(
-            data=models
-        )
+        return resp_200(data=models)
     except Exception as err:
         return HTTPException(status_code=500, detail=str(err))

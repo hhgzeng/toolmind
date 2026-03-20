@@ -1,5 +1,3 @@
-from types import SimpleNamespace
-
 import yaml
 from loguru import logger
 from pydantic.v1 import BaseSettings, Field

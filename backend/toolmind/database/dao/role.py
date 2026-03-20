@@ -1,14 +1,16 @@
 from typing import List
-from sqlmodel import Session
+
+from sqlmodel import Session, and_, delete, func, select
+from toolmind.database.models.role import AdminRole, Role, RoleBase, RoleCreate
 from toolmind.database.session import session_getter
-from sqlmodel import select, func, delete, and_
-from toolmind.database.models.role import RoleBase, Role, AdminRole, RoleCreate
 
 
 class RoleDao(RoleBase):
 
     @classmethod
-    def get_role_by_groups(cls, group: List[int], keyword: str = None, page: int = 0, limit: int = 0) -> List[Role]:
+    def get_role_by_groups(
+        cls, group: List[int], keyword: str = None, page: int = 0, limit: int = 0
+    ) -> List[Role]:
         """
         获取用户组内的角色列表, 不包含系统管理员角色
         params:
@@ -21,7 +23,7 @@ class RoleDao(RoleBase):
         if group:
             statement = statement.where(Role.group_id.in_(group))
         if keyword:
-            statement = statement.filter(Role.role_name.like(f'%{keyword}%'))
+            statement = statement.filter(Role.role_name.like(f"%{keyword}%"))
         if page and limit:
             statement = statement.offset((page - 1) * limit).limit(limit)
         statement = statement.order_by(Role.create_time.desc())
@@ -37,7 +39,7 @@ class RoleDao(RoleBase):
         if group:
             statement = statement.where(Role.group_id.in_(group))
         if keyword:
-            statement = statement.filter(Role.role_name.like(f'%{keyword}%'))
+            statement = statement.filter(Role.role_name.like(f"%{keyword}%"))
         with session_getter() as session:
             return session.scalar(statement)
 
@@ -65,12 +67,19 @@ class RoleDao(RoleBase):
         删除分组下所有的角色，清理用户对应的角色
         """
         from toolmind.database.models.user_role import UserRole
+
         with session_getter() as session:
             # 清理对应的用户
-            all_user = select(UserRole, Role).join(
-                Role, and_(UserRole.role_id == Role.id,
-                           Role.group_id == group_id)).group_by(UserRole.id)
+            all_user = (
+                select(UserRole, Role)
+                .join(
+                    Role, and_(UserRole.role_id == Role.id, Role.group_id == group_id)
+                )
+                .group_by(UserRole.id)
+            )
             all_user = session.exec(all_user).all()
-            session.exec(delete(UserRole).where(UserRole.id.in_([one.id for one in all_user])))
+            session.exec(
+                delete(UserRole).where(UserRole.id.in_([one.id for one in all_user]))
+            )
             session.exec(delete(Role).where(Role.group_id == group_id))
             session.commit()

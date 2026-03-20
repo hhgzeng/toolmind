@@ -40,4 +40,3 @@ class SessionService:
     @classmethod
     async def generate_session_title(cls, user_query):
         pass
-

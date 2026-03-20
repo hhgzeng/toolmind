@@ -1,9 +1,11 @@
-import pytz
 from datetime import datetime, timedelta
+
+import pytz
+
 
 def get_beijing_time():
     # 设置北京时区
-    beijing_tz = pytz.timezone('Asia/Shanghai')
+    beijing_tz = pytz.timezone("Asia/Shanghai")
 
     # 获取当前的北京时区时间
     current_bj_time = datetime.now(beijing_tz)
@@ -11,9 +13,10 @@ def get_beijing_time():
 
     return formatted_time
 
+
 def get_beijing_date_str():
     """获取当前北京时间，并返回格式为 'YYYY-m-d' 的字符串（如 2025-6-30）"""
-    now = datetime.now(pytz.timezone('Asia/Shanghai'))
+    now = datetime.now(pytz.timezone("Asia/Shanghai"))
     return f"{now.year}-{now.month}-{now.day}"
 
 
@@ -38,5 +41,3 @@ def get_current_and_future_dates(days=7):
     future_date = current_date + timedelta(days=days)
 
     return current_date.strftime("%Y-%m-%d"), future_date.strftime("%Y-%m-%d")
-
-

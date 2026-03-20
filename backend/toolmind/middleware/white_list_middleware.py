@@ -1,5 +1,6 @@
-from typing import List, Set, Optional
-from fastapi import FastAPI, Request, Response
+from typing import List, Optional, Set
+
+from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from toolmind.settings import app_settings
 
@@ -13,10 +14,10 @@ class WhitelistChecker:
 
         # 解析和分类白名单路径
         for path in whitelist_paths:
-            if path.endswith('/*'):  # 前缀匹配
-                self.prefix_paths.append(path.rstrip('/*'))
-            elif path.endswith('*'):  # 通配符匹配
-                self.prefix_paths.append(path.rstrip('*'))
+            if path.endswith("/*"):  # 前缀匹配
+                self.prefix_paths.append(path.rstrip("/*"))
+            elif path.endswith("*"):  # 通配符匹配
+                self.prefix_paths.append(path.rstrip("*"))
             else:  # 精确匹配
                 self.exact_paths.add(path)
 
@@ -45,6 +46,8 @@ class WhitelistMiddleware(BaseHTTPMiddleware):
             whitelist_paths = app_settings.whitelist_paths or []
             self.whitelist_checker = WhitelistChecker(whitelist_paths)
 
-        request.state.is_whitelisted = self.whitelist_checker.is_whitelisted(request.url.path)
+        request.state.is_whitelisted = self.whitelist_checker.is_whitelisted(
+            request.url.path
+        )
         response = await call_next(request)
         return response

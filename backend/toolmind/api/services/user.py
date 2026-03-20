@@ -1,40 +1,41 @@
+import hashlib
 import json
+from base64 import b64decode
 
 import rsa
-import hashlib
+from fastapi import Depends, HTTPException, Request
 from fastapi_jwt_auth import AuthJWT
-
+from toolmind.api.errcode.user import UserNameAlreadyExistError
 from toolmind.api.services.redis import redis_client
+from toolmind.database.dao.user import UserDao
 from toolmind.database.dao.user_role import UserRoleDao
 from toolmind.database.models.role import AdminRole
-from toolmind.api.errcode.user import UserNameAlreadyExistError
-from toolmind.utils.hash import md5_hash
-from base64 import b64decode
-from fastapi import Request, Depends, HTTPException
-from toolmind.database.models.user import UserTable, AdminUser
-from toolmind.database.dao.user import UserDao
-from toolmind.utils.constants import RSA_KEY
+from toolmind.database.models.user import AdminUser, UserTable
 from toolmind.schema.schemas import CreateUserReq
+from toolmind.utils.constants import RSA_KEY
+from toolmind.utils.hash import md5_hash
 from toolmind.utils.JWT import ACCESS_TOKEN_EXPIRE_TIME
+
 
 class UserPayload:
 
     def __init__(self, **kwargs):
-        self.user_id = kwargs.get('user_id')
-        self.user_role = kwargs.get('role')
-        if self.user_role != 'admin':  # 非管理员用户，需要获取他的角色列表
+        self.user_id = kwargs.get("user_id")
+        self.user_role = kwargs.get("role")
+        if self.user_role != "admin":  # 非管理员用户，需要获取他的角色列表
             roles = UserRoleDao.get_user_roles(self.user_id)
             self.user_role = [one.role_id for one in roles]
-        self.user_name = kwargs.get('user_name')
+        self.user_name = kwargs.get("user_name")
 
     def is_admin(self):
-        if self.user_role == 'admin':
+        if self.user_role == "admin":
             return True
         if isinstance(self.user_role, list):
             for one in self.user_role:
                 if one == AdminRole:
                     return True
         return False
+
 
 class UserService:
 
@@ -43,7 +44,9 @@ class UserService:
     def decrypt_md5_password(cls, password: str):
         if value := redis_client.get(RSA_KEY):
             private_key = value[1]
-            password = md5_hash(rsa.decrypt(b64decode(password), private_key).decode('utf-8'))
+            password = md5_hash(
+                rsa.decrypt(b64decode(password), private_key).decode("utf-8")
+            )
         else:
             password = md5_hash(password)
         return password
@@ -52,7 +55,7 @@ class UserService:
     @classmethod
     def encrypt_sha256_password(cls, password: str):
         sha256 = hashlib.sha256()
-        sha256.update(password.encode('utf-8'))
+        sha256.update(password.encode("utf-8"))
         encrypted_password = sha256.hexdigest()
         return encrypted_password
 
@@ -62,7 +65,9 @@ class UserService:
         return cls.encrypt_sha256_password(password) == encrypted_password
 
     @classmethod
-    def create_user(cls, request: Request, login_user: UserPayload, req_data: CreateUserReq):
+    def create_user(
+        cls, request: Request, login_user: UserPayload, req_data: CreateUserReq
+    ):
         """
         创建用户
         """
@@ -74,8 +79,9 @@ class UserService:
             user_name=req_data.user_name,
             user_password=cls.decrypt_md5_password(req_data.password),
         )
-        user = UserDao.add_user_and_default_role(user_name=user.user_name,
-                                                 user_password=user.user_password)
+        user = UserDao.add_user_and_default_role(
+            user_name=user.user_name, user_password=user.user_password
+        )
         return user
 
     @classmethod
@@ -88,7 +94,10 @@ class UserService:
         user = UserDao.get_user_by_username(user_name)
         return user.user_id
 
-async def get_login_user(request: Request, authorize: AuthJWT = Depends()) -> UserPayload:
+
+async def get_login_user(
+    request: Request, authorize: AuthJWT = Depends()
+) -> UserPayload:
     """
     获取当前登录的用户
     """
@@ -102,7 +111,10 @@ async def get_login_user(request: Request, authorize: AuthJWT = Depends()) -> Us
         current_user = json.loads(authorize.get_jwt_subject())
         return UserPayload(**current_user)
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+        raise HTTPException(
+            status_code=401, detail="Invalid authentication credentials"
+        )
+
 
 def get_user_role(db_user: UserTable):
     # 查询用户的角色列表
@@ -112,7 +124,7 @@ def get_user_role(db_user: UserTable):
     for user_role in db_user_role:
         if user_role.role_id == AdminRole:
             # 是管理员，忽略其他的角色
-            role = 'admin'
+            role = "admin"
         else:
             role_ids.append(user_role.role_id)
     if role != "admin":
@@ -120,13 +132,16 @@ def get_user_role(db_user: UserTable):
 
     return role
 
+
 def get_user_jwt(db_user: UserTable):
     # 查询角色
     role = get_user_role(db_user)
     # 生成JWT令牌
-    payload = {'user_name': db_user.user_name, 'user_id': db_user.user_id, 'role': role}
+    payload = {"user_name": db_user.user_name, "user_id": db_user.user_id, "role": role}
 
-    access_token = AuthJWT().create_access_token(subject=json.dumps(payload), expires_time=ACCESS_TOKEN_EXPIRE_TIME)
+    access_token = AuthJWT().create_access_token(
+        subject=json.dumps(payload), expires_time=ACCESS_TOKEN_EXPIRE_TIME
+    )
 
     refresh_token = AuthJWT().create_refresh_token(subject=db_user.user_name)
 

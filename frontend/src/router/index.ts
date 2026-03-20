@@ -1,20 +1,19 @@
 // router/index.ts
+import type { RouteRecordRaw } from 'vue-router';
 import { createRouter, createWebHistory } from 'vue-router';
+import Dashboard from '../pages/dashboard';
+import GeneralSettings from '../pages/general-settings';
+import Index from '../pages/index.vue';
+import Login, { Register } from '../pages/login';
+import McpServer from '../pages/mcp-server';
+import MindConfig from '../pages/mind-config';
+import Model from '../pages/model';
 import NotFound from '../pages/notFound/index';
-import Index from '../pages/index.vue'
-import Login from '../pages/login'
-import { Register } from '../pages/login'
-import McpServer from '../pages/mcp-server'
-import Model from '../pages/model'
-import MindConfig from '../pages/mind-config'
-import WebSearchPage from '../pages/web-search'
-import GeneralSettings from '../pages/general-settings'
-import UserManagement from '../pages/user-management'
-import Session from '../pages/workspace/workspace.vue'
-import SessionDefaultPage from '../pages/workspace/defaultPage/defaultPage.vue'
-import TaskGraphPage from '../pages/workspace/taskGraphPage/taskGraphPage.vue'
-import Dashboard from '../pages/dashboard'
-import type { RouteRecordRaw } from 'vue-router'
+import UserManagement from '../pages/user-management';
+import WebSearchPage from '../pages/web-search';
+import SessionDefaultPage from '../pages/workspace/defaultPage/defaultPage.vue';
+import TaskGraphPage from '../pages/workspace/taskGraphPage/taskGraphPage.vue';
+import Session from '../pages/workspace/workspace.vue';
 
 const routes: RouteRecordRaw[] = [
   {

@@ -1,13 +1,13 @@
 import logging
+from contextlib import asynccontextmanager, contextmanager
+from typing import AsyncIterator, Iterator
 
-from contextlib import contextmanager, asynccontextmanager
-from typing import Iterator, AsyncIterator
-
-from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import Session
-from toolmind.database import engine, async_engine
+from sqlmodel.ext.asyncio.session import AsyncSession
+from toolmind.database import async_engine, engine
 
 logger = logging.getLogger(__name__)
+
 
 @contextmanager
 def session_getter() -> Iterator[Session]:
@@ -16,11 +16,12 @@ def session_getter() -> Iterator[Session]:
     try:
         yield session
     except Exception as e:
-        logger.info('Session rollback because of exception:{}', e)
+        logger.info("Session rollback because of exception:{}", e)
         session.rollback()
         raise
     finally:
         session.close()
+
 
 @asynccontextmanager
 async def async_session_getter() -> AsyncIterator[AsyncSession]:
@@ -29,7 +30,7 @@ async def async_session_getter() -> AsyncIterator[AsyncSession]:
     try:
         yield session
     except Exception as e:
-        logger.info('Session rollback because of exception: %s', e)
+        logger.info("Session rollback because of exception: %s", e)
         await session.rollback()  # 异步回滚
         raise
     finally:

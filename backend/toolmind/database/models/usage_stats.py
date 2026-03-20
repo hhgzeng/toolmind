@@ -1,19 +1,22 @@
 from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel
-from sqlmodel import Field
 from sqlalchemy import Column, DateTime, text
-
+from sqlmodel import Field
 from toolmind.database.models.base import SQLModelSerializable
 
 
 class UsageStatsBase(SQLModelSerializable):
     model: Optional[str] = Field(description="使用统计的模型")
-    user_id: str = Field(..., description="发起请求的用户唯一标识（UUID 或系统用户 ID）")
+    user_id: str = Field(
+        ..., description="发起请求的用户唯一标识（UUID 或系统用户 ID）"
+    )
     input_tokens: int = Field(0, description="输入（prompt）所消耗的 token 数量")
-    output_tokens: int = Field(0, description="模型生成（completion）所消耗的 token 数量")
+    output_tokens: int = Field(
+        0, description="模型生成（completion）所消耗的 token 数量"
+    )
     create_time: Optional[datetime] = Field(
         sa_column=Column(
             DateTime,
@@ -22,6 +25,7 @@ class UsageStatsBase(SQLModelSerializable):
         ),
         description="创建时间",
     )
+
 
 class UsageStats(UsageStatsBase, table=True):
     __tablename__ = "usage_stats"

@@ -1,16 +1,15 @@
 from typing import List, Optional
-from pydantic import BaseModel
 
-from langchain.tools import BaseTool
 from langchain.agents import create_agent
+from langchain.agents.middleware import AgentState, before_agent, wrap_tool_call
+from langchain.tools import BaseTool
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langgraph.config import get_stream_writer
 from langgraph.prebuilt.tool_node import ToolCallRequest
-from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage
-from langchain.agents.middleware import AgentState, wrap_tool_call, before_agent
-
+from pydantic import BaseModel
+from toolmind.core.mcp.manager import MCPManager
 from toolmind.core.models.manager import ModelManager
 from toolmind.prompts.chat import CALL_END_PROMPT
-from toolmind.core.mcp.manager import MCPManager
 from toolmind.utils.convert import convert_mcp_config
 
 
@@ -52,10 +51,14 @@ class MCPAgent:
 
     async def setup_language_model(self):
         # 普通对话模型
-        self.conversation_model = await ModelManager.get_conversation_model(user_id=self.user_id)
+        self.conversation_model = await ModelManager.get_conversation_model(
+            user_id=self.user_id
+        )
 
         # 工具调用模型
-        self.tool_invocation_model = await ModelManager.get_tool_invocation_model(user_id=self.user_id)
+        self.tool_invocation_model = await ModelManager.get_tool_invocation_model(
+            user_id=self.user_id
+        )
 
     async def setup_mcp_tools(self):
         mcp_tools = await self.mcp_manager.get_mcp_tools()
@@ -64,15 +67,12 @@ class MCPAgent:
     async def setup_agent_middlewares(self):
 
         @wrap_tool_call
-        async def add_tool_call_args(
-            request: ToolCallRequest,
-            handler
-        ):
+        async def add_tool_call_args(request: ToolCallRequest, handler):
             await self.emit_event(
                 {
                     "status": "START",
                     "title": f"Sub-Agent - {self.mcp_config.server_name}执行可用工具: {request.tool_call["name"]}",
-                    "messages": f"正在调用工具 {request.tool_call["name"]}..."
+                    "messages": f"正在调用工具 {request.tool_call["name"]}...",
                 }
             )
 
@@ -82,7 +82,7 @@ class MCPAgent:
                 {
                     "status": "END",
                     "title": f"Sub-Agent - {self.mcp_config.server_name}执行可用工具: {request.tool_call["name"]}",
-                    "messages": f"{tool_result}"
+                    "messages": f"{tool_result}",
                 }
             )
             return tool_result
@@ -94,9 +94,8 @@ class MCPAgent:
             model=self.conversation_model,
             tools=self.mcp_tools,
             middleware=self.middlewares,
-            system_prompt=CALL_END_PROMPT
+            system_prompt=CALL_END_PROMPT,
         )
-
 
     async def ainvoke(self, messages: List[BaseMessage]) -> List[BaseMessage] | str:
         """非流式版本"""
@@ -104,6 +103,8 @@ class MCPAgent:
         messages = []
 
         for message in result["messages"][:-1]:
-            if not isinstance(message, HumanMessage) and not isinstance(message, SystemMessage):
+            if not isinstance(message, HumanMessage) and not isinstance(
+                message, SystemMessage
+            ):
                 messages.append(message)
         return messages

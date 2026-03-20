@@ -1,7 +1,6 @@
 from uuid import uuid4
 
 from sqlmodel import Field
-
 from toolmind.database.models.base import SQLModelSerializable
 
 

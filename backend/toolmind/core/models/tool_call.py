@@ -1,8 +1,16 @@
 import json
-from typing import List, Dict, Any, Union
+from typing import Any, Dict, List, Union
 
-from langchain_core.messages import BaseMessage, ChatMessage, HumanMessage, AIMessage, FunctionMessage, ToolMessage, \
-    SystemMessage, ToolCall
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    ChatMessage,
+    FunctionMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolCall,
+    ToolMessage,
+)
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageToolCall
 from openai.types.chat.chat_completion_message_tool_call import Function
@@ -24,9 +32,7 @@ class ToolCallModel:
         user_messages = [self.convert_message_to_dict(message) for message in messages]
 
         response = await self.client.chat.completions.create(
-            model=self.model_name,
-            messages=user_messages,
-            tools=self.tools
+            model=self.model_name, messages=user_messages, tools=self.tools
         )
         return response.choices[0].message
 
@@ -43,7 +49,9 @@ class ToolCallModel:
             message_dict = {"role": "assistant", "content": message.content}
             if message.tool_calls:
                 message_dict["function_call"] = None
-                message_dict["tool_calls"] = self.convert_openai_tool_calls(message.tool_calls)
+                message_dict["tool_calls"] = self.convert_openai_tool_calls(
+                    message.tool_calls
+                )
             # if "function_call" in message.additional_kwargs:
             #     message_dict["function_call"] = message.additional_kwargs["function_call"]
             #     # If function call only, content is None not empty string
@@ -56,14 +64,16 @@ class ToolCallModel:
                 "role": "tool",
                 "content": self._create_tool_content(message.content),
                 "name": message.name or message.additional_kwargs.get("name"),
-                "tool_call_id": message.tool_call_id
+                "tool_call_id": message.tool_call_id,
             }
         else:
             raise TypeError(f"Got unknown type {message}")
 
         return message_dict
 
-    def _create_tool_content(self, content: Union[str, List[Union[str, Dict[Any, Any]]]]) -> str:
+    def _create_tool_content(
+        self, content: Union[str, List[Union[str, Dict[Any, Any]]]]
+    ) -> str:
         """Convert tool content to dict scheme."""
         if isinstance(content, str):
             try:
@@ -81,9 +91,14 @@ class ToolCallModel:
         openai_tool_calls: List[ChatCompletionMessageToolCall] = []
 
         for tool_call in tool_calls:
-            openai_tool_calls.append(ChatCompletionMessageToolCall(id=tool_call["id"], type="function",
-                                                                   function=Function(
-                                                                       arguments=json.dumps(tool_call["args"]),
-                                                                       name=tool_call["name"])))
+            openai_tool_calls.append(
+                ChatCompletionMessageToolCall(
+                    id=tool_call["id"],
+                    type="function",
+                    function=Function(
+                        arguments=json.dumps(tool_call["args"]), name=tool_call["name"]
+                    ),
+                )
+            )
 
         return openai_tool_calls

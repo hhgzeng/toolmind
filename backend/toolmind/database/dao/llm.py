@@ -1,23 +1,35 @@
-from sqlmodel import Session, select, and_, update, desc, delete
-from toolmind.database.session import session_getter
+from sqlmodel import Session, and_, delete, desc, select, update
 from toolmind.database.models.llm import LLMTable
+from toolmind.database.session import session_getter
 
 
 class LLMDao:
 
     @classmethod
-    async def _create_llm(cls, model: str, base_url: str,
-                          api_key: str, provider: str, user_id: str):
-        llm = LLMTable(model=model, base_url=base_url,
-                       api_key=api_key, provider=provider, user_id=user_id)
+    async def _create_llm(
+        cls, model: str, base_url: str, api_key: str, provider: str, user_id: str
+    ):
+        llm = LLMTable(
+            model=model,
+            base_url=base_url,
+            api_key=api_key,
+            provider=provider,
+            user_id=user_id,
+        )
         return llm
 
     @classmethod
-    async def create_llm(cls, model: str, base_url: str,
-                         api_key: str, provider: str, user_id: str):
+    async def create_llm(
+        cls, model: str, base_url: str, api_key: str, provider: str, user_id: str
+    ):
         with session_getter() as session:
-            llm = await cls._create_llm(model=model, base_url=base_url,
-                                        api_key=api_key, provider=provider, user_id=user_id)
+            llm = await cls._create_llm(
+                model=model,
+                base_url=base_url,
+                api_key=api_key,
+                provider=provider,
+                user_id=user_id,
+            )
             session.add(llm)
             session.commit()
 
@@ -29,20 +41,25 @@ class LLMDao:
             session.commit()
 
     @classmethod
-    async def update_llm(cls, llm_id: str, base_url: str,
-                         model: str, api_key: str, provider: str):
+    async def update_llm(
+        cls, llm_id: str, base_url: str, model: str, api_key: str, provider: str
+    ):
         with session_getter() as session:
             update_values = {}
             if base_url:
-                update_values['base_url'] = base_url
+                update_values["base_url"] = base_url
             if model:
-                update_values['model'] = model
+                update_values["model"] = model
             if api_key:
-                update_values['api_key'] = api_key
+                update_values["api_key"] = api_key
             if provider:
-                update_values['provider'] = provider
+                update_values["provider"] = provider
 
-            sql = update(LLMTable).where(LLMTable.llm_id == llm_id).values(**update_values)
+            sql = (
+                update(LLMTable)
+                .where(LLMTable.llm_id == llm_id)
+                .values(**update_values)
+            )
             session.exec(sql)
             session.commit()
 
@@ -77,7 +94,8 @@ class LLMDao:
     @classmethod
     async def get_llm_id_from_name(cls, llm_name, user_id):
         with session_getter() as session:
-            sql = select(LLMTable).where(and_(LLMTable.model == llm_name,
-                                              LLMTable.user_id == user_id))
+            sql = select(LLMTable).where(
+                and_(LLMTable.model == llm_name, LLMTable.user_id == user_id)
+            )
             result = session.exec(sql)
             return result.first()

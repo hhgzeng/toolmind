@@ -1,10 +1,10 @@
 from datetime import datetime
 from typing import List, Optional
 
-from sqlmodel import Field, select, Session, delete
-from toolmind.database.session import session_getter
+from sqlmodel import Field, Session, delete, select
 from toolmind.database.models.role import AdminRole
-from toolmind.database.models.user_role import UserRoleBase, UserRole
+from toolmind.database.models.user_role import UserRole, UserRoleBase
+from toolmind.database.session import session_getter
 
 
 class UserRoleDao(UserRoleBase):
@@ -12,10 +12,14 @@ class UserRoleDao(UserRoleBase):
     @classmethod
     def get_user_roles(cls, user_id: str) -> List[UserRole]:
         with session_getter() as session:
-            return session.exec(select(UserRole).where(UserRole.user_id == user_id)).all()
+            return session.exec(
+                select(UserRole).where(UserRole.user_id == user_id)
+            ).all()
 
     @classmethod
-    def get_roles_user(cls, role_ids: List[str], page: int = 0, limit: int = 0) -> List[UserRole]:
+    def get_roles_user(
+        cls, role_ids: List[str], page: int = 0, limit: int = 0
+    ) -> List[UserRole]:
         """
         获取角色对应的用户
         """
@@ -52,7 +56,9 @@ class UserRoleDao(UserRoleBase):
         给用户批量添加角色
         """
         with session_getter() as session:
-            user_roles = [UserRole(user_id=user_id, role_id=role_id) for role_id in role_ids]
+            user_roles = [
+                UserRole(user_id=user_id, role_id=role_id) for role_id in role_ids
+            ]
             session.add_all(user_roles)
             session.commit()
             return user_roles
@@ -63,6 +69,10 @@ class UserRoleDao(UserRoleBase):
         将用户从某些角色中移除
         """
         with session_getter() as session:
-            statement = delete(UserRole).where(UserRole.user_id == user_id).where(UserRole.role_id.in_(role_ids))
+            statement = (
+                delete(UserRole)
+                .where(UserRole.user_id == user_id)
+                .where(UserRole.role_id.in_(role_ids))
+            )
             session.exec(statement)
             session.commit()

@@ -1,44 +1,38 @@
 import json
 import re
-import openai
 from typing import List, Optional
 
 from langchain_core.messages import (
-    SystemMessage,
-    HumanMessage,
     AIMessage,
-    ToolMessage,
-    BaseMessage,
     AIMessageChunk,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
 )
 from langchain_core.tools.base import ToolException
 from langchain_core.utils.function_calling import convert_to_openai_tool
-
 from toolmind.api.services.mcp_server import MCPService
-from toolmind.api.services.usage_stats import UsageStatsService
 from toolmind.api.services.session import SessionService
+from toolmind.api.services.usage_stats import UsageStatsService
+from toolmind.api.services.web_search import tavily_search as web_search
+from toolmind.core.agents.mcp_agent import MCPConfig
 from toolmind.core.callbacks import usage_metadata_callback
-from toolmind.database.models.session import (
-    SessionCreate,
-    SessionContext,
+from toolmind.core.mcp.manager import MCPManager
+from toolmind.core.models.manager import ModelManager
+from toolmind.database.models.session import SessionContext, SessionCreate
+from toolmind.prompts.mind import (
+    EvaluateResultPrompt,
+    FinalSynthesisPrompt,
+    FixJsonPrompt,
+    GenerateTaskPrompt,
+    GenerateTitlePrompt,
+    SystemMessagePrompt,
+    ToolCallPrompt,
 )
 from toolmind.schema.mind import MindTask, MindTaskStep
-from toolmind.core.agents.mcp_agent import MCPConfig
-from toolmind.core.models.manager import ModelManager
-from toolmind.api.services.web_search import tavily_search as web_search
-from toolmind.settings import app_settings
-from toolmind.utils.convert import mcp_tool_to_args_schema, convert_mcp_config
+from toolmind.utils.convert import convert_mcp_config, mcp_tool_to_args_schema
 from toolmind.utils.date_utils import get_beijing_time
-from toolmind.core.mcp.manager import MCPManager
-from toolmind.prompts.mind import (
-    GenerateTitlePrompt,
-    GenerateTaskPrompt,
-    FixJsonPrompt,
-    ToolCallPrompt,
-    SystemMessagePrompt,
-    FinalSynthesisPrompt,
-    EvaluateResultPrompt,
-)
 
 
 class MindAgent:
@@ -461,7 +455,6 @@ class MindAgent:
             global_web_search_enabled = user_config.enabled
         else:
             global_web_search_enabled = True
-
 
         if enable_web_search and global_web_search_enabled:
             tools.append(convert_to_openai_tool(web_search))

@@ -1,7 +1,6 @@
 from typing import List
 
-from sqlmodel import select, and_, delete
-
+from sqlmodel import and_, delete, select
 from toolmind.database.models.session import Session
 from toolmind.database.session import async_session_getter
 
@@ -81,4 +80,3 @@ class SessionDao:
             await session.commit()
             await session.refresh(session_model)
         return session_model
-

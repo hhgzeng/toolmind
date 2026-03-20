@@ -1,10 +1,11 @@
+from typing import Optional
+
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
 from toolmind.core.models.reason_model import ReasoningModel
-from toolmind.settings import app_settings
-from toolmind.database.dao.mind_config import MindModelConfigDao
 from toolmind.database.dao.llm import LLMDao
-from typing import Optional
+from toolmind.database.dao.mind_config import MindModelConfigDao
+from toolmind.settings import app_settings
 
 
 class ModelManager:
@@ -40,7 +41,9 @@ class ModelManager:
         model_config = await cls._get_model_config(user_id, "tool_call")
 
         if not model_config:
-             raise ValueError(f"User {user_id} has no tool_call model configuration in database")
+            raise ValueError(
+                f"User {user_id} has no tool_call model configuration in database"
+            )
 
         return ChatOpenAI(
             stream_usage=True,
@@ -56,7 +59,9 @@ class ModelManager:
         model_config = await cls._get_model_config(user_id, "conversation")
 
         if not model_config:
-            raise ValueError(f"User {user_id} has no conversation model configuration in database")
+            raise ValueError(
+                f"User {user_id} has no conversation model configuration in database"
+            )
 
         return ChatOpenAI(
             stream_usage=True,
@@ -70,7 +75,9 @@ class ModelManager:
         model_config = await cls._get_model_config(user_id, "reasoning")
 
         if not model_config:
-            raise ValueError(f"User {user_id} has no reasoning model configuration in database")
+            raise ValueError(
+                f"User {user_id} has no reasoning model configuration in database"
+            )
 
         return ReasoningModel(
             model_name=model_config["model"],
@@ -85,7 +92,9 @@ class ModelManager:
         model_config = await cls._get_model_config(user_id, "tool_call")
 
         if not model_config:
-            raise ValueError(f"User {user_id} has no tool_call model configuration in database")
+            raise ValueError(
+                f"User {user_id} has no tool_call model configuration in database"
+            )
 
         return ChatOpenAI(
             stream_usage=True,

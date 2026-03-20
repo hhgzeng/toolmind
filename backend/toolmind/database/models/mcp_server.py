@@ -1,9 +1,8 @@
-from typing import Optional, List
-from uuid import uuid4, UUID
+from typing import List, Optional
+from uuid import UUID, uuid4
 
+from sqlalchemy import JSON, VARCHAR, Column
 from sqlmodel import Field
-from sqlalchemy import Column, VARCHAR, JSON
-
 from toolmind.database.models.base import SQLModelSerializable
 
 

@@ -1,15 +1,15 @@
 import json
-from typing import List, Dict, Any, Union, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from langchain_core.messages import (
+    AIMessage,
     BaseMessage,
     ChatMessage,
-    HumanMessage,
-    AIMessage,
     FunctionMessage,
-    ToolMessage,
+    HumanMessage,
     SystemMessage,
     ToolCall,
+    ToolMessage,
 )
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageToolCall
@@ -57,9 +57,7 @@ class ReasoningModel:
                     args = json.loads(tc.function.arguments)
                 except (json.JSONDecodeError, TypeError):
                     args = {}
-                tool_calls.append(
-                    ToolCall(name=tc.function.name, args=args, id=tc.id)
-                )
+                tool_calls.append(ToolCall(name=tc.function.name, args=args, id=tc.id))
 
         # 保留 reasoning_content 到 additional_kwargs
         additional_kwargs: Dict[str, Any] = {}

@@ -1,18 +1,15 @@
+import warnings
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi_jwt_auth import AuthJWT
 from fastapi_jwt_auth.exceptions import AuthJWTException
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-
 from toolmind.middleware.trace_id_middleware import TraceIDMiddleware
 from toolmind.middleware.white_list_middleware import WhitelistMiddleware
-from toolmind.settings import initialize_app_settings
-from toolmind.settings import app_settings
-
-import warnings
+from toolmind.settings import app_settings, initialize_app_settings
 
 warnings.filterwarnings("ignore")
 

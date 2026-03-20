@@ -4,10 +4,7 @@ from typing import List
 
 from langchain_core.messages import ToolCall
 from openai.types.chat import ChatCompletionMessageToolCall
-from pydantic import create_model
-from toolmind.schema.mcp import (
-    MCPSSEConfig,
-)
+from toolmind.schema.mcp import MCPSSEConfig
 
 
 def convert_langchain_tool_calls(tool_calls: List[ChatCompletionMessageToolCall]):

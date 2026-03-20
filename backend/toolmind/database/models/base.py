@@ -1,12 +1,11 @@
 from datetime import datetime
-from typing import Union, Dict, Any, ClassVar, Set
-
-from sqlmodel.main import IncEx
-from typing_extensions import Literal
+from typing import Any, ClassVar, Dict, Set, Union
 
 import orjson
-from sqlmodel import SQLModel
 from pydantic import ConfigDict
+from sqlmodel import SQLModel
+from sqlmodel.main import IncEx
+from typing_extensions import Literal
 
 
 def orjson_dumps(v, *, default=None, sort_keys=False, indent_2=True):
@@ -29,7 +28,7 @@ class SQLModelSerializable(SQLModel):
     model_config = ConfigDict(from_attributes=True)
 
     # 使用ClassVar标注类变量，不会被视为模型字段
-    hide_fields: ClassVar[list[str]] = [] # "api_key"
+    hide_fields: ClassVar[list[str]] = []  # "api_key"
 
     def to_dict(self):
         result = self.model_dump(exclude=self.hide_fields)

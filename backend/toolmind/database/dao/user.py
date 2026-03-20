@@ -1,10 +1,13 @@
 import uuid
+from typing import List
+
+from sqlmodel import Session, func, select
+from toolmind.database.models.role import AdminRole, DefaultRole
 from toolmind.database.models.user import UserTable
 from toolmind.database.models.user_role import UserRole
-from toolmind.database.models.role import DefaultRole, AdminRole
-from typing import List
-from sqlmodel import Session, select, func
 from toolmind.database.session import session_getter
+
+
 class UserDao:
 
     @classmethod
@@ -26,22 +29,29 @@ class UserDao:
             return session.exec(statement).first()
 
     @classmethod
-    def update_user(cls, user_id: str, user_name: str, user_password: str) :
+    def update_user(cls, user_id: str, user_name: str, user_password: str):
         with session_getter() as session:
-            session.add(UserTable(user_id=user_id,
-                                  user_name=user_name, user_password=user_password))
+            session.add(
+                UserTable(
+                    user_id=user_id, user_name=user_name, user_password=user_password
+                )
+            )
             session.commit()
 
     @classmethod
-    def filter_users(cls, user_ids: List[str], keyword: str = None, page: int = 0, limit: int = 0) -> (List[UserTable], int):
+    def filter_users(
+        cls, user_ids: List[str], keyword: str = None, page: int = 0, limit: int = 0
+    ) -> (List[UserTable], int):
         statement = select(UserTable)
         count_statement = select(func.count(UserTable.user_id))
         if user_ids:
             statement = statement.where(UserTable.user_id.in_(user_ids))
             count_statement = count_statement.where(UserTable.user_id.in_(user_ids))
         if keyword:
-            statement = statement.where(UserTable.user_name.like(f'%{keyword}%'))
-            count_statement = count_statement.where(UserTable.user_name.like(f'%{keyword}%'))
+            statement = statement.where(UserTable.user_name.like(f"%{keyword}%"))
+            count_statement = count_statement.where(
+                UserTable.user_name.like(f"%{keyword}%")
+            )
         if page and limit:
             statement = statement.offset((page - 1) * limit).limit(limit)
         statement = statement.order_by(UserTable.user_id.desc())
@@ -57,8 +67,11 @@ class UserDao:
     @classmethod
     def create_user(cls, user_id: str, user_name: str, user_password: str):
         with session_getter() as session:
-            session.add(UserTable(user_id=user_id, user_name=user_name,
-                                  user_password=user_password))
+            session.add(
+                UserTable(
+                    user_id=user_id, user_name=user_name, user_password=user_password
+                )
+            )
             session.commit()
 
     @classmethod
@@ -70,23 +83,30 @@ class UserDao:
         user_number = len(cls.get_user_number()) + 1
         with session_getter() as session:
             user_id = str(user_number)
-            session.add(UserTable(user_id=user_id,
-                                  user_name=user_name,
-                                  user_password=user_password))
-            session.add(UserRole(id=uuid.uuid4().hex, user_id=user_id, role_id=DefaultRole))
+            session.add(
+                UserTable(
+                    user_id=user_id, user_name=user_name, user_password=user_password
+                )
+            )
+            session.add(
+                UserRole(id=uuid.uuid4().hex, user_id=user_id, role_id=DefaultRole)
+            )
             session.commit()
 
     @classmethod
-    def add_user_and_admin_role(cls, user_id: str, user_name: str,
-                                user_password: str):
+    def add_user_and_admin_role(cls, user_id: str, user_name: str, user_password: str):
         """
         新增用户，并添加超级管理员角色
         """
         with session_getter() as session:
-            session.add(UserTable(user_id=user_id,
-                                  user_name=user_name,
-                                  user_password=user_password))
-            session.add(UserRole(id=uuid.uuid4().hex, user_id=user_id, role_id=AdminRole))
+            session.add(
+                UserTable(
+                    user_id=user_id, user_name=user_name, user_password=user_password
+                )
+            )
+            session.add(
+                UserRole(id=uuid.uuid4().hex, user_id=user_id, role_id=AdminRole)
+            )
             session.commit()
 
     @classmethod

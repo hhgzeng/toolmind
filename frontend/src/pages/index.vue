@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, computed } from "vue"
-import { useRouter } from "vue-router"
-import { useRoute } from "vue-router"
 import { Setting, User } from "@element-plus/icons-vue"
+import { computed, ref, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
 import { theme as useTheme } from "../apis/theme"
 import { useUserStore } from "../store/user"
 

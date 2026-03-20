@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
-
+from fastapi import APIRouter, Body, Depends, HTTPException
 from toolmind.api.services.session import SessionService
 from toolmind.api.services.user import UserPayload, get_login_user
 from toolmind.schema.schemas import resp_200
@@ -30,7 +29,9 @@ async def session_info(
     login_user: UserPayload = Depends(get_login_user),
 ):
     try:
-        result = await SessionService.get_session_from_id(session_id, login_user.user_id)
+        result = await SessionService.get_session_from_id(
+            session_id, login_user.user_id
+        )
         return resp_200(data=result)
     except Exception as err:
         raise HTTPException(status_code=500, detail=str(err))
@@ -65,4 +66,3 @@ async def update_session(
         return resp_200(data=result.to_dict())
     except Exception as err:
         raise HTTPException(status_code=500, detail=str(err))
-

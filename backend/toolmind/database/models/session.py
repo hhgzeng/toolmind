@@ -1,9 +1,10 @@
 from datetime import datetime
-from typing import Optional, List
-from sqlmodel import Field
+from typing import List, Optional
 from uuid import uuid4
+
 from pydantic import BaseModel
-from sqlalchemy import Column, JSON, DateTime, Boolean, text
+from sqlalchemy import JSON, Boolean, Column, DateTime, text
+from sqlmodel import Field
 from toolmind.database.models.base import SQLModelSerializable
 
 
@@ -24,6 +25,7 @@ class SessionBase(SQLModelSerializable):
         ),
         description="是否置顶该会话",
     )
+
 
 class Session(SessionBase, table=True):
     # 保持表名不变，避免隐式引入数据库迁移

@@ -1,11 +1,13 @@
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
 from pydantic import validator
 from sqlalchemy import Column, DateTime, text
 from sqlmodel import Field
 from toolmind.database.models.base import SQLModelSerializable
 
 AdminUser = "1"
+
 
 class UserTable(SQLModelSerializable, table=True):
     __tablename__ = "user"

@@ -1,15 +1,14 @@
 import threading
 from typing import Any
-from loguru import logger
-from typing_extensions import override
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import AIMessage
 from langchain_core.messages.ai import UsageMetadata, add_usage
 from langchain_core.outputs import ChatGeneration, LLMResult
-
+from loguru import logger
 from toolmind.api.services.usage_stats import UsageStatsService
 from toolmind.utils.contexts import get_user_id_context
+from typing_extensions import override
 
 
 class UsageMetadataCallbackHandler(BaseCallbackHandler):
@@ -62,11 +61,13 @@ class UsageMetadataCallbackHandler(BaseCallbackHandler):
         user_id = get_user_id_context()
 
         record = {
-            'model': model_name,
+            "model": model_name,
             "user_id": user_id,
-            'input_tokens': usage_metadata.get("input_tokens", 0),
-            'output_tokens': usage_metadata.get("output_tokens", 0),
+            "input_tokens": usage_metadata.get("input_tokens", 0),
+            "output_tokens": usage_metadata.get("output_tokens", 0),
         }
-        logger.info(f"{model_name} cost input tokens: {usage_metadata.get("input_tokens")}, output tokens: {usage_metadata.get("output_tokens")}")
+        logger.info(
+            f"{model_name} cost input tokens: {usage_metadata.get("input_tokens")}, output tokens: {usage_metadata.get("output_tokens")}"
+        )
 
         UsageStatsService.sync_create_usage_stats(**record)

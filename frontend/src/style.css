@@ -1,11 +1,11 @@
-*{
+* {
     margin: 0;
     padding: 0;
     font-family: "Microsoft YaHei";
 }
 
 .md-editor {
-    background-color:transparent !important;
+    background-color: transparent !important;
 }
 
 .md-editor-preview-wrapper {
@@ -164,6 +164,8 @@ body {
 
 
 /* 确保主要容器可交互 */
-.ai-body, .ai-main, .ai-nav {
+.ai-body,
+.ai-main,
+.ai-nav {
     pointer-events: auto !important;
 }

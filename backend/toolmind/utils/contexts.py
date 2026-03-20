@@ -1,6 +1,7 @@
 """
 请求上下文 (ContextVar)，用于在异步调用链中传递 trace_id、user_id、agent_name。
 """
+
 from contextvars import ContextVar
 from typing import Optional
 

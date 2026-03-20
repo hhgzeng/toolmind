@@ -1,5 +1,4 @@
 from fastapi.exceptions import HTTPException
-
 from toolmind.schema.schemas import UnifiedResponseModel
 
 
@@ -10,7 +9,9 @@ class BaseErrorCode:
 
     @classmethod
     def return_resp(cls, msg: str = None, data: any = None) -> UnifiedResponseModel:
-        return UnifiedResponseModel(status_code=cls.Code, status_message=msg or cls.Msg, data=data)
+        return UnifiedResponseModel(
+            status_code=cls.Code, status_message=msg or cls.Msg, data=data
+        )
 
     @classmethod
     def http_exception(cls, msg: str = None) -> HTTPException:
@@ -19,9 +20,9 @@ class BaseErrorCode:
 
 class UnAuthorizedError(BaseErrorCode):
     Code: int = 403
-    Msg: str = '暂无操作权限'
+    Msg: str = "暂无操作权限"
 
 
 class NotFoundError(BaseErrorCode):
     Code: int = 404
-    Msg: str = '资源不存在'
+    Msg: str = "资源不存在"

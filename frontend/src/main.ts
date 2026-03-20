@@ -1,13 +1,13 @@
-import { createApp } from 'vue'
-import './style.css'
-import App from './App.vue'
-import router from './router';
-import { createPinia } from 'pinia'
+import { createPinia } from 'pinia';
 import persistState from 'pinia-plugin-persistedstate';
+import { createApp } from 'vue';
+import App from './App.vue';
+import router from './router';
+import './style.css';
 
 // Element Plus CSS
-import 'element-plus/dist/index.css'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue';
+import 'element-plus/dist/index.css';
 
 const app = createApp(App)
 const pinia = createPinia();

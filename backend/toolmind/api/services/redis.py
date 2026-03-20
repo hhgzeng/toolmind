@@ -1,16 +1,14 @@
 import pickle
+from typing import Optional
+
 import redis
 from loguru import logger
-from typing import Optional
-from toolmind.settings import app_settings
 from redis import ConnectionPool, RedisCluster
-from redis.backoff import ExponentialBackoff
-from redis.cluster import ClusterNode
-from redis.retry import Retry
-from redis.sentinel import Sentinel
+from toolmind.settings import app_settings
+
 
 class RedisClient:
-    
+
     def __init__(self, url, max_connections=10):
         if isinstance(url, str):
             self.pool = ConnectionPool.from_url(url, max_connections=max_connections)
@@ -20,8 +18,10 @@ class RedisClient:
 
     # 用于集群模式
     def cluster_nodes(self, key):
-        if isinstance(self.connection,
-                      RedisCluster) and self.connection.get_default_node() is None:
+        if (
+            isinstance(self.connection, RedisCluster)
+            and self.connection.get_default_node() is None
+        ):
             target = self.connection.get_node_from_key(key)
             self.connection.set_default_node(target)
 
@@ -34,7 +34,9 @@ class RedisClient:
                     return False
                 return True
         except TypeError as exc:
-            raise TypeError('RedisCache only accepts values that can be pickled. ') from exc
+            raise TypeError(
+                "RedisCache only accepts values that can be pickled. "
+            ) from exc
         finally:
             self.close()
 
@@ -43,11 +45,13 @@ class RedisClient:
             if pickled := pickle.dumps(value):
                 result = self.connection.setex(key, expiration, pickled)
                 if not result:
-                    raise ValueError('redis could not set value')
+                    raise ValueError("redis could not set value")
             else:
-                logger.error('pickle error, value={}', value)
+                logger.error("pickle error, value={}", value)
         except TypeError as exc:
-            raise TypeError('RedisCache only accepts values that can be pickled. ') from exc
+            raise TypeError(
+                "RedisCache only accepts values that can be pickled. "
+            ) from exc
         finally:
             self.close()
 
@@ -60,12 +64,15 @@ class RedisClient:
         finally:
             self.close()
 
-    def hset(self, name,
-             key: Optional[str] = None,
-             value: Optional[str] = None,
-             mapping: Optional[dict] = None,
-             items: Optional[list] = None,
-             expiration: int = 3600):
+    def hset(
+        self,
+        name,
+        key: Optional[str] = None,
+        value: Optional[str] = None,
+        mapping: Optional[dict] = None,
+        items: Optional[list] = None,
+        expiration: int = 3600,
+    ):
         try:
             r = self.connection.hset(name, key, value, mapping, items)
             if expiration:
@@ -111,5 +118,6 @@ class RedisClient:
     def close(self):
         self.connection.close()
 
+
 # 实例化对象
-redis_client = RedisClient(app_settings.redis.get('endpoint'))
+redis_client = RedisClient(app_settings.redis.get("endpoint"))

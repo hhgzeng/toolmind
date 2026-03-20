@@ -1,7 +1,7 @@
 from loguru import logger
 from sqlmodel import SQLModel
-
 from toolmind.database import engine
+
 
 # 创建MySQL数据表
 async def init_database():
@@ -10,4 +10,3 @@ async def init_database():
         logger.info("Create MySQL Table Successful")
     except Exception as err:
         logger.error(f"Create MySQL Table Error: {err}")
-
