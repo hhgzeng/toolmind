@@ -1,13 +1,13 @@
 """
-最终汇总 Agent
+最终汇总 Agent（LangGraph 节点）
 
-负责将所有步骤结果整合为面向用户的最终答案，支持流式输出。
+负责将所有步骤结果整合为面向用户的最终答案。
 """
 
 import json
-from typing import AsyncGenerator, List
 
 from langchain_core.messages import HumanMessage
+
 from toolmind.core.agents.state import MindState
 from toolmind.core.callbacks import usage_metadata_callback
 from toolmind.core.models.manager import ModelManager
@@ -15,17 +15,13 @@ from toolmind.prompts.mind import FinalSynthesisPrompt
 
 
 class Synthesizer:
-    """最终汇总 Agent：整合所有步骤结果生成最终答案"""
+    """最终汇总节点：整合所有步骤结果生成最终答案"""
 
     def __init__(self, user_id: str):
         self.user_id = user_id
 
-    async def synthesize(self, state: MindState) -> AsyncGenerator[dict, None]:
-        """
-        基于 state.steps 的执行结果生成最终汇总答案。
-
-        流式 yield SSE 事件，完成后 state.final_response 被填充。
-        """
+    async def __call__(self, state: MindState) -> dict:
+        """LangGraph 节点函数：生成最终答案，返回状态更新"""
         final_steps_payload = [
             {
                 "step_id": step.step_id,
@@ -33,15 +29,16 @@ class Synthesizer:
                 "target": step.target,
                 "result": step.result,
             }
-            for step in state.steps
+            for step in state["steps"]
         ]
 
         synthesis_prompt = FinalSynthesisPrompt.format(
-            query=state.query,
+            query=state["query"],
             steps_json=json.dumps(final_steps_payload, ensure_ascii=False, indent=2),
         )
 
         final_response = ""
+        events = []
         conversation_model = await ModelManager.get_conversation_model(
             user_id=self.user_id
         )
@@ -50,9 +47,9 @@ class Synthesizer:
             config={"callbacks": [usage_metadata_callback]},
         ):
             final_response += chunk.content
-            yield {
+            events.append({
                 "event": "task_result",
                 "data": {"message": chunk.content},
-            }
+            })
 
-        state.final_response = final_response
+        return {"final_response": final_response, "events": events}

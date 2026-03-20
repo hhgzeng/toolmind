@@ -1,9 +1,14 @@
 """
-编排器 — MindAgent 的核心入口
+LangGraph 编排器 — MindAgent 的核心入口
 
-驱动 Planner → Executor → Synthesizer → Evaluator 的状态流转，
-处理自我反馈重试循环和会话持久化。
+使用 LangGraph StateGraph 构建状态机：
+  increment_loop → Planner → Executor → Synthesizer → Evaluator → (条件边: 重跑 / 结束)
 """
+
+import time
+
+from langgraph.graph import END, START, StateGraph
+from loguru import logger
 
 from toolmind.api.services.session import SessionService
 from toolmind.core.agents.evaluator import Evaluator
@@ -19,45 +24,88 @@ from toolmind.prompts.mind import GenerateTitlePrompt
 from toolmind.schema.mind import MindTask
 
 
+# ── LangGraph 辅助节点 & 条件边 ──
+
+
+async def _increment_loop(state: MindState) -> dict:
+    """每次进入规划前递增循环计数"""
+    new_count = state.get("loop_count", 0) + 1
+    events = []
+    if new_count > 1:
+        events.append({
+            "event": "step_result",
+            "data": {
+                "message": "正在重新规划任务并重头执行...",
+                "title": f"第 {new_count} 次重跑",
+            },
+        })
+    return {"loop_count": new_count, "events": events}
+
+
+def _should_retry(state: MindState) -> str:
+    """条件边：决定是否重跑"""
+    if state["eval_score"] >= 80:
+        return "end"
+    if state["loop_count"] >= state["max_loop"]:
+        return "end"
+    return "retry"
+
+
+def _build_graph(user_id: str, tool_manager: ToolManager):
+    """构建并编译 LangGraph 状态机"""
+
+    planner = Planner(user_id, tool_manager)
+    executor = Executor(user_id, tool_manager)
+    synthesizer = Synthesizer(user_id)
+    evaluator = Evaluator(user_id, tool_manager)
+
+    graph = StateGraph(MindState)
+
+    # ── 注册节点 ──
+    graph.add_node("increment_loop", _increment_loop)
+    graph.add_node("planner", planner)
+    graph.add_node("executor", executor)
+    graph.add_node("synthesizer", synthesizer)
+    graph.add_node("evaluator", evaluator)
+
+    # ── 注册边 ──
+    #   START → increment_loop → planner → executor → synthesizer → evaluator
+    #   evaluator →(条件)→ increment_loop（重跑）/ END（结束）
+    graph.add_edge(START, "increment_loop")
+    graph.add_edge("increment_loop", "planner")
+    graph.add_edge("planner", "executor")
+    graph.add_edge("executor", "synthesizer")
+    graph.add_edge("synthesizer", "evaluator")
+
+    graph.add_conditional_edges(
+        "evaluator",
+        _should_retry,
+        {"retry": "increment_loop", "end": END},
+    )
+
+    return graph.compile()
+
+
 class MindAgent:
     """
-    MindAgent 编排器
+    MindAgent 编排器（基于 LangGraph StateGraph）
 
-    对外 API 保持不变，内部委托给各子 Agent 完成工作。
+    对外 API 保持与原始 MindAgent 完全一致。
     """
 
     def __init__(self, user_id: str):
         self.user_id = user_id
-
-        # 初始化共享的工具管理器
         self.tool_manager = ToolManager(user_id)
-
-        # 初始化各子 Agent
-        self.planner = Planner(user_id, self.tool_manager)
-        self.executor = Executor(user_id, self.tool_manager)
-        self.synthesizer = Synthesizer(user_id)
-        self.evaluator = Evaluator(user_id, self.tool_manager)
+        self.graph = _build_graph(user_id, self.tool_manager)
 
     async def submit_mind_task(self, mind_task: MindTask):
-        """主入口：接收 MindTask，驱动状态机流转，yield SSE 事件"""
-
-        # ── 初始化状态 ──
-        state = MindState(
-            query=mind_task.query,
-            mcp_servers=mind_task.mcp_servers,
-            web_search=mind_task.web_search,
-            user_id=self.user_id,
-        )
+        """主入口：接收 MindTask，驱动 LangGraph 状态机，yield SSE 事件"""
+        task_start = time.monotonic()
 
         # ── 创建会话 ──
         session_model = await SessionService.create_session(
-            SessionCreate(
-                title="新对话",
-                user_id=self.user_id,
-                contexts=[],
-            )
+            SessionCreate(title="新对话", user_id=self.user_id, contexts=[])
         )
-        state.session_model = session_model
 
         yield {
             "event": "session_started",
@@ -72,87 +120,80 @@ class MindAgent:
             },
         }
 
-        # ── 状态机主循环（最多 max_loop 次） ──
-        while state.loop_count < state.max_loop:
-            state.loop_count += 1
+        # ── 初始化状态 ──
+        initial_state: MindState = {
+            "query": mind_task.query,
+            "mcp_servers": mind_task.mcp_servers,
+            "web_search": mind_task.web_search,
+            "user_id": self.user_id,
+            "steps": [],
+            "tasks_show": [],
+            "context_task": [],
+            "final_response": "",
+            "eval_score": 0,
+            "eval_reasoning": "",
+            "loop_count": 0,
+            "max_loop": 3,
+            "session_model": session_model,
+            "events": [],
+        }
 
-            if state.loop_count > 1:
-                yield {
-                    "event": "step_result",
-                    "data": {
-                        "message": "正在重新规划任务并重头执行...",
-                        "title": f"第 {state.loop_count} 次重跑",
-                    },
-                }
+        # ── 运行 LangGraph 状态机（带节点级耗时日志）──
+        final_state = initial_state
+        node_start = time.monotonic()
+        async for update in self.graph.astream(
+            initial_state, stream_mode="updates"
+        ):
+            for node_name, state_update in update.items():
+                node_elapsed = time.monotonic() - node_start
+                logger.info(f"[MindAgent] Node '{node_name}' completed in {node_elapsed:.2f}s")
+                node_start = time.monotonic()
 
-            # ── 1. 规划 ──
-            state = await self.planner.plan(state)
-            yield {"event": "generate_tasks", "data": {"graph": state.tasks_show}}
+                # 实时推送该节点产出的 SSE 事件
+                for sse_event in state_update.get("events", []):
+                    yield sse_event
+                # 合并状态以获取最终结果
+                final_state = {**final_state, **state_update}
 
-            # ── 2. 执行 ──
-            async for event in self.executor.execute(state):
-                yield event
+        total_elapsed = time.monotonic() - task_start
+        logger.info(f"[MindAgent] Total pipeline completed in {total_elapsed:.2f}s")
 
-            # ── 3. 汇总 ──
-            async for event in self.synthesizer.synthesize(state):
-                yield event
+        # ── 生成反馈消息 ──
+        score = final_state.get("eval_score", 0)
+        reasoning = final_state.get("eval_reasoning", "")
 
-            # ── 4. 评估 ──
-            yield {"event": "evaluating_result", "data": {}}
-            state = await self.evaluator.evaluate(state)
+        if score >= 80:
+            feedback_msg = (
+                f"\n\n\n> **✅ 自我反馈通过** (匹配度: {score}/100)\n"
+                f"> **理由**: {reasoning}\n\n---\n\n"
+            )
+        else:
+            feedback_msg = (
+                f"\n\n\n> **⚠️ 自我反馈未通过，已达最大重试次数** (匹配度: {score}/100)\n"
+                f"> **理由**: {reasoning}\n\n---\n\n"
+            )
 
-            score = state.eval_score
-            reasoning = state.eval_reasoning
+        yield {"event": "task_result", "data": {"message": feedback_msg}}
 
-            if score >= 80 or state.loop_count == state.max_loop:
-                # 评估通过（或达到最大重试次数）
-                pass_msg = (
-                    f"\n\n\n> **✅ 自我反馈通过** (匹配度: {score}/100)\n"
-                    f"> **理由**: {reasoning}\n\n---\n\n"
-                )
-                yield {"event": "task_result", "data": {"message": pass_msg}}
-                final_response_with_feedback = state.final_response + pass_msg
+        # ── 持久化会话 ──
+        final_response = final_state.get("final_response", "")
+        await SessionService.update_session_contexts(
+            session_model.session_id,
+            SessionContext(
+                query=mind_task.query,
+                task=final_state.get("context_task", []),
+                task_graph=final_state.get("tasks_show", []),
+                answer=final_response + feedback_msg,
+            ).model_dump(),
+        )
 
-                # 持久化会话上下文
-                await SessionService.update_session_contexts(
-                    session_model.session_id,
-                    SessionContext(
-                        query=state.query,
-                        task=state.context_task,
-                        task_graph=state.tasks_show,
-                        answer=final_response_with_feedback,
-                    ).model_dump(),
-                )
+        # ── 流式生成标题 ──
+        async for event in self._stream_title(session_model, mind_task.query):
+            yield event
 
-                # 流式生成会话标题
-                async for event in self._stream_title(state):
-                    yield event
-
-                break
-            else:
-                # 评估未通过，准备重跑
-                retry_msg = (
-                    f"\n\n\n> **⚠️ 自我反馈未通过** (匹配度: {score}/100)\n"
-                    f"> **理由**: {reasoning}\n"
-                    f"> \n> __系统正在进行第 {state.loop_count + 1} 次重跑尝试...__\n\n---\n\n"
-                )
-                yield {"event": "task_result", "data": {"message": retry_msg}}
-                final_response_with_feedback = state.final_response + retry_msg
-
-                await SessionService.update_session_contexts(
-                    session_model.session_id,
-                    SessionContext(
-                        query=state.query,
-                        task=state.context_task,
-                        task_graph=state.tasks_show,
-                        answer=final_response_with_feedback,
-                    ).model_dump(),
-                )
-
-    async def _stream_title(self, state: MindState):
+    async def _stream_title(self, session_model, query: str):
         """流式生成会话标题并持久化"""
-        session_model = state.session_model
-        title_prompt = GenerateTitlePrompt.format(query=state.query)
+        title_prompt = GenerateTitlePrompt.format(query=query)
         conversation_model = await ModelManager.get_conversation_model(
             user_id=self.user_id
         )

@@ -4,12 +4,14 @@
 负责 MCP 工具和内置工具（web_search）的获取、缓存和执行。
 """
 
+import asyncio
 import json
 from typing import List, Optional
 
 from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.tools.base import ToolException
 from langchain_core.utils.function_calling import convert_to_openai_tool
+from loguru import logger
 from toolmind.api.services.mcp_server import MCPService
 from toolmind.api.services.web_search import tavily_search as web_search
 from toolmind.core.mcp.manager import MCPManager
@@ -25,24 +27,42 @@ class ToolManager:
         self.mcp_manager: Optional[MCPManager] = None
         self.mcp_tools = []
         self.tool_mcp_server_dict = {}
+        # —— 工具列表缓存 ——
+        self._cached_tools: Optional[list] = None
+        self._cached_tools_key: Optional[tuple] = None
+        # —— web search 配置缓存 ——
+        self._web_search_config_cached = False
+        self._web_search_enabled: bool = True
+        self._web_search_api_key: Optional[str] = None
+
+    async def _ensure_web_search_config(self):
+        """查询并缓存 web search 配置（整个生命周期只查一次 DB）"""
+        if self._web_search_config_cached:
+            return
+        from toolmind.database.dao.web_search_config import WebSearchConfigDao
+
+        user_config = await WebSearchConfigDao.get_config_by_user_id(self.user_id)
+        if user_config:
+            self._web_search_enabled = user_config.enabled
+            self._web_search_api_key = user_config.api_key
+        else:
+            self._web_search_enabled = True
+            self._web_search_api_key = None
+        self._web_search_config_cached = True
 
     async def obtain_tools(
         self, mcp_servers: List[str], enable_web_search: bool = False
     ) -> list:
-        """获取可用工具列表（MCP + web_search）"""
+        """获取可用工具列表（MCP + web_search），带实例级缓存"""
+        cache_key = (tuple(sorted(mcp_servers)), enable_web_search)
+        if self._cached_tools is not None and self._cached_tools_key == cache_key:
+            return self._cached_tools
+
         tools = []
 
         # 内置搜索工具
-        from toolmind.database.dao.web_search_config import WebSearchConfigDao
-
-        user_config = await WebSearchConfigDao.get_config_by_user_id(self.user_id)
-
-        if user_config:
-            global_web_search_enabled = user_config.enabled
-        else:
-            global_web_search_enabled = True
-
-        if enable_web_search and global_web_search_enabled:
+        await self._ensure_web_search_config()
+        if enable_web_search and self._web_search_enabled:
             tools.append(convert_to_openai_tool(web_search))
 
         # MCP 工具
@@ -53,7 +73,22 @@ class ToolManager:
         ]
         tools.extend(mcp_tools)
 
+        self._cached_tools = tools
+        self._cached_tools_key = cache_key
         return tools
+
+    def get_tools_summary(self) -> list[dict]:
+        """返回工具的精简摘要（仅 name + description），供 Planner prompt 使用"""
+        if not self._cached_tools:
+            return []
+        summary = []
+        for tool in self._cached_tools:
+            func = tool.get("function", tool)
+            summary.append({
+                "name": func.get("name", ""),
+                "description": func.get("description", ""),
+            })
+        return summary
 
     async def _get_mcp_tools(self, mcp_servers: List[str]):
         """获取并缓存 MCP 工具"""
@@ -62,9 +97,12 @@ class ToolManager:
 
         servers_config = []
         enabled_tools = set()
+        # 批量获取 MCP 配置，记录到 dict 中避免后续重复查询
+        mcp_configs: dict[str, MCPConfig] = {}
         for mcp_id in mcp_servers:
             mcp_server = await MCPService.get_mcp_server_from_id(mcp_id)
             mcp_config = MCPConfig(**mcp_server)
+            mcp_configs[mcp_id] = mcp_config
 
             if mcp_config.tools:
                 enabled_tools.update(mcp_config.tools)
@@ -82,9 +120,8 @@ class ToolManager:
             ]
         else:
             filtered_tools = all_mcp_tools
-            for mcp_id in mcp_servers:
-                mcp_server = await MCPService.get_mcp_server_from_id(mcp_id)
-                mcp_config = MCPConfig(**mcp_server)
+            # 使用已缓存的 mcp_configs，不再重复查 DB
+            for mcp_id, mcp_config in mcp_configs.items():
                 for tool in filtered_tools:
                     self.tool_mcp_server_dict.setdefault(
                         tool.name, mcp_config.mcp_server_id
@@ -112,13 +149,11 @@ class ToolManager:
         else:
             if tool_name == "web_search":
                 from toolmind.api.services.web_search import _tavily_search
-                from toolmind.database.dao.web_search_config import WebSearchConfigDao
 
-                user_config = await WebSearchConfigDao.get_config_by_user_id(
-                    self.user_id
+                await self._ensure_web_search_config()
+                text_content = _tavily_search(
+                    **tool_args, api_key=self._web_search_api_key
                 )
-                api_key = user_config.api_key if user_config else None
-                text_content = _tavily_search(**tool_args, api_key=api_key)
             else:
                 text_content = f"[工具执行失败] 未知内置工具 {tool_name}"
 
@@ -127,18 +162,21 @@ class ToolManager:
     async def parse_function_call_response(
         self, message: AIMessage
     ) -> List[ToolMessage]:
-        """解析 AI 的 tool_calls 并批量执行，返回 ToolMessage 列表"""
-        tool_messages = []
-        if message.tool_calls:
-            for tool_call in message.tool_calls:
-                tool_name = tool_call.get("name")
-                tool_args = tool_call.get("args")
-                tool_call_id = tool_call.get("id")
+        """解析 AI 的 tool_calls 并并发执行，返回 ToolMessage 列表"""
+        if not message.tool_calls:
+            return []
 
-                content = await self.process_tool_result(tool_name, tool_args)
-                tool_messages.append(
-                    ToolMessage(
-                        content=content, name=tool_name, tool_call_id=tool_call_id
-                    )
-                )
-        return tool_messages
+        # 并发执行所有工具调用
+        async def _run_one(tool_call: dict) -> ToolMessage:
+            tool_name = tool_call.get("name")
+            tool_args = tool_call.get("args")
+            tool_call_id = tool_call.get("id")
+            content = await self.process_tool_result(tool_name, tool_args)
+            return ToolMessage(
+                content=content, name=tool_name, tool_call_id=tool_call_id
+            )
+
+        tool_messages = await asyncio.gather(
+            *[_run_one(tc) for tc in message.tool_calls]
+        )
+        return list(tool_messages)
