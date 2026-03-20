@@ -1,4 +1,4 @@
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -27,3 +27,11 @@ class MCPResponseFormat(BaseModel):
         ...,
         description="根据该mcp服务下提供的工具描述生成一个子Agent描述，当主Agent在什么场景下能够调用这个Agent的描述，描述需要加上：子智能体可以调用多个自身工具，所以将用户问题整合询问一次即可。字数在100字符以内",
     )
+
+
+class MCPConfig(BaseModel):
+    url: str
+    type: str = "sse"
+    tools: List[str] = []
+    server_name: str
+    mcp_server_id: str

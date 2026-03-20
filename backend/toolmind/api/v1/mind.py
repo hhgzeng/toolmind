@@ -3,7 +3,7 @@ import json
 from fastapi import APIRouter, Depends
 from starlette.responses import StreamingResponse
 from toolmind.api.services.user import UserPayload, get_login_user
-from toolmind.core.mind.agent import MindAgent
+from toolmind.core.agents import MindAgent
 from toolmind.schema.mind import MindTask
 from toolmind.schema.usage_stats import UsageStatsAgentType
 from toolmind.utils.contexts import set_agent_name_context, set_user_id_context

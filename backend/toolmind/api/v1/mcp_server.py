@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, Depends
 from loguru import logger
 from toolmind.api.services.mcp_server import MCPService
 from toolmind.api.services.user import UserPayload, get_login_user
-from toolmind.core.agents.structured_response_agent import StructuredResponseAgent
+from toolmind.core.mcp.agent import StructuredResponseAgent
 from toolmind.core.mcp.manager import MCPManager
 from toolmind.prompts.mcp import McpAsToolPrompt
 from toolmind.schema.mcp import MCPResponseFormat
