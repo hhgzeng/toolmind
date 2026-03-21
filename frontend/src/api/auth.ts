@@ -53,7 +53,7 @@ export const registerAPI = (data: RegisterForm) => {
 // 登出接口
 export const logoutAPI = () => {
   return request({
-    url: '/api/v1/user/logout',
+    url: '/api/v1/users/logout',
     method: 'POST'
   })
 }

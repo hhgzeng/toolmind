@@ -89,7 +89,6 @@ from toolmind.api.services.user import UserPayload, get_login_user
 from toolmind.api.services.user_management import UserManagementService
 from toolmind.schema.schemas import (
     ToggleUserStatusReq,
-    UpdateUserPasswordReq,
     UpdateUserRoleReq,
     resp_500,
 )
@@ -111,12 +110,6 @@ async def get_user_list(
     return resp_200(data)
 
 
-@router.put("/users/{user_id}/password", response_model=UnifiedResponseModel)
-async def reset_user_password(
-    user_id: str, req: UpdateUserPasswordReq, admin_user: UserPayload = Depends(require_admin)
-):
-    """管理员修改任意用户密码"""
-    return UserManagementService.update_user_password(user_id, req.new_password)
 
 
 @router.put("/users/{user_id}/role", response_model=UnifiedResponseModel)
@@ -124,6 +117,9 @@ async def update_user_role(
     user_id: str, req: UpdateUserRoleReq, admin_user: UserPayload = Depends(require_admin)
 ):
     """分配或取消管理员角色"""
+    if admin_user.user_id != "1":
+        return resp_500(message="只有超级管理员可以更改角色")
+
     if user_id == admin_user.user_id:
         return resp_500(message="你不能修改你自己的角色")
 
@@ -138,4 +134,17 @@ async def toggle_user_status(
     if user_id == admin_user.user_id:
         return resp_500(message="你不能禁用你自己的账号")
 
+    # 如果不是超级管理员，只能禁用普通用户
+    if admin_user.user_id != "1":
+        # 获取目标用户角色
+        target_user_role = UserManagementService.get_user_role_str(user_id)
+        if target_user_role == "admin" or user_id == "1":
+            return resp_500(message="普通管理员只能禁用普通用户的账号")
+
     return UserManagementService.toggle_user_status(user_id, req.enable)
+
+@router.post("/users/logout", response_model=UnifiedResponseModel)
+async def logout(Authorize: AuthJWT = Depends()):
+    """退出登录，清除 JWT cookies"""
+    Authorize.unset_jwt_cookies()
+    return resp_200(message="退出成功")

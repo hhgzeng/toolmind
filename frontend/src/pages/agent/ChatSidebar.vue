@@ -114,7 +114,7 @@ const groupedSessions = computed(() => {
       continue
     }
 
-    const date = new Date(session.createTime)
+    const date = new Date(session.updateTime || session.createTime)
     if (isNaN(date.getTime())) {
       // 无效日期放到最后
       const key = '未知'

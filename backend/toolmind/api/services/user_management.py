@@ -36,24 +36,6 @@ class UserManagementService:
 
         return {"total": total, "items": user_list, "page": page, "limit": limit}
 
-    @classmethod
-    def update_user_password(cls, user_id: str, new_password: str):
-        """管理员重置用户密码"""
-        user = UserDao.get_user(user_id)
-        if not user:
-            return resp_500(message="用户不存在")
-
-        try:
-            encrypted_password = UserService.encrypt_sha256_password(new_password)
-            UserDao.update_user(
-                user_id=user.user_id,
-                user_name=user.user_name,
-                user_password=encrypted_password,
-            )
-            return resp_200(message="密码修改成功")
-        except Exception as e:
-            logger.error(f"Failed to update password for user {user_id}: {e}")
-            return resp_500(message="修改密码失败")
 
     @classmethod
     def update_user_role(cls, user_id: str, new_role: str):
@@ -104,3 +86,10 @@ class UserManagementService:
         except Exception as e:
             logger.error(f"Failed to toggle status for user {user_id}: {e}")
             return resp_500(message="状态修改失败")
+
+    @classmethod
+    def get_user_role_str(cls, user_id: str) -> str:
+        """获取用户角色字符串 ('admin' or 'user')"""
+        roles = UserRoleDao.get_user_roles(user_id)
+        is_admin = any(r.role_id == AdminRole for r in roles)
+        return "admin" if is_admin else "user"

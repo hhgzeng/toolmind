@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { CloseBold, Edit, Search, User } from '@element-plus/icons-vue'
 import { computed, onMounted, ref } from 'vue'
+import { useUserStore } from '../../store/user'
 import { getUserListAPI, toggleUserStatusAPI, updateUserRoleAPI } from '../../api/users'
 
-const loading = ref(false)
+const userStore = useUserStore()
+const currentUser = computed(() => userStore.userInfo)
+
+const loading = ref(true)
 const users = ref<any[]>([])
 const searchKeyword = ref('')
 
@@ -59,6 +63,10 @@ const fetchUsers = async () => {
 
 // 打开更改角色弹窗
 const handleRoleChange = (user: any) => {
+  if (currentUser.value?.id !== '1') {
+    ElMessage.warning('只有超级管理员可以更改角色')
+    return
+  }
   if (String(user.user_id) === '1') {
     ElMessage.warning('不能修改超级管理员的角色')
     return
@@ -98,6 +106,12 @@ const cancelRoleChange = () => {
 const handleToggleStatus = (user: any) => {
   if (String(user.user_id) === '1') {
     ElMessage.warning('不能禁用/启用超级管理员账号')
+    return
+  }
+
+  // 如果不是超级管理员，且目标是管理员，则无权操作
+  if (currentUser.value?.id !== '1' && user.role === 'admin') {
+    ElMessage.warning('普通管理员只能禁用普通用户的账号')
     return
   }
 
@@ -153,7 +167,7 @@ onMounted(() => {
       <div class="header-actions">
         <div class="search-box">
           <el-input v-model="searchKeyword" placeholder="搜索用户名或ID..." :prefix-icon="Search" clearable
-            @clear="clearSearch" style="width: 260px" />
+            @clear="clearSearch" style="width: 300px" />
         </div>
       </div>
     </div>
@@ -208,15 +222,17 @@ onMounted(() => {
 
           <div class="cell col-actions">
             <div class="action-buttons">
-              <el-button :type="user.role === 'admin' ? 'warning' : 'primary'" size="small"
-                @click.stop="handleRoleChange(user)" class="action-btn role-btn">
+              <el-button v-if="currentUser?.id === '1'" :type="user.role === 'admin' ? 'warning' : 'primary'"
+                size="small" @click.stop="handleRoleChange(user)" class="action-btn role-btn">
                 <el-icon class="action-icon">
                   <Edit />
                 </el-icon>
                 <span>更改角色</span>
               </el-button>
-              <el-button :type="user.is_disabled ? 'success' : 'danger'" size="small"
-                @click.stop="handleToggleStatus(user)" class="action-btn status-btn">
+              <el-button
+                v-if="currentUser?.id === '1' || (currentUser?.role === 'admin' && user.role !== 'admin' && String(user.user_id) !== '1')"
+                :type="user.is_disabled ? 'success' : 'danger'" size="small" @click.stop="handleToggleStatus(user)"
+                class="action-btn status-btn">
                 <el-icon class="action-icon">
                   <CloseBold />
                 </el-icon>
@@ -310,9 +326,9 @@ onMounted(() => {
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 24px;
+    margin-bottom: 32px;
     background: linear-gradient(to right, #ffffff, #f8fafc);
-    padding: 24px 28px;
+    padding: 28px;
     border-radius: 24px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     position: relative;

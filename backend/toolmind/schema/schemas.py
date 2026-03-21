@@ -12,18 +12,12 @@ class CreateUserReq(BaseModel):
     password: str = Field(description="创建用户时的密码")
 
 
-class UpdateUserPasswordReq(BaseModel):
-    user_id: str = Field(description="用户ID")
-    new_password: str = Field(description="新密码")
-
 
 class UpdateUserRoleReq(BaseModel):
-    user_id: str = Field(description="用户ID")
     role: str = Field(description="角色分配（admin 或 user）")
 
 
 class ToggleUserStatusReq(BaseModel):
-    user_id: str = Field(description="用户ID")
     enable: bool = Field(description="是否解禁")
 
 

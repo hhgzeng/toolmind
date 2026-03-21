@@ -212,8 +212,6 @@ watch(
 // 当前这次 Agent 任务对应的工作区会话 ID（由后端在任务启动时创建）
 const currentSessionId = ref<string | null>(null)
 
-
-
 // 启动结果接收并流式回放缓冲
 const startReceivingResults = () => {
   console.log('🚀 [startReceivingResults] 被调用')

@@ -3,7 +3,6 @@ import type { RouteRecordRaw } from 'vue-router';
 import { createRouter, createWebHistory } from 'vue-router';
 import { ChatInput, ChatSidebar, Sessions } from '../pages/agent';
 import { Login, Register } from '../pages/login';
-
 import {
   AgentConfig,
   Dashboard,

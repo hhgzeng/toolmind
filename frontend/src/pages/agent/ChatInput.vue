@@ -24,7 +24,6 @@ const autoResize = () => {
 }
 
 
-
 // 发送消息
 const handleSend = async () => {
   if (!inputMessage.value.trim()) {
@@ -78,8 +77,6 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 onMounted(async () => {
 })
-
-
 </script>
 
 <template>
