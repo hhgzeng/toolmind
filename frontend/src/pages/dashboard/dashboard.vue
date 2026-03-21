@@ -1,110 +1,22 @@
-<template>
-  <div class="dashboard-container">
-    <div class="page-header">
-      <div class="header-titles">
-        <h2>
-          <el-icon class="dashboard-icon"><DataAnalysis /></el-icon>
-          数据看板
-        </h2>
-      </div>
-
-      <div class="header-actions">
-        <div class="filter-group">
-          <el-select
-            v-model="filters.model"
-            placeholder="全部模型"
-            clearable
-            filterable
-            class="filter-select"
-            :teleported="false"
-            fit-input-width
-            @change="handleFilterChange"
-            style="width: 250px"
-          >
-            <el-option label="全部模型" value="" />
-            <el-option
-              v-for="model in modelsList"
-              :key="model"
-              :label="model"
-              :value="model"
-            />
-          </el-select>
-        </div>
-
-        <div class="filter-group">
-          <el-select
-            v-model="filters.delta_days"
-            class="filter-select"
-            :teleported="false"
-            fit-input-width
-            @change="handleFilterChange"
-            style="width: 130px"
-          >
-          <el-option label="全部时间" :value="10000" />
-          <el-option label="周内" :value="7" />
-          <el-option label="月内" :value="30" />
-          <el-option label="年内" :value="365" />
-          </el-select>
-        </div>
-      </div>
-    </div>
-
-    <div class="kpi-container">
-      <div class="kpi-card kpi-card--primary">
-        <div class="kpi-top">
-          <div class="kpi-title">总调用次数</div>
-          <div class="kpi-icon">☎️</div>
-        </div>
-        <div class="kpi-value">{{ totalCalls.toLocaleString() }}</div>
-        <div class="kpi-desc">{{ periodText }}</div>
-      </div>
-      <div class="kpi-card kpi-card--warning">
-        <div class="kpi-top">
-          <div class="kpi-title">总 Token 消耗</div>
-          <div class="kpi-icon">Σ</div>
-        </div>
-        <div class="kpi-value">{{ totalTokens.toLocaleString() }}</div>
-        <div class="kpi-desc">输入 + 输出（{{ periodText }}）</div>
-      </div>
-    </div>
-
-    <div class="charts-container">
-      <!-- 模型调用次数折线图 -->
-      <div class="chart-wrapper">
-        <div class="chart-title">模型调用次数统计</div>
-        <div class="chart-content" ref="callCountChartRef"></div>
-        <div class="empty" v-if="!hasCallCountData">暂无数据</div>
-      </div>
-
-      <!-- Token 使用量柱状图 -->
-      <div class="chart-wrapper">
-        <div class="chart-title">Token 使用量统计</div>
-        <div class="chart-content" ref="tokenUsageChartRef"></div>
-        <div class="empty" v-if="!hasTokenUsageData">暂无数据</div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
-import { ElMessage } from 'element-plus'
 import { DataAnalysis } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 // 按需引入 ECharts，避免打包体积和解析问题
-import * as echarts from 'echarts/core'
+import { BarChart, LineChart } from 'echarts/charts'
+import { DataZoomComponent, GridComponent, LegendComponent, TitleComponent, TooltipComponent } from 'echarts/components'
 import type { ECharts as EChartsInstance } from 'echarts/core'
-import { LineChart, BarChart } from 'echarts/charts'
-import { TitleComponent, TooltipComponent, LegendComponent, GridComponent, DatasetComponent, DataZoomComponent } from 'echarts/components'
+import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-echarts.use([TitleComponent, TooltipComponent, LegendComponent, GridComponent, DatasetComponent, DataZoomComponent, LineChart, BarChart, CanvasRenderer])
 import {
-  getUsageStatsAPI,
   getUsageCountAPI,
   getUsageModelsAPI,
-  type UsageStatsRequest,
+  getUsageStatsAPI,
+  type UsageCountByDate,
   type UsageDataByDate,
-  type UsageCountByDate
-} from '../../apis/usage-stats'
+  type UsageStatsRequest
+} from '../../api/usage-stats'
+echarts.use([TitleComponent, TooltipComponent, LegendComponent, GridComponent, DataZoomComponent, LineChart, BarChart, CanvasRenderer])
 
 // 筛选条件
 const filters = ref<UsageStatsRequest>({
@@ -115,8 +27,6 @@ const filters = ref<UsageStatsRequest>({
 // 数据列表
 const modelsList = ref<string[]>([])
 
-// 加载状态
-const loading = ref(false)
 
 // 图表引用
 const callCountChartRef = ref<HTMLElement | null>(null)
@@ -154,13 +64,13 @@ const fetchModelsList = async () => {
 // 初始化调用次数折线图
 const initCallCountChart = () => {
   if (!callCountChartRef.value) return
-  
+
   if (callCountChart) {
     callCountChart.dispose()
   }
-  
+
   callCountChart = echarts.init(callCountChartRef.value)
-  
+
   const option = {
     color: ['#5B8FF9', '#61DDAA', '#65789B', '#F6BD16', '#7262fd', '#78D3F8'],
     tooltip: {
@@ -199,20 +109,20 @@ const initCallCountChart = () => {
     },
     series: []
   }
-  
+
   callCountChart.setOption(option)
 }
 
 // 初始化Token使用量柱状图
 const initTokenUsageChart = () => {
   if (!tokenUsageChartRef.value) return
-  
+
   if (tokenUsageChart) {
     tokenUsageChart.dispose()
   }
-  
+
   tokenUsageChart = echarts.init(tokenUsageChartRef.value)
-  
+
   const option = {
     color: ['#5AD8A6', '#5B8FF9'],
     tooltip: {
@@ -288,20 +198,20 @@ const initTokenUsageChart = () => {
       }
     ]
   }
-  
+
   tokenUsageChart.setOption(option)
 }
 
 // 更新调用次数折线图
 const updateCallCountChart = (data: UsageCountByDate) => {
   if (!callCountChart) return
-  
+
   const dates = Object.keys(data).sort()
   const seriesMap = new Map<string, number[]>()
-  
+
   // 仅按模型维度统计
   const dataKey = 'model'
-  
+
   // 收集所有系列数据
   dates.forEach(date => {
     const dayData = data[date][dataKey]
@@ -313,7 +223,7 @@ const updateCallCountChart = (data: UsageCountByDate) => {
       seriesMap.get(name)![index] = count
     })
   })
-  
+
   // 构建图表配置
   const series = Array.from(seriesMap.entries()).map(([name, data]) => ({
     name,
@@ -327,7 +237,7 @@ const updateCallCountChart = (data: UsageCountByDate) => {
       opacity: 0.08
     }
   }))
-  
+
   callCountChart.setOption({
     xAxis: {
       data: dates
@@ -344,34 +254,34 @@ const updateCallCountChart = (data: UsageCountByDate) => {
 // 更新Token使用量柱状图
 const updateTokenUsageChart = (data: UsageDataByDate) => {
   if (!tokenUsageChart) return
-  
+
   const dates = Object.keys(data).sort()
-  
+
   // 仅按模型维度统计
   const dataKey = 'model'
-  
+
   const inputTokens: number[] = []
   const outputTokens: number[] = []
   const totalTokens: number[] = []
-  
+
   // 聚合每天的Token数据
   dates.forEach(date => {
     const dayData = data[date][dataKey]
     let dayInputTotal = 0
     let dayOutputTotal = 0
     let dayTotal = 0
-    
+
     Object.values(dayData).forEach((tokenData: any) => {
       dayInputTotal += tokenData.input_tokens || 0
       dayOutputTotal += tokenData.output_tokens || 0
       dayTotal += tokenData.total_tokens || 0
     })
-    
+
     inputTokens.push(dayInputTotal)
     outputTokens.push(dayOutputTotal)
     totalTokens.push(dayTotal)
   })
-  
+
   tokenUsageChart.setOption({
     xAxis: {
       data: dates
@@ -393,39 +303,35 @@ const updateTokenUsageChart = (data: UsageDataByDate) => {
 
 // 获取使用统计数据
 const fetchUsageData = async () => {
-  loading.value = true
-  
   try {
     const params: UsageStatsRequest = {
       model: filters.value.model || undefined,
       delta_days: filters.value.delta_days
     }
-    
+
     // 获取调用次数数据
     const countRes = await getUsageCountAPI(params)
     if (countRes.data.status_code === 200) {
       updateCallCountChart(countRes.data.data)
-      // 累计调用次数（使用显式遍历避免 unknown 类型问题）
-      const dk: 'agent' | 'model' = (filters.value.agent ? 'agent' : 'model')
+      // 累计调用次数
       let calls = 0
       const dayList = Object.values(countRes.data.data || {}) as Array<any>
       for (const day of dayList) {
-        const map = (day?.[dk] || {}) as Record<string, number>
+        const map = (day?.model || {}) as Record<string, number>
         for (const v of Object.values(map)) calls += Number(v || 0)
       }
       totalCalls.value = calls
     }
-    
+
     // 获取Token使用量数据
     const statsRes = await getUsageStatsAPI(params)
     if (statsRes.data.status_code === 200) {
       updateTokenUsageChart(statsRes.data.data)
-      // 累计Token（使用显式遍历避免 unknown 类型问题）
-      const dk: 'agent' | 'model' = (filters.value.agent ? 'agent' : 'model')
+      // 累计Token
       let tokens = 0
       const dayList = Object.values(statsRes.data.data || {}) as Array<any>
       for (const day of dayList) {
-        const map = (day?.[dk] || {}) as Record<string, { total_tokens?: number }>
+        const map = (day?.model || {}) as Record<string, { total_tokens?: number }>
         for (const obj of Object.values(map)) tokens += Number(obj?.total_tokens || 0)
       }
       totalTokens.value = tokens
@@ -433,8 +339,6 @@ const fetchUsageData = async () => {
   } catch (error) {
     console.error('获取使用统计数据失败:', error)
     ElMessage.error('获取数据失败')
-  } finally {
-    loading.value = false
   }
 }
 
@@ -452,17 +356,17 @@ const handleResize = () => {
 // 初始化
 onMounted(async () => {
   await nextTick()
-  
+
   // 获取筛选列表
   await fetchModelsList()
-  
+
   // 初始化图表
   initCallCountChart()
   initTokenUsageChart()
-  
+
   // 加载数据
   await fetchUsageData()
-  
+
   // 监听窗口大小变化
   window.addEventListener('resize', handleResize)
 })
@@ -470,18 +374,88 @@ onMounted(async () => {
 // 清理
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
-  
+
   if (callCountChart) {
     callCountChart.dispose()
     callCountChart = null
   }
-  
+
   if (tokenUsageChart) {
     tokenUsageChart.dispose()
     tokenUsageChart = null
   }
 })
 </script>
+
+<template>
+  <div class="dashboard-container">
+    <div class="page-header">
+      <div class="header-titles">
+        <h2>
+          <el-icon class="dashboard-icon">
+            <DataAnalysis />
+          </el-icon>
+          数据看板
+        </h2>
+      </div>
+
+      <div class="header-actions">
+        <div class="filter-group">
+          <el-select v-model="filters.model" placeholder="全部模型" clearable filterable class="filter-select"
+            :teleported="false" fit-input-width @change="handleFilterChange" style="width: 250px">
+            <el-option label="全部模型" value="" />
+            <el-option v-for="model in modelsList" :key="model" :label="model" :value="model" />
+          </el-select>
+        </div>
+
+        <div class="filter-group">
+          <el-select v-model="filters.delta_days" class="filter-select" :teleported="false" fit-input-width
+            @change="handleFilterChange" style="width: 130px">
+            <el-option label="全部时间" :value="10000" />
+            <el-option label="周内" :value="7" />
+            <el-option label="月内" :value="30" />
+            <el-option label="年内" :value="365" />
+          </el-select>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-container">
+      <div class="kpi-card kpi-card--primary">
+        <div class="kpi-top">
+          <div class="kpi-title">总调用次数</div>
+          <div class="kpi-icon">☎️</div>
+        </div>
+        <div class="kpi-value">{{ totalCalls.toLocaleString() }}</div>
+        <div class="kpi-desc">{{ periodText }}</div>
+      </div>
+      <div class="kpi-card kpi-card--warning">
+        <div class="kpi-top">
+          <div class="kpi-title">总 Token 消耗</div>
+          <div class="kpi-icon">Σ</div>
+        </div>
+        <div class="kpi-value">{{ totalTokens.toLocaleString() }}</div>
+        <div class="kpi-desc">输入 + 输出（{{ periodText }}）</div>
+      </div>
+    </div>
+
+    <div class="charts-container">
+      <!-- 模型调用次数折线图 -->
+      <div class="chart-wrapper">
+        <div class="chart-title">模型调用次数统计</div>
+        <div class="chart-content" ref="callCountChartRef"></div>
+        <div class="empty" v-if="!hasCallCountData">暂无数据</div>
+      </div>
+
+      <!-- Token 使用量柱状图 -->
+      <div class="chart-wrapper">
+        <div class="chart-title">Token 使用量统计</div>
+        <div class="chart-content" ref="tokenUsageChartRef"></div>
+        <div class="empty" v-if="!hasTokenUsageData">暂无数据</div>
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped lang="scss">
 .dashboard-container {
@@ -509,7 +483,7 @@ onBeforeUnmount(() => {
     align-items: center;
     gap: 12px;
     color: #303133;
-    
+
     .dashboard-icon {
       font-size: 30px;
       color: #303133;
@@ -542,19 +516,23 @@ onBeforeUnmount(() => {
   min-height: 36px !important;
   height: 36px !important;
 }
+
 .filter-select :deep(.el-select__placeholder),
 .filter-select :deep(.el-select__selected-item) {
   color: #475569;
   font-size: 14px;
   line-height: 1.2;
 }
+
 .filter-select :deep(.el-select__wrapper.is-hovering),
 .filter-select :deep(.el-select__wrapper:hover) {
   box-shadow: 0 0 0 1px #a8abb2 inset !important;
 }
+
 .filter-select :deep(.el-select__wrapper.is-focused) {
   box-shadow: 0 0 0 1.5px #409eff inset !important;
 }
+
 .filter-select :deep(.el-select__caret) {
   color: #94a3b8;
   font-size: 16px;
@@ -563,21 +541,24 @@ onBeforeUnmount(() => {
 /* 下拉项美化 */
 .filter-select :deep(.el-popper) {
   border-radius: 24px !important;
-  box-shadow: 0 12px 32px rgba(0,0,0,.08) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .08) !important;
   border: 1px solid #eef0f4 !important;
 }
+
 .filter-select :deep(.el-select-dropdown__item) {
   border-radius: 24px !important;
   margin: 0 8px;
   width: calc(100% - 16px);
   color: #475569;
 }
+
 .filter-select :deep(.el-select-dropdown__item.is-hovering),
 .filter-select :deep(.el-select-dropdown__item.hover),
 .filter-select :deep(.el-select-dropdown__item:hover) {
   background: #f1f5f9;
   color: #1e293b;
 }
+
 .filter-select :deep(.el-select-dropdown__item.is-selected),
 .filter-select :deep(.el-select-dropdown__item.selected) {
   background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
@@ -612,6 +593,7 @@ onBeforeUnmount(() => {
     color: #64748b;
     margin-bottom: 6px;
   }
+
   .kpi-value {
     font-size: 32px;
     font-weight: 700;
@@ -619,18 +601,21 @@ onBeforeUnmount(() => {
     line-height: 1.2;
     letter-spacing: -0.02em;
   }
+
   .kpi-desc {
     margin-top: 8px;
     font-size: 13px;
     color: #94a3b8;
     font-weight: 500;
   }
+
   .kpi-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 12px;
   }
+
   .kpi-icon {
     width: 44px;
     height: 44px;
@@ -649,15 +634,18 @@ onBeforeUnmount(() => {
 .kpi-card--primary {
   background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%);
   border-color: #e0f2fe;
+
   .kpi-icon {
     background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
     color: #0284c7;
     box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
   }
 }
+
 .kpi-card--warning {
   background: linear-gradient(180deg, #ffffff 0%, #fff7ed 100%);
   border-color: #ffedd5;
+
   .kpi-icon {
     background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
     color: #ea580c;
@@ -680,7 +668,7 @@ onBeforeUnmount(() => {
   position: relative;
   border: 1px solid #eef0f4;
   transition: all 0.3s ease;
-  
+
   &:hover {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   }
@@ -827,4 +815,3 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-

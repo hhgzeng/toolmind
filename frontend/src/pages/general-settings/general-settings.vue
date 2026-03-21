@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Setting, Sunny, Moon } from '@element-plus/icons-vue'
-import { theme as useTheme } from '../../apis/theme'
+import { Moon, Setting, Sunny } from '@element-plus/icons-vue';
+import { theme as useTheme } from '../../api/theme';
 
 const { theme, setTheme } = useTheme()
 </script>
@@ -23,26 +23,22 @@ const { theme, setTheme } = useTheme()
 
       <div class="theme-control">
         <div class="theme-grid">
-          <div
-            class="theme-card"
-            :class="{ active: theme === 'light' }"
-            @click="setTheme('light')"
-          >
+          <div class="theme-card" :class="{ active: theme === 'light' }" @click="setTheme('light')">
             <div class="theme-icon light">
-              <el-icon><Sunny /></el-icon>
+              <el-icon>
+                <Sunny />
+              </el-icon>
             </div>
             <div class="theme-info">
               <h4>浅色</h4>
             </div>
           </div>
 
-          <div
-            class="theme-card"
-            :class="{ active: theme === 'dark' }"
-            @click="setTheme('dark')"
-          >
+          <div class="theme-card" :class="{ active: theme === 'dark' }" @click="setTheme('dark')">
             <div class="theme-icon dark">
-              <el-icon><Moon /></el-icon>
+              <el-icon>
+                <Moon />
+              </el-icon>
             </div>
             <div class="theme-info">
               <h4>深色</h4>
@@ -90,15 +86,10 @@ const { theme, setTheme } = useTheme()
       }
     }
 
-    .header-subtitle {
-      font-size: 14px;
-      color: #64748b;
-    }
   }
 }
 
 .settings-section {
-  margin-top: 0;
   background: #ffffff;
   border-radius: 24px;
   padding: 32px;
@@ -115,12 +106,6 @@ const { theme, setTheme } = useTheme()
       font-weight: 700;
       color: #303133;
       margin: 0 0 8px 0;
-    }
-
-    p {
-      color: #909399;
-      font-size: 14px;
-      margin: 0;
     }
   }
 
@@ -190,12 +175,6 @@ const { theme, setTheme } = useTheme()
           font-weight: 600;
           color: #303133;
         }
-
-        p {
-          margin: 0;
-          font-size: 13px;
-          color: #606266;
-        }
       }
     }
   }
@@ -211,10 +190,6 @@ const { theme, setTheme } = useTheme()
       h2 {
         text-align: center;
         justify-content: center;
-      }
-
-      .header-subtitle {
-        text-align: center;
       }
     }
   }
@@ -236,10 +211,6 @@ const { theme, setTheme } = useTheme()
           color: #f5f5f7;
         }
       }
-
-      .header-subtitle {
-        color: rgba(255, 255, 255, 0.55);
-      }
     }
   }
 
@@ -251,10 +222,6 @@ const { theme, setTheme } = useTheme()
     .section-title {
       h3 {
         color: #f5f5f7;
-      }
-
-      p {
-        color: rgba(255, 255, 255, 0.55);
       }
     }
 
@@ -278,6 +245,7 @@ const { theme, setTheme } = useTheme()
         .theme-icon {
           &.light {
             background: rgba(251, 191, 36, 0.1);
+
             .el-icon {
               color: #f59e0b;
             }
@@ -285,6 +253,7 @@ const { theme, setTheme } = useTheme()
 
           &.dark {
             background: rgba(77, 107, 254, 0.12);
+
             .el-icon {
               color: #4d6bfe;
             }
@@ -295,14 +264,9 @@ const { theme, setTheme } = useTheme()
           h4 {
             color: #f5f5f7;
           }
-
-          p {
-            color: rgba(255, 255, 255, 0.55);
-          }
         }
       }
     }
   }
 }
 </style>
-

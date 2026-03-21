@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { User, Search, Edit, CloseBold } from '@element-plus/icons-vue'
-import { getUserListAPI, updateUserRoleAPI, toggleUserStatusAPI } from '../../apis/user-management'
+import { CloseBold, Edit, Search, User } from '@element-plus/icons-vue'
+import { computed, onMounted, ref } from 'vue'
+import { getUserListAPI, toggleUserStatusAPI, updateUserRoleAPI } from '../../api/user-management'
 
 const loading = ref(false)
 const users = ref<any[]>([])
@@ -152,14 +152,8 @@ onMounted(() => {
       </h2>
       <div class="header-actions">
         <div class="search-box">
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索用户名或ID..."
-            :prefix-icon="Search"
-            clearable
-            @clear="clearSearch"
-            style="width: 260px"
-          />
+          <el-input v-model="searchKeyword" placeholder="搜索用户名或ID..." :prefix-icon="Search" clearable
+            @clear="clearSearch" style="width: 260px" />
         </div>
       </div>
     </div>
@@ -173,11 +167,7 @@ onMounted(() => {
         <div class="header-col col-actions">操作</div>
       </div>
       <div class="list-body" v-if="filteredUsers.length > 0">
-        <div
-          v-for="user in filteredUsers"
-          :key="user.user_id"
-          class="list-row"
-        >
+        <div v-for="user in filteredUsers" :key="user.user_id" class="list-row">
           <div class="cell col-user">
             <div class="user-info">
               <div class="avatar">
@@ -186,13 +176,8 @@ onMounted(() => {
               <div class="user-meta">
                 <div class="user-name">
                   {{ user.user_name }}
-                  <el-tag
-                    v-if="String(user.user_id) === '1'"
-                    size="small"
-                    type="warning"
-                    effect="plain"
-                    class="super-admin-tag"
-                  >
+                  <el-tag v-if="String(user.user_id) === '1'" size="small" type="warning" effect="plain"
+                    class="super-admin-tag">
                     超级管理员
                   </el-tag>
                 </div>
@@ -202,23 +187,15 @@ onMounted(() => {
           </div>
 
           <div class="cell col-role">
-            <el-tag
-              :type="user.role === 'admin' ? 'success' : 'info'"
-              size="small"
-              effect="plain"
-              :class="['role-tag-card', { 'admin-tag': user.role === 'admin' }]"
-            >
+            <el-tag :type="user.role === 'admin' ? 'success' : 'info'" size="small" effect="plain"
+              :class="['role-tag-card', { 'admin-tag': user.role === 'admin' }]">
               {{ user.role === 'admin' ? '管理员' : '普通用户' }}
             </el-tag>
           </div>
 
           <div class="cell col-status">
-            <el-tag
-              :type="user.is_disabled ? 'danger' : 'primary'"
-              size="small"
-              effect="plain"
-              :class="['status-tag-card', { 'is-disabled': user.is_disabled }]"
-            >
+            <el-tag :type="user.is_disabled ? 'danger' : 'primary'" size="small" effect="plain"
+              :class="['status-tag-card', { 'is-disabled': user.is_disabled }]">
               {{ user.is_disabled ? '已禁用' : '正常' }}
             </el-tag>
           </div>
@@ -231,23 +208,15 @@ onMounted(() => {
 
           <div class="cell col-actions">
             <div class="action-buttons">
-              <el-button
-                :type="user.role === 'admin' ? 'warning' : 'primary'"
-                size="small"
-                @click.stop="handleRoleChange(user)"
-                class="action-btn role-btn"
-              >
+              <el-button :type="user.role === 'admin' ? 'warning' : 'primary'" size="small"
+                @click.stop="handleRoleChange(user)" class="action-btn role-btn">
                 <el-icon class="action-icon">
                   <Edit />
                 </el-icon>
                 <span>更改角色</span>
               </el-button>
-              <el-button
-                :type="user.is_disabled ? 'success' : 'danger'"
-                size="small"
-                @click.stop="handleToggleStatus(user)"
-                class="action-btn status-btn"
-              >
+              <el-button :type="user.is_disabled ? 'success' : 'danger'" size="small"
+                @click.stop="handleToggleStatus(user)" class="action-btn status-btn">
                 <el-icon class="action-icon">
                   <CloseBold />
                 </el-icon>
@@ -267,11 +236,7 @@ onMounted(() => {
     <!-- 更改角色弹窗 -->
     <Teleport to="body">
       <transition name="fade">
-        <div
-          v-if="roleDialogVisible"
-          class="dialog-overlay"
-          @click="cancelRoleChange"
-        >
+        <div v-if="roleDialogVisible" class="dialog-overlay" @click="cancelRoleChange">
           <div class="dialog-container" @click.stop>
             <div class="dialog-body">
               <div class="dialog-title-row">
@@ -291,18 +256,10 @@ onMounted(() => {
               </p>
             </div>
             <div class="dialog-footer">
-              <button
-                class="dialog-btn cancel-btn"
-                @click.stop="cancelRoleChange"
-                :disabled="roleLoading"
-              >
+              <button class="dialog-btn cancel-btn" @click.stop="cancelRoleChange" :disabled="roleLoading">
                 取消
               </button>
-              <button
-                class="dialog-btn confirm-btn"
-                @click.stop="confirmRoleChange"
-                :disabled="roleLoading"
-              >
+              <button class="dialog-btn confirm-btn" @click.stop="confirmRoleChange" :disabled="roleLoading">
                 {{ roleLoading ? '保存中...' : '确认更改' }}
               </button>
             </div>
@@ -314,11 +271,7 @@ onMounted(() => {
     <!-- 启用 / 禁用弹窗 -->
     <Teleport to="body">
       <transition name="fade">
-        <div
-          v-if="statusDialogVisible"
-          class="confirm-dialog-overlay"
-          @click="cancelToggleStatus"
-        >
+        <div v-if="statusDialogVisible" class="confirm-dialog-overlay" @click="cancelToggleStatus">
           <div class="confirm-dialog" @click.stop>
             <h3 class="dialog-title">
               {{ statusActionName }}账号
@@ -329,18 +282,12 @@ onMounted(() => {
               吗？
             </p>
             <div class="confirm-dialog-footer">
-              <button
-                class="confirm-dialog-btn confirm-cancel-btn"
-                @click="cancelToggleStatus"
-                :disabled="statusLoading"
-              >
+              <button class="confirm-dialog-btn confirm-cancel-btn" @click="cancelToggleStatus"
+                :disabled="statusLoading">
                 取消
               </button>
-              <button
-                class="confirm-dialog-btn confirm-delete-btn"
-                @click="confirmToggleStatus"
-                :disabled="statusLoading"
-              >
+              <button class="confirm-dialog-btn confirm-delete-btn" @click="confirmToggleStatus"
+                :disabled="statusLoading">
                 {{ statusLoading ? '处理中...' : `确认${statusActionName}` }}
               </button>
             </div>
@@ -710,75 +657,11 @@ onMounted(() => {
   }
 }
 
-.dialog-desc {
-  margin: 4px 0 20px;
-  font-size: 14px;
-  color: #6b7280;
-}
-
 .dialog-message {
   margin: 12px 0 24px;
   font-size: 14px;
   color: #4b5563;
   line-height: 1.6;
-}
-
-.form-item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.form-item:last-child {
-  margin-bottom: 0;
-}
-
-.form-label {
-  width: 80px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-  flex-shrink: 0;
-}
-
-.label-text {
-  color: #374151;
-}
-
-.required-mark {
-  color: #ef4444;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.input-wrapper {
-  flex: 1;
-}
-
-.form-input {
-  width: 100%;
-  padding: 9px 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 999px;
-  font-size: 14px;
-  color: #111827;
-  background: #ffffff;
-  transition: all 0.2s ease;
-  box-sizing: border-box;
-
-  &:focus {
-    outline: none;
-    border-color: #409eff;
-    box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.15);
-  }
-
-  &::placeholder {
-    color: #9ca3af;
-  }
 }
 
 .dialog-footer {
@@ -892,6 +775,7 @@ onMounted(() => {
     transform: scale(0.9);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -902,6 +786,7 @@ onMounted(() => {
 .fade-leave-active {
   transition: opacity 0.2s ease;
 }
+
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
@@ -943,7 +828,7 @@ onMounted(() => {
         }
       }
     }
-    
+
     .user-card-list {
       background-color: #1c1c1e;
       border-color: #2c2c2e;
@@ -993,23 +878,7 @@ onMounted(() => {
         color: rgba(255, 255, 255, 0.65);
       }
     }
-    
-    :deep(.el-pagination) {
-      --el-pagination-bg-color: transparent;
-      --el-pagination-text-color: #f5f5f7;
-      --el-pagination-button-color: #f5f5f7;
-      --el-pagination-button-disabled-bg-color: transparent;
-      button:disabled {
-        background-color: transparent;
-      }
-      .el-input__wrapper {
-        background-color: #2c2c2e;
-        box-shadow: 0 0 0 1px #3a3a3c inset;
-      }
-      .el-input__inner {
-        color: #f5f5f7;
-      }
-    }
+
   }
 
   /* 自定义弹窗深色模式 */
@@ -1029,32 +898,8 @@ onMounted(() => {
       color: #f5f5f7;
     }
 
-    .dialog-desc,
     .dialog-message {
       color: rgba(255, 255, 255, 0.75);
-    }
-
-    .form-label {
-      color: #e5e5ea;
-    }
-
-    .label-text {
-      color: #e5e5ea;
-    }
-
-    .form-input {
-      background: #2c2c2e;
-      border-color: #3a3a3c;
-      color: #f5f5f7;
-
-      &::placeholder {
-        color: rgba(255, 255, 255, 0.4);
-      }
-
-      &:focus {
-        border-color: #4d6bfe;
-        background: #2c2c2e;
-      }
     }
 
     .dialog-footer {

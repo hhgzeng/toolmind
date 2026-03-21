@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { Setting, User } from "@element-plus/icons-vue"
 import { computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { theme as useTheme } from "../apis/theme"
+import { theme as useTheme } from "../api/theme"
 import { useUserStore } from "../store/user"
 
 const route = useRoute()
@@ -15,27 +14,13 @@ const menuTextColor = computed(() => (theme.value === "dark" ? "rgba(255, 255, 2
 const menuActiveTextColor = computed(() => (theme.value === "dark" ? "#f5f5f7" : "#1a1a1a"))
 
 const goCurrent = (item: string) => {
-  const routes: Record<string, string> = {
-    "session": "/session",
-    "model": "/model",
-    "mind-config": "/mind-config",
-    "web-search": "/web-search",
-    "mcp-server": "/mcp-server",
-    "dashboard": "/dashboard",
-    "general-settings": "/general-settings",
-    "user-management": "/user-management"
-  }
-
-  router.push(routes[item] || "/")
+  router.push(item ? `/${item}` : "/")
 }
 
 watch(
   route,
-  (val) => {
+  () => {
     current.value = (route.meta.current as string) || "general-settings"
-  },
-  {
-    immediate: true
   }
 )
 </script>
@@ -125,7 +110,6 @@ watch(
 
 <style lang="scss" scoped>
 .ai-body {
-  @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap');
   overflow: hidden;
 
   .ai-main {

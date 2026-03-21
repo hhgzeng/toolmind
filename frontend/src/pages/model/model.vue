@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { Cpu, Delete, Edit, Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Edit, Delete, Connection, Cpu, Search } from '@element-plus/icons-vue'
-import { 
-  getVisibleLLMsAPI, 
-  createLLMAPI, 
-  updateLLMAPI,
+import { computed, onMounted, ref } from 'vue'
+import {
+  createLLMAPI,
   deleteLLMAPI,
-  type LLMResponse,
+  getVisibleLLMsAPI,
+  updateLLMAPI,
   type CreateLLMRequest,
+  type LLMResponse,
   type UpdateLLMRequest
-} from '../../apis/llm'
+} from '../../api/llm'
 
 // 响应式数据
 const models = ref<LLMResponse[]>([])
@@ -50,17 +50,17 @@ const fetchModels = async () => {
   loading.value = true
   try {
     const response = await getVisibleLLMsAPI()
-    
+
     if (response.data.status_code === 200) {
       const data = response.data.data || {}
       const allModels: LLMResponse[] = []
-      
+
       Object.values(data).forEach((typeModels: any) => {
         if (Array.isArray(typeModels)) {
           allModels.push(...typeModels)
         }
       })
-      
+
       models.value = allModels
     } else {
       ElMessage.error(response.data.status_message || '获取模型列表失败')
@@ -77,7 +77,7 @@ const filteredModels = computed(() => {
   if (!searchKeyword.value) {
     return models.value
   }
-  
+
   const keyword = searchKeyword.value.toLowerCase()
   return models.value.filter(model => {
     return (
@@ -111,11 +111,11 @@ const handleCreate = async () => {
     ElMessage.error('请填写所有必填字段')
     return
   }
-  
+
   createLoading.value = true
   try {
     const response = await createLLMAPI(createForm.value)
-    
+
     if (response.data.status_code === 200) {
       createDialogVisible.value = false
       fetchModels()
@@ -147,11 +147,11 @@ const handleEdit = async () => {
     ElMessage.error('请填写所有必填字段')
     return
   }
-  
+
   editLoading.value = true
   try {
     const response = await updateLLMAPI(editForm.value)
-    
+
     if (response.data.status_code === 200) {
       editDialogVisible.value = false
       fetchModels()
@@ -175,11 +175,11 @@ const deleteModel = async (model: LLMResponse) => {
 // 确认删除模型
 const confirmDelete = async () => {
   if (!modelToDelete.value) return
-  
+
   deleteLoading.value = true
   try {
     const response = await deleteLLMAPI({ llm_id: modelToDelete.value.llm_id })
-    
+
     if (response.data.status_code === 200) {
       deleteDialogVisible.value = false
       fetchModels()
@@ -203,22 +203,22 @@ const cancelDelete = () => {
 const truncateUrl = (url: string, maxLength: number): string => {
   if (!url) return '';
   if (url.length <= maxLength) return url;
-  
+
   const protocol = url.includes('://') ? url.split('://')[0] + '://' : '';
   const domainPath = url.replace(protocol, '');
-  
+
   // 如果协议+3个点+最后15个字符超过了最大长度，就只显示开头和结尾
   if (protocol.length + 3 + 15 >= maxLength) {
     const start = protocol + domainPath.substring(0, Math.floor((maxLength - protocol.length - 3) / 2));
     const end = domainPath.substring(domainPath.length - Math.floor((maxLength - protocol.length - 3) / 2));
     return start + '...' + end;
   }
-  
+
   // 否则显示协议+域名开头+...+路径结尾
   const visibleLength = maxLength - protocol.length - 3;
   const start = domainPath.substring(0, Math.floor(visibleLength / 2));
   const end = domainPath.substring(domainPath.length - Math.floor(visibleLength / 2));
-  
+
   return protocol + start + '...' + end;
 };
 
@@ -232,29 +232,19 @@ onMounted(() => {
     <!-- 页面头部 -->
     <div class="page-header">
       <h2>
-        <el-icon class="model-icon"><Cpu /></el-icon>
+        <el-icon class="model-icon">
+          <Cpu />
+        </el-icon>
         模型管理
       </h2>
       <div class="header-actions">
         <div class="search-box">
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索模型名称或提供商..."
-            :prefix-icon="Search"
-            clearable
-            @clear="clearSearch"
-            style="width: 300px"
-          />
+          <el-input v-model="searchKeyword" placeholder="搜索模型名称或提供商..." :prefix-icon="Search" clearable
+            @clear="clearSearch" style="width: 300px" />
         </div>
-        
-        <div class="action-buttons">
 
-          <el-button 
-            type="primary" 
-            :icon="Plus"
-            @click="openCreateDialog"
-            class="add-btn"
-          >
+        <div class="action-buttons">
+          <el-button type="primary" :icon="Plus" @click="openCreateDialog" class="add-btn">
             添加模型
           </el-button>
         </div>
@@ -271,11 +261,7 @@ onMounted(() => {
           <div class="header-col col-actions">操作</div>
         </div>
         <div class="list-body">
-          <div 
-            v-for="row in filteredModels" 
-            :key="row.llm_id" 
-            class="list-row"
-          >
+          <div v-for="row in filteredModels" :key="row.llm_id" class="list-row">
             <!-- 模型信息列 -->
             <div class="cell col-model">
               <div class="model-info-cell">
@@ -300,24 +286,18 @@ onMounted(() => {
             <!-- 操作列 -->
             <div class="cell col-actions">
               <div class="action-buttons-cell">
-                <el-button 
-                  size="small" 
-                  type="primary"
-                  @click.stop="openEditDialog(row)"
-                  title="编辑模型"
-                  class="action-btn edit-btn"
-                >
-                  <el-icon><Edit /></el-icon>
+                <el-button size="small" type="primary" @click.stop="openEditDialog(row)" title="编辑模型"
+                  class="action-btn edit-btn">
+                  <el-icon>
+                    <Edit />
+                  </el-icon>
                   <span>编辑</span>
                 </el-button>
-                <el-button 
-                  size="small" 
-                  type="danger"
-                  @click.stop="deleteModel(row)"
-                  title="删除模型"
-                  class="action-btn delete-btn"
-                >
-                  <el-icon><Delete /></el-icon>
+                <el-button size="small" type="danger" @click.stop="deleteModel(row)" title="删除模型"
+                  class="action-btn delete-btn">
+                  <el-icon>
+                    <Delete />
+                  </el-icon>
                   <span>删除</span>
                 </el-button>
               </div>
@@ -325,7 +305,7 @@ onMounted(() => {
           </div>
         </div>
       </div>
-      
+
       <!-- 空状态 -->
       <div v-else-if="!loading" class="empty-state">
         <div class="empty-icon">
@@ -333,7 +313,6 @@ onMounted(() => {
         </div>
         <h3>暂无模型</h3>
         <p>点击添加按钮创建您的第一个 AI 模型吧</p>
-
       </div>
     </div>
 
@@ -350,77 +329,52 @@ onMounted(() => {
                   <span class="required-mark">*</span>
                 </label>
                 <div class="input-wrapper">
-                  <input 
-                    v-model="createForm.model"
-                    type="text" 
-                    placeholder="例如：gpt-4, claude-3.5-sonnet"
-                    maxlength="50"
-                    class="form-input"
-                  />
+                  <input v-model="createForm.model" type="text" placeholder="例如：gpt-4, claude-3.5-sonnet" maxlength="50"
+                    class="form-input" />
                 </div>
               </div>
-              
+
               <div class="form-item">
                 <label class="form-label">
                   <span class="label-text">提供商</span>
                   <span class="required-mark">*</span>
                 </label>
                 <div class="input-wrapper">
-                  <input 
-                    v-model="createForm.provider"
-                    type="text" 
-                    placeholder="例如：OpenAI, Anthropic, 阿里云"
-                    maxlength="50"
-                    class="form-input"
-                  />
+                  <input v-model="createForm.provider" type="text" placeholder="例如：OpenAI, Anthropic, 阿里云"
+                    maxlength="50" class="form-input" />
                 </div>
               </div>
-              
+
               <div class="form-item">
                 <label class="form-label">
                   <span class="label-text">基础URL</span>
                   <span class="required-mark">*</span>
                 </label>
                 <div class="input-wrapper">
-                  <input 
-                    v-model="createForm.base_url"
-                    type="text" 
-                    placeholder="例如：https://api.openai.com/v1"
-                    maxlength="200"
-                    class="form-input"
-                  />
+                  <input v-model="createForm.base_url" type="text" placeholder="例如：https://api.openai.com/v1"
+                    maxlength="200" class="form-input" />
                 </div>
               </div>
-              
+
               <div class="form-item">
                 <label class="form-label">
                   <span class="label-text">API密钥</span>
                   <span class="required-mark">*</span>
                 </label>
                 <div class="input-wrapper">
-                  <input 
-                    v-model="createForm.api_key"
-                    type="password" 
-                    placeholder="请输入您的API密钥"
-                    maxlength="200"
-                    class="form-input"
-                  />
+                  <input v-model="createForm.api_key" type="password" placeholder="请输入您的API密钥" maxlength="200"
+                    class="form-input" />
                 </div>
               </div>
             </div>
-            
+
             <!-- 对话框底部 -->
             <div class="dialog-footer">
-              <button 
-                class="dialog-btn cancel-btn" 
-                @click.stop="createDialogVisible = false"
-              >取消</button>
-              <button 
-                class="dialog-btn confirm-btn" 
+              <button class="dialog-btn cancel-btn" @click.stop="createDialogVisible = false">取消</button>
+              <button class="dialog-btn confirm-btn"
                 :class="{ 'disabled': !createForm.model || !createForm.api_key || !createForm.base_url || !createForm.provider }"
                 :disabled="!createForm.model || !createForm.api_key || !createForm.base_url || !createForm.provider || createLoading"
-                @click.stop="handleCreate"
-              >{{ createLoading ? '创建中...' : '创建' }}</button>
+                @click.stop="handleCreate">{{ createLoading ? '创建中...' : '创建' }}</button>
             </div>
           </div>
         </div>
@@ -440,77 +394,52 @@ onMounted(() => {
                   <span class="required-mark">*</span>
                 </label>
                 <div class="input-wrapper">
-                  <input 
-                    v-model="editForm.model"
-                    type="text" 
-                    placeholder="例如：gpt-4, claude-3.5-sonnet"
-                    maxlength="50"
-                    class="form-input"
-                  />
+                  <input v-model="editForm.model" type="text" placeholder="例如：gpt-4, claude-3.5-sonnet" maxlength="50"
+                    class="form-input" />
                 </div>
               </div>
-              
+
               <div class="form-item">
                 <label class="form-label">
                   <span class="label-text">提供商</span>
                   <span class="required-mark">*</span>
                 </label>
                 <div class="input-wrapper">
-                  <input 
-                    v-model="editForm.provider"
-                    type="text" 
-                    placeholder="例如：OpenAI, Anthropic, 阿里云"
-                    maxlength="50"
-                    class="form-input"
-                  />
+                  <input v-model="editForm.provider" type="text" placeholder="例如：OpenAI, Anthropic, 阿里云" maxlength="50"
+                    class="form-input" />
                 </div>
               </div>
-              
+
               <div class="form-item">
                 <label class="form-label">
                   <span class="label-text">基础URL</span>
                   <span class="required-mark">*</span>
                 </label>
                 <div class="input-wrapper">
-                  <input 
-                    v-model="editForm.base_url"
-                    type="text" 
-                    placeholder="例如：https://api.openai.com/v1"
-                    maxlength="200"
-                    class="form-input"
-                  />
+                  <input v-model="editForm.base_url" type="text" placeholder="例如：https://api.openai.com/v1"
+                    maxlength="200" class="form-input" />
                 </div>
               </div>
-              
+
               <div class="form-item">
                 <label class="form-label">
                   <span class="label-text">API密钥</span>
                   <span class="required-mark">*</span>
                 </label>
                 <div class="input-wrapper">
-                  <input 
-                    v-model="editForm.api_key"
-                    type="password" 
-                    placeholder="请输入您的API密钥(留空则不修改)"
-                    maxlength="200"
-                    class="form-input"
-                  />
+                  <input v-model="editForm.api_key" type="password" placeholder="请输入您的API密钥(留空则不修改)" maxlength="200"
+                    class="form-input" />
                 </div>
               </div>
             </div>
-            
+
             <!-- 对话框底部 -->
             <div class="dialog-footer">
-              <button 
-                class="dialog-btn cancel-btn" 
-                @click.stop="editDialogVisible = false"
-              >取消</button>
-              <button 
-                class="dialog-btn confirm-btn" 
+              <button class="dialog-btn cancel-btn" @click.stop="editDialogVisible = false">取消</button>
+              <button class="dialog-btn confirm-btn"
                 :class="{ 'disabled': !editForm.model || !editForm.base_url || !editForm.provider }"
                 :disabled="!editForm.model || !editForm.base_url || !editForm.provider || editLoading"
-                @click.stop="handleEdit"
-              >{{ editLoading ? '保存中...' : '保存' }}</button>
+                @click.stop="handleEdit">{{ editLoading ? '保存中...' : '保存' }}</button>
             </div>
           </div>
         </div>
@@ -525,8 +454,10 @@ onMounted(() => {
             <h3 class="dialog-title">确认删除模型</h3>
             <p class="dialog-message" v-if="modelToDelete">确定要删除模型 <strong>"{{ modelToDelete.model }}"</strong> 吗？</p>
             <div class="confirm-dialog-footer">
-              <button class="confirm-dialog-btn confirm-cancel-btn" @click="cancelDelete" :disabled="deleteLoading">取消</button>
-              <button class="confirm-dialog-btn confirm-delete-btn" @click="confirmDelete" :disabled="deleteLoading">{{ deleteLoading ? '删除中...' : '删除' }}</button>
+              <button class="confirm-dialog-btn confirm-cancel-btn" @click="cancelDelete"
+                :disabled="deleteLoading">取消</button>
+              <button class="confirm-dialog-btn confirm-delete-btn" @click="confirmDelete" :disabled="deleteLoading">{{
+                deleteLoading ? '删除中...' : '删除' }}</button>
             </div>
           </div>
         </div>
@@ -540,7 +471,7 @@ onMounted(() => {
   padding: 30px;
   min-height: calc(100vh - 60px);
   background-color: #ffffff;
-  
+
   .page-header {
     display: flex;
     justify-content: space-between;
@@ -553,7 +484,6 @@ onMounted(() => {
     position: relative;
     overflow: hidden;
 
-    
     h2 {
       font-size: 26px;
       font-weight: 700;
@@ -570,47 +500,47 @@ onMounted(() => {
         color: #303133;
       }
     }
-    
+
     .header-actions {
       display: flex;
       align-items: center;
       gap: 16px;
-      
+
       .search-box {
         margin-right: 12px;
-        
+
         :deep(.el-input__wrapper) {
           border-radius: 100px;
           transition: all 0.3s;
           border: 1px solid #dcdfe6;
-          
+
           &:hover {
             border-color: #409eff;
             box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.2);
           }
         }
       }
-      
+
       .action-buttons {
         display: flex;
         gap: 12px;
-        
+
         .el-button {
           border-radius: 100px;
           padding: 12px 20px;
           font-size: 14px;
           font-weight: 500;
           transition: all 0.3s;
-          
+
           &:hover {
             transform: translateY(-2px);
           }
-          
+
           &.add-btn {
             background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
             border: none;
             box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
-            
+
             &:hover {
               background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
               box-shadow: 0 6px 16px rgba(64, 158, 255, 0.3);
@@ -620,11 +550,11 @@ onMounted(() => {
       }
     }
   }
-  
+
   .model-list {
     min-height: 300px;
     position: relative;
-    
+
     .static-model-list {
       border-radius: 24px;
       overflow: hidden;
@@ -635,7 +565,7 @@ onMounted(() => {
         display: flex;
         background-color: #f8fafc;
         border-bottom: 2px solid #e2e8f0;
-        
+
         .header-col {
           padding: 12px 16px;
           color: #64748b;
@@ -685,7 +615,7 @@ onMounted(() => {
       .model-info-cell {
         display: flex;
         align-items: center;
-        
+
         .model-avatar {
           width: 44px;
           height: 44px;
@@ -700,7 +630,7 @@ onMounted(() => {
           font-size: 20px;
           background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
         }
-        
+
         .model-title {
           .model-name {
             font-size: 15px;
@@ -708,13 +638,14 @@ onMounted(() => {
             color: #303133;
             margin-bottom: 4px;
           }
+
           .model-provider {
             font-size: 13px;
             color: #909399;
           }
         }
       }
-      
+
       .url-value {
         font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
         color: #409eff;
@@ -725,35 +656,35 @@ onMounted(() => {
         display: inline-block;
         border: 1px dashed rgba(64, 158, 255, 0.3);
         word-break: break-all;
-        
+
         &:hover {
           background-color: rgba(64, 158, 255, 0.15);
           border-color: rgba(64, 158, 255, 0.5);
         }
       }
-      
+
       .action-buttons-cell {
         display: flex;
         justify-content: flex-start;
         gap: 8px;
-        
+
         .action-btn {
           border-radius: 100px;
           transition: all 0.3s;
         }
       }
     }
-    
+
     .empty-state {
       text-align: center;
       padding: 80px 30px;
       position: relative;
       overflow: hidden;
-      
+
       .empty-icon {
         margin-bottom: 24px;
         position: relative;
-        
+
         &::after {
           content: '';
           position: absolute;
@@ -765,20 +696,20 @@ onMounted(() => {
           background: linear-gradient(90deg, #409eff, #67c23a);
           border-radius: 2px;
         }
-        
+
         .empty-emoji {
           font-size: 64px;
           opacity: 0.8;
         }
       }
-      
+
       h3 {
         font-size: 22px;
         font-weight: 600;
         color: #303133;
         margin-bottom: 16px;
       }
-      
+
       p {
         font-size: 16px;
         color: #606266;
@@ -787,7 +718,7 @@ onMounted(() => {
         margin-left: auto;
         margin-right: auto;
       }
-      
+
 
     }
   }
@@ -797,33 +728,33 @@ onMounted(() => {
 @media (max-width: 768px) {
   .model-page {
     padding: 20px;
-    
+
     .page-header {
       flex-direction: column;
       align-items: stretch;
       gap: 16px;
       padding: 20px;
-      
+
       h2 {
         text-align: center;
         justify-content: center;
       }
-      
+
       .header-actions {
         flex-direction: column;
         align-items: stretch;
-        
+
         .search-box {
           margin-right: 0;
           margin-bottom: 12px;
         }
-        
+
         .action-buttons {
           justify-content: center;
         }
       }
     }
-    
+
   }
 }
 
@@ -872,7 +803,7 @@ onMounted(() => {
         .list-header {
           background-color: #2c2c2e;
           border-bottom-color: #3a3a3c;
-          
+
           .header-col {
             color: #e5e5ea;
           }
@@ -913,6 +844,7 @@ onMounted(() => {
 
       :deep(.el-loading-mask) {
         background-color: rgba(0, 0, 0, 0.6);
+
         .el-loading-spinner .el-loading-text {
           color: #e5e5ea;
         }
@@ -1112,15 +1044,9 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-/* 如果使用 el-input 组件则需要对它覆盖 */
-:deep(.el-input__wrapper) {
-  border-radius: 100px;
-}
-
 .form-input:focus {
   outline: none;
   border-color: #409eff;
-  background: white;
 }
 
 .form-input::placeholder {
@@ -1183,21 +1109,21 @@ onMounted(() => {
     margin: 10px;
     max-height: 95vh;
   }
-  
+
   .dialog-body {
     padding: 24px 20px 16px 20px;
   }
-  
+
   .form-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
-  
+
   .form-label {
     width: 100%;
   }
-  
+
   .dialog-footer {
     padding: 0 20px 24px 20px;
     flex-direction: row;
@@ -1266,7 +1192,6 @@ onMounted(() => {
       &.confirm-cancel-btn {
         border: 1px solid #e5e5e5;
         color: #333;
-        background: white;
 
         &:hover {
           background: #f5f5f5;
@@ -1276,7 +1201,6 @@ onMounted(() => {
       &.confirm-delete-btn {
         border: 1px solid #ff3b30;
         color: #ff3b30;
-        background: white;
 
         &:hover {
           background: #fff0f0;
@@ -1291,6 +1215,7 @@ onMounted(() => {
     transform: scale(0.9);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -1301,10 +1226,9 @@ onMounted(() => {
 .fade-leave-active {
   transition: opacity 0.2s ease;
 }
+
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
 }
-
-
 </style>

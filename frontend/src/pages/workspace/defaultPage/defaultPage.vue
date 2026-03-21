@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { nextTick, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
 const inputMessage = ref('')
 const selectedMcpServers = ref<string[]>([])
-const mcpServers = ref<any[]>([])
 const webSearchEnabled = ref(true)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
-const currentSessionId = ref<string>('')  // 当前会话ID
 const isGenerating = ref(false)  // 是否正在生成回复
 
 // 自动调整 textarea 高度（2行起，最多10行）
@@ -25,11 +23,7 @@ const autoResize = () => {
   textarea.style.height = Math.min(Math.max(scrollH, minHeight), maxHeight) + 'px'
 }
 
-// 生成UUID（模拟Python的uuid4().hex）
-const generateSessionId = (): string => {
-  // 使用crypto.randomUUID()生成UUID，然后移除横杠
-  return crypto.randomUUID().replace(/-/g, '')
-}
+
 
 // 发送消息
 const handleSend = async () => {
@@ -43,18 +37,18 @@ const handleSend = async () => {
     ElMessage.warning('请等待当前回复完成')
     return
   }
-  
+
   const query = inputMessage.value.trim()
-  
+
   // 直接跳转到任务流程图页面（三列布局）
   console.log('跳转到灵寻任务页面')
   console.log('query:', query)
   console.log('webSearch:', webSearchEnabled.value)
-  
+
   // 立即清空输入框
   inputMessage.value = ''
   nextTick(autoResize)
-  
+
   router.push({
     name: 'taskGraphPage',
     query: {
@@ -83,46 +77,9 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 onMounted(async () => {
-  // 检查是否有 session_id 参数，如果有则加载会话历史
-  const sessionId = route.query.session_id as string
-  if (sessionId) {
-    console.log('加载已有会话:', sessionId)
-    currentSessionId.value = sessionId  // 设置当前会话ID
-  } else {
-    // 如果没有session_id，生成一个新的
-    currentSessionId.value = generateSessionId()
-    console.log('生成新会话ID:', currentSessionId.value)
-  }
-  
-  // 懒加载 MCP 列表（用于选择）
-  import('../../../apis/mcp-server').then(async ({ getMCPServersAPI }) => {
-    try {
-      const res = await getMCPServersAPI()
-      if (res.data && res.data.status_code === 200 && Array.isArray(res.data.data)) {
-        mcpServers.value = res.data.data.filter((mcp: any) => mcp.is_active)
-        selectedMcpServers.value = mcpServers.value.map((mcp: any) => mcp.mcp_server_id)
-      }
-    } catch (e) {
-      console.error('加载 MCP 服务器失败', e)
-    }
-  })
 })
 
-// 监听路由参数变化
-watch(
-  () => route.query.session_id,
-  async (newSessionId, oldSessionId) => {
-    if (newSessionId && newSessionId !== oldSessionId) {
-      console.log('检测到会话ID变化:', oldSessionId, '->', newSessionId)
-      // 更新当前会话ID
-      currentSessionId.value = newSessionId as string
-    } else if (!newSessionId && oldSessionId) {
-      // 如果从有session_id变为没有，生成新的session_id
-      currentSessionId.value = generateSessionId()
-      console.log('生成新会话ID:', currentSessionId.value)
-    }
-  }
-)
+
 </script>
 
 <template>
@@ -137,31 +94,17 @@ watch(
       <!-- 输入区域 -->
       <div class="input-section">
         <div class="input-wrapper">
-          <textarea
-            ref="textareaRef"
-            v-model="inputMessage"
-            placeholder="给 ToolMind 发送消息"
-            class="message-input"
-            rows="2"
-            @keydown="handleKeydown"
-            @input="autoResize"
-          ></textarea>
-          
-          <!-- 底部控制栏 -->
+          <textarea ref="textareaRef" v-model="inputMessage" placeholder="给 ToolMind 发送消息" class="message-input"
+            rows="2" @keydown="handleKeydown" @input="autoResize"></textarea>
           <div class="input-footer">
-            <div class="footer-left">
-            </div>
-            
             <div class="footer-right">
               <!-- 发送按钮 -->
-              <button 
-                class="send-btn" 
-                :class="{ 'btn-disabled': isGenerating, 'btn-inactive': !inputMessage.trim() && !isGenerating }" 
-                :disabled="isGenerating" 
-                @click="handleSend"
-              >
-                <svg v-if="!isGenerating" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 20V4M5 11l7-7 7 7"/>
+              <button class="send-btn"
+                :class="{ 'btn-disabled': isGenerating, 'btn-inactive': !inputMessage.trim() && !isGenerating }"
+                :disabled="isGenerating" @click="handleSend">
+                <svg v-if="!isGenerating" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20V4M5 11l7-7 7 7" />
                 </svg>
                 <span v-else class="loading-spinner"></span>
               </button>
@@ -183,12 +126,6 @@ watch(
   background: #ffffff;
   padding: 0;
   overflow-y: auto;
-
-  &.chat-active {
-    padding: 0;
-    overflow: hidden;
-    background-color: #ffffff;
-  }
 }
 
 .chat-container {
@@ -198,14 +135,6 @@ watch(
   flex-direction: column;
   align-items: center;
   padding: 0 20px 80px;
-
-  .chat-active & {
-    max-width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-  }
 }
 
 .welcome-section {
@@ -237,112 +166,23 @@ watch(
   }
 }
 
-.mode-selector {
-  display: flex;
-  gap: 14px;
-  margin-bottom: 36px;
-  animation: fadeInUp 0.6s ease 0.1s both;
-
-  .mode-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 24px;
-    border: 2px solid #e5e7eb;
-    border-radius: 24px;
-    background: white;
-    color: #6b7280;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-
-    .mode-icon {
-      font-size: 18px;
-      transition: transform 0.3s ease;
-    }
-
-    .mode-label {
-      font-weight: 600;
-    }
-
-    &:hover {
-      border-color: #667eea;
-      background: #f8f9ff;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-
-      .mode-icon {
-        transform: scale(1.1);
-      }
-    }
-
-    &.active {
-      border-color: #667eea;
-      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-      color: #667eea;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-      transform: translateY(-2px);
-
-      .mode-icon {
-        transform: scale(1.15);
-      }
-    }
-  }
-}
-
 // 动画
 @keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-@keyframes rotate {
-  from {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
-@keyframes bounce {
-  0%, 80%, 100% {
-    transform: scale(0) translateY(0);
-    opacity: 0.5;
-  }
-  40% {
-    transform: scale(1.2) translateY(-8px);
-    opacity: 1;
-  }
-}
-
-// 输入框聚焦动画（简洁）
-
-// 移除彩虹动画（不再需要）
-
 .input-section {
   width: 100%;
   max-width: 760px;
   animation: fadeInUp 0.6s ease 0.2s both;
-
-  &.input-fixed {
-    max-width: 100%;
-    padding: 10px 20px 20px 20px;
-    background: #f7f8fa;
-    animation: none;
-
-    .input-wrapper {
-      max-width: 900px;
-      margin: 0 auto;
-    }
-  }
 
   .input-wrapper {
     background: #f4f4f4;
@@ -350,13 +190,8 @@ watch(
     border-radius: 24px;
     padding: 14px 18px 16px;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: none;
     position: relative;
     z-index: 1;
-
-    &:focus-within {
-      background: #f4f4f4;
-    }
 
     .message-input {
       width: 100%;
@@ -393,376 +228,8 @@ watch(
 
     .input-footer {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
-
-      .footer-left {
-        display: flex;
-        gap: 10px;
-
-          .selector-dropdown {
-          position: relative;
-
-          .selector-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: rgba(0, 0, 0, 0.03);
-            border: 1px solid rgba(0, 0, 0, 0.06);
-            border-radius: 20px;
-            font-size: 13px;
-            color: #4b5563;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            user-select: none;
-
-            .selector-icon {
-              font-size: 16px;
-            }
-
-            .selector-icon-img {
-              width: 20px;
-              height: 20px;
-              object-fit: contain;
-              display: inline-block;
-            }
-
-            .selector-text {
-              font-weight: 500;
-            }
-
-            .selector-arrow {
-              font-size: 10px;
-              opacity: 0.5;
-              transition: transform 0.2s ease;
-            }
-
-            &.open {
-              .selector-arrow {
-                transform: rotate(180deg);
-              }
-            }
-
-            .selector-check {
-              font-size: 14px;
-              color: #667eea;
-              font-weight: 600;
-            }
-
-            &:hover {
-              border-color: #667eea;
-              background: #f0f4ff;
-              color: #667eea;
-            }
-
-            &.active {
-              background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-              border-color: #667eea;
-              color: #667eea;
-              box-shadow: 0 2px 6px rgba(102, 126, 234, 0.15);
-            }
-
-            &:active {
-              transform: scale(0.96);
-            }
-          }
-
-          .dropdown-menu {
-            position: absolute;
-            bottom: calc(100% + 8px);
-            left: 0;
-            min-width: 200px;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15);
-            z-index: 1000;
-            max-height: 320px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-
-            &.tool-menu {
-              min-width: 360px;
-              max-height: 450px;
-            }
-
-            // 模型下拉尺寸与工具列表保持一致
-            &.model-menu {
-              min-width: 180px;
-              max-height: 450px;
-
-              .dropdown-item {
-                .item-content {
-                  .item-text {
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                  }
-                }
-              }
-            }
-
-            .dropdown-header {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              padding: 12px 16px;
-              background: linear-gradient(135deg, #f8f9fa 0%, #f0f2f5 100%);
-              border-bottom: 1px solid #e5e7eb;
-
-              .header-title {
-                font-size: 14px;
-                font-weight: 600;
-                color: #1f2937;
-              }
-
-              .header-count {
-                font-size: 12px;
-                color: #6b7280;
-                background: white;
-                padding: 2px 8px;
-                border-radius: 10px;
-                border: 1px solid #e5e7eb;
-              }
-            }
-
-            .dropdown-list {
-              flex: 1;
-              overflow-y: auto;
-              padding: 8px;
-
-              &::-webkit-scrollbar {
-                width: 8px;
-              }
-
-              &::-webkit-scrollbar-track {
-                background: transparent;
-              }
-
-              &::-webkit-scrollbar-thumb {
-                background: #e0e0e0;
-                border-radius: 4px;
-
-                &:hover {
-                  background: #bdbdbd;
-                }
-              }
-            }
-
-            .dropdown-empty {
-              padding: 48px 20px;
-              text-align: center;
-              color: #9ca3af;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              gap: 12px;
-
-              .empty-icon {
-                font-size: 48px;
-                opacity: 0.3;
-              }
-
-              .empty-icon-img {
-                width: 48px;
-                height: 48px;
-                opacity: 0.35;
-                object-fit: contain;
-              }
-
-              .empty-text {
-                font-size: 14px;
-                color: #6b7280;
-              }
-            }
-
-            .dropdown-item {
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              gap: 12px;
-              padding: 14px 12px;
-              border-radius: 10px;
-              cursor: pointer;
-              transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-              margin-bottom: 4px;
-              border: 2px solid transparent;
-              background: #fafafa;
-
-              .item-left {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                flex: 1;
-                min-width: 0;
-              }
-
-              .item-icon-wrapper {
-                width: 40px;
-                height: 40px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-                border-radius: 10px;
-                flex-shrink: 0;
-                transition: all 0.3s ease;
-                overflow: hidden;
-
-                .item-icon-img {
-                  width: 100%;
-                  height: 100%;
-                  object-fit: cover;
-                }
-
-                .item-icon {
-                  font-size: 20px;
-                }
-              }
-
-              .item-content {
-                flex: 1;
-                min-width: 0;
-
-                .item-text {
-                  font-size: 15px;
-                  font-weight: 600;
-                  color: #1f2937;
-                  margin-bottom: 4px;
-                  line-height: 1.3;
-                }
-
-                .item-desc {
-                  font-size: 12px;
-                  color: #6b7280;
-                  overflow: hidden;
-                  text-overflow: ellipsis;
-                  display: -webkit-box;
-                  -webkit-line-clamp: 2;
-                  line-clamp: 2;
-                  -webkit-box-orient: vertical;
-                  line-height: 1.5;
-                }
-              }
-
-              .item-check-wrapper {
-                width: 28px;
-                height: 28px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 50%;
-                flex-shrink: 0;
-                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-
-                .item-check {
-                  font-size: 16px;
-                  color: white;
-                  font-weight: 700;
-                }
-              }
-
-              &:hover {
-                background: #f5f7fa;
-                transform: translateX(2px);
-                border-color: #e5e7eb;
-
-                .item-icon-wrapper {
-                  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
-                  transform: scale(1.05);
-                }
-              }
-
-              &.selected {
-                background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
-                border-color: #667eea;
-                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.12);
-
-                .item-icon-wrapper {
-                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-                  
-                  .item-icon-img {
-                    filter: brightness(1.2);
-                  }
-
-                  .item-icon {
-                    filter: brightness(0) invert(1);
-                  }
-                }
-
-                .item-text {
-                  color: #667eea;
-                }
-              }
-
-              &:active {
-                transform: scale(0.98) translateX(2px);
-              }
-            }
-
-            .dropdown-footer {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              padding: 12px 16px;
-              border-top: 2px solid #f0f0f0;
-              background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
-
-              .clear-btn {
-                padding: 8px 16px;
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                font-size: 13px;
-                color: #6b7280;
-                cursor: pointer;
-                transition: all 0.25s ease;
-                font-weight: 500;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-
-                &:hover {
-                  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-                  border-color: #ef4444;
-                  color: #dc2626;
-                  transform: translateY(-1px);
-                  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.2);
-                }
-
-                &:active {
-                  transform: translateY(0);
-                }
-              }
-
-              .selected-info {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-
-                .selected-count {
-                  font-size: 13px;
-                  color: #667eea;
-                  font-weight: 600;
-                  padding: 4px 12px;
-                  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                  border-radius: 12px;
-                  border: 1px solid #667eea;
-                }
-              }
-            }
-          }
-        }
-      }
-
-      .footer-left {
-        display: flex;
-        align-items: center;
-      }
 
       .footer-right {
         display: flex;
@@ -804,6 +271,11 @@ watch(
           }
 
           .loading-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
             animation: spin 1s linear infinite;
           }
         }
@@ -812,6 +284,7 @@ watch(
           from {
             transform: rotate(0deg);
           }
+
           to {
             transform: rotate(360deg);
           }
@@ -821,123 +294,10 @@ watch(
   }
 }
 
-.chat-conversation {
-  flex: 1;
-  padding: 0;
-  overflow-y: auto;
-  width: 100%;
-  background-color: #f7f8fa;
-  scroll-behavior: smooth;  // 平滑滚动
-  
-  .message-group {
-    margin-bottom: 20px;
-    padding: 0 20px;
-    
-    &:first-child {
-      padding-top: 20px;
-    }
-  }
-
-  .ai-message {
-    display: flex;
-    align-items: flex-start;
-    justify-content: flex-start;
-
-    .avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      margin-right: 15px;
-      flex-shrink: 0;
-      border: 1px solid #eee;
-    }
-
-    .message-content {
-      background-color: #ffffff;
-      border-radius: 18px;
-      padding: 12px 18px;
-      max-width: 70%;
-      color: #333;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      word-break: break-word;
-
-      // 加载转圈器样式
-      .loading-spinner-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 4px 0;
-        color: #6b7280;
-        font-size: 14px;
-
-        .loading-spinner {
-          width: 16px;
-          height: 16px;
-          border: 2px solid #d1d5db;
-          border-top: 2px solid transparent;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        .loading-text {
-          font-weight: 500;
-          color: #9ca3af;
-        }
-      }
-    }
-  }
-
-  .user-message {
-    display: flex;
-    justify-content: flex-end;
-    align-items: flex-start;
-
-    .avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      margin-left: 12px;
-      flex-shrink: 0;
-      border: 1px solid #eee;
-    }
-
-    .message-content {
-      display: flex;
-      align-items: center;
-      background: linear-gradient(135deg, #6e8efb, #a777e3);
-      color: white;
-      border-radius: 18px;
-      padding: 12px 18px;
-      max-width: 70%;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-  }
-}
-
-// 下拉菜单动画（向上展开）
-.dropdown-enter-active,
-.dropdown-leave-active {
-  transition: all 0.2s ease;
-}
-
-.dropdown-enter-from {
-  opacity: 0;
-  transform: translateY(8px);
-}
-
-.dropdown-leave-to {
-  opacity: 0;
-  transform: translateY(4px);
-}
-
 /* 深色模式 */
 .theme-dark {
   .chat-page {
     background: #1c1c1e;
-
-    &.chat-active {
-      background-color: #1c1c1e;
-    }
   }
 
   .chat-container {
@@ -951,17 +311,9 @@ watch(
   }
 
   .input-section {
-    &.input-fixed {
-      background: #1c1c1e;
-    }
-
     .input-wrapper {
       background: #2c2c2e;
       border-color: #3a3a3c;
-
-      &:focus-within {
-        background: #2c2c2e;
-      }
 
       .message-input {
         color: #f5f5f7;
@@ -976,118 +328,6 @@ watch(
       }
 
       .input-footer {
-        .footer-left {
-          .selector-dropdown {
-            .selector-item {
-              background: rgba(255, 255, 255, 0.04);
-              border-color: rgba(255, 255, 255, 0.08);
-              color: rgba(255, 255, 255, 0.7);
-
-              &:hover {
-                background: rgba(77, 107, 254, 0.18);
-                border-color: #4d6bfe;
-                color: #f5f5f7;
-              }
-
-              &.active {
-                background: linear-gradient(135deg, #2c2c2e, #3b3b3f);
-                border-color: #4d6bfe;
-                color: #f5f5f7;
-              }
-            }
-
-            .dropdown-menu {
-              background: #1c1c1e;
-              border-color: #2c2c2e;
-              box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
-
-              .dropdown-header {
-                background: #242426;
-                border-bottom-color: #2c2c2e;
-
-                .header-title {
-                  color: #f5f5f7;
-                }
-
-                .header-count {
-                  background: #1c1c1e;
-                  border-color: #2c2c2e;
-                  color: rgba(235, 235, 245, 0.7);
-                }
-              }
-
-              .dropdown-list {
-                &::-webkit-scrollbar-thumb {
-                  background: #4b4b4f;
-
-                  &:hover {
-                    background: #636366;
-                  }
-                }
-              }
-
-              .dropdown-empty {
-                color: rgba(235, 235, 245, 0.6);
-
-                .empty-text {
-                  color: rgba(235, 235, 245, 0.6);
-                }
-              }
-
-              .dropdown-item {
-                background: #2c2c2e;
-                border-color: transparent;
-
-                .item-icon-wrapper {
-                  background: linear-gradient(135deg, #3a3a3c, #48484a);
-                }
-
-                .item-text {
-                  color: #f5f5f7;
-                }
-
-                .item-desc {
-                  color: rgba(235, 235, 245, 0.6);
-                }
-
-                &:hover {
-                  background: #333336;
-                  border-color: #3a3a3c;
-                }
-
-                &.selected {
-                  background: linear-gradient(135deg, #2c2c2e, #3b3b3f);
-                  border-color: #4d6bfe;
-                }
-              }
-
-              .dropdown-footer {
-                border-top-color: #2c2c2e;
-                background: #242426;
-
-                .clear-btn {
-                  background: #1c1c1e;
-                  border-color: #3a3a3c;
-                  color: rgba(235, 235, 245, 0.7);
-
-                  &:hover {
-                    background: rgba(248, 113, 113, 0.18);
-                    border-color: #f97373;
-                    color: #fecaca;
-                    box-shadow: none;
-                  }
-                }
-
-                .selected-count {
-                  background: rgba(77, 107, 254, 0.18);
-                  border-color: #4d6bfe;
-                  color: #f5f5f7;
-                }
-              }
-            }
-          }
-        }
-
         .footer-right {
           .send-btn {
             &.btn-disabled {
@@ -1096,40 +336,6 @@ watch(
             }
           }
         }
-      }
-    }
-  }
-
-  .chat-conversation {
-    background-color: #1c1c1e;
-
-    .ai-message {
-      .avatar {
-        border-color: #3a3a3c;
-      }
-
-      .message-content {
-        background-color: #242426;
-        color: #f5f5f7;
-        box-shadow: none;
-
-        .loading-spinner-container {
-          color: rgba(235, 235, 245, 0.7);
-
-          .loading-text {
-            color: rgba(235, 235, 245, 0.6);
-          }
-        }
-      }
-    }
-
-    .user-message {
-      .avatar {
-        border-color: #3a3a3c;
-      }
-
-      .message-content {
-        box-shadow: none;
       }
     }
   }
@@ -1153,26 +359,10 @@ watch(
     }
   }
 
-  .mode-selector {
-    margin-bottom: 28px;
-    
-    .mode-btn {
-      padding: 10px 18px;
-      font-size: 13px;
-    }
-  }
-
   .input-section {
     .input-wrapper {
       padding: 18px;
-
-      .input-footer {
-        .footer-left {
-          flex-wrap: wrap;
-        }
-      }
     }
   }
 }
 </style>
-

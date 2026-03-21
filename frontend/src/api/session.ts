@@ -8,15 +8,6 @@ export const getSessionsAPI = async () => {
   })
 }
 
-// 创建会话
-export const createSessionAPI = async (data: { title?: string, contexts?: any }) => {
-  return request({
-    url: '/api/v1/session',
-    method: 'post',
-    data
-  })
-}
-
 // 获取会话信息
 export const getSessionInfoAPI = async (sessionId: string) => {
   return request({

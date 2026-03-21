@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { Connection, Delete, Edit, Plus, Search, Tools } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Connection, Edit, Delete, Tools, Search } from '@element-plus/icons-vue'
-import { 
-  createMCPServerAPI, 
-  getMCPServersAPI, 
-  deleteMCPServerAPI, 
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import {
+  createMCPServerAPI,
+  deleteMCPServerAPI,
+  getMCPServersAPI,
   updateMCPServerAPI,
-  type MCPServer, 
-  type CreateMCPServerRequest, 
+  type CreateMCPServerRequest,
+  type MCPServer,
   type MCPServerTool
-} from '../../apis/mcp-server'
+} from '../../api/mcp-server'
 
 const servers = ref<MCPServer[]>([])
 const loading = ref(false)
@@ -68,7 +68,7 @@ const formErrors = ref<Record<string, string>>({})
 
 const validateForm = () => {
   formErrors.value = {}
-  
+
   if (!formData.value.config) {
     formErrors.value.config = '请输入JSON配置'
   } else {
@@ -81,7 +81,7 @@ const validateForm = () => {
       formErrors.value.config = '请输入有效的 JSON 格式'
     }
   }
-  
+
   return Object.keys(formErrors.value).length === 0
 }
 
@@ -89,18 +89,18 @@ const fetchServers = async () => {
   loading.value = true
   try {
     const response = await getMCPServersAPI()
-    
+
     if (response?.data?.status_code === 200) {
       const serverList = response.data.data || []
       // 排序：官方服务器（user_id = 0）在前，其他服务器在后
       servers.value = serverList.sort((a: MCPServer, b: MCPServer) => {
         const aIsOfficial = String(a.user_id) === '0'
         const bIsOfficial = String(b.user_id) === '0'
-        
+
         // 如果一个是官方，一个不是，官方的排在前面
         if (aIsOfficial && !bIsOfficial) return -1
         if (!aIsOfficial && bIsOfficial) return 1
-        
+
         // 如果都是官方或都不是官方，保持原有顺序
         return 0
       })
@@ -135,13 +135,13 @@ const handleEdit = (server: MCPServer) => {
     ElMessage.warning(`${server.server_name} MCP Server 为官方所有，不能编辑`)
     return
   }
-  
+
   editingServer.value = server
   dialogVisible.value = true
   formErrors.value = {}
   // 阻止背景滚动
   document.body.style.overflow = 'hidden'
-  
+
   formData.value = {
     config: typeof server.config === 'object' ? JSON.stringify(server.config, null, 2) : (server.config || '{\n  "mcpServers": {\n    "bing-cn-mcp-server": {\n      "type": "sse",\n      "url": ""\n    }\n  }\n}')
   }
@@ -161,7 +161,7 @@ const handleSubmit = async () => {
   if (!validateForm()) {
     return
   }
-  
+
   formLoading.value = true
   try {
     let configData = {}
@@ -193,7 +193,7 @@ const handleSubmit = async () => {
       const submitData = {
         config: configData
       }
-      
+
       const response = await createMCPServerAPI(submitData)
       if (response.data.status_code === 200) {
         closeDialog()
@@ -210,7 +210,7 @@ const handleSubmit = async () => {
   }
 }
 
-// removed updateUserConfig as it's no longer used
+
 
 const handleDelete = (server: MCPServer) => {
   // 检查是否为官方服务器
@@ -218,14 +218,14 @@ const handleDelete = (server: MCPServer) => {
     ElMessage.warning(`${server.server_name} MCP Server 为官方所有，不能删除`)
     return
   }
-  
+
   serverToDelete.value = server
   deleteDialogVisible.value = true
 }
 
 const confirmDelete = async () => {
   if (!serverToDelete.value) return
-  
+
   deleteLoading.value = true
   try {
     const response = await deleteMCPServerAPI(serverToDelete.value.mcp_server_id)
@@ -354,35 +354,26 @@ onUnmounted(() => {
   document.body.style.overflow = 'auto'
 })
 
-// removed saveUserConfig as it's no longer used
+
 </script>
 
 <template>
   <div class="mcp-server-page">
     <div class="page-header">
       <h2>
-        <el-icon class="mcp-icon"><Connection /></el-icon>
+        <el-icon class="mcp-icon">
+          <Connection />
+        </el-icon>
         MCP 服务器
       </h2>
       <div class="header-actions">
         <div class="search-box">
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索服务器名称或类型..."
-            :prefix-icon="Search"
-            clearable
-            @clear="clearSearch"
-            style="width: 300px"
-          />
+          <el-input v-model="searchKeyword" placeholder="搜索服务器名称或类型..." :prefix-icon="Search" clearable
+            @clear="clearSearch" style="width: 300px" />
         </div>
 
         <div class="action-buttons">
-          <el-button
-            type="primary"
-            :icon="Plus"
-            @click="handleCreate"
-            class="add-btn"
-          >
+          <el-button type="primary" :icon="Plus" @click="handleCreate" class="add-btn">
             添加服务器
           </el-button>
         </div>
@@ -398,11 +389,7 @@ onUnmounted(() => {
           <div class="header-col col-actions">操作</div>
         </div>
         <div class="list-body">
-          <div 
-            v-for="row in filteredServers" 
-            :key="row.mcp_server_id" 
-            class="list-row"
-          >
+          <div v-for="row in filteredServers" :key="row.mcp_server_id" class="list-row">
             <!-- 头像和名称统一列 -->
             <div class="cell col-name">
               <div class="server-info-cell">
@@ -415,54 +402,39 @@ onUnmounted(() => {
                 </div>
               </div>
             </div>
-            
+
             <!-- 可用工具数量列 -->
             <div class="cell col-tools">
               <div class="tools-count">
-                <el-button 
-                  type="primary" 
-                  :icon="Tools"
-                  size="small"
-                  @click="viewTools(row)"
-                  :disabled="!row.params || row.params.length === 0"
-                  round
-                >
+                <el-button type="primary" :icon="Tools" size="small" @click="viewTools(row)"
+                  :disabled="!row.params || row.params.length === 0" round>
                   {{ row.params?.length || 0 }} 个工具
                 </el-button>
               </div>
             </div>
-            
+
             <!-- 配置状态列 -->
             <div class="cell col-status">
               <div class="config-status-align-left">
-                <el-switch
-                  v-model="row.is_active"
-                  @change="(val) => handleToggleActive(row, val as boolean)"
-                />
+                <el-switch v-model="row.is_active" @change="(val) => handleToggleActive(row, val as boolean)" />
               </div>
             </div>
-            
+
             <!-- 操作列 -->
             <div class="cell col-actions">
               <div class="action-buttons-cell">
-                <el-button 
-                  size="small" 
-                  type="primary"
-                  @click.stop="handleEdit(row)"
-                  title="编辑"
-                  class="action-btn edit-btn"
-                >
-                  <el-icon><Edit /></el-icon>
+                <el-button size="small" type="primary" @click.stop="handleEdit(row)" title="编辑"
+                  class="action-btn edit-btn">
+                  <el-icon>
+                    <Edit />
+                  </el-icon>
                   <span>编辑</span>
                 </el-button>
-                <el-button 
-                  size="small" 
-                  type="danger" 
-                  @click.stop="handleDelete(row)"
-                  title="删除"
-                  class="action-btn delete-btn"
-                >
-                  <el-icon><Delete /></el-icon>
+                <el-button size="small" type="danger" @click.stop="handleDelete(row)" title="删除"
+                  class="action-btn delete-btn">
+                  <el-icon>
+                    <Delete />
+                  </el-icon>
                   <span>删除</span>
                 </el-button>
               </div>
@@ -470,7 +442,7 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
-      
+
       <div v-if="filteredServers.length === 0 && !loading" class="empty-state">
         <div class="empty-icon">
           <i class="empty-icon-symbol">📡</i>
@@ -491,54 +463,52 @@ onUnmounted(() => {
 
               <form @submit.prevent="handleSubmit" class="mcp-form">
                 <!-- 服务器信息 -->
-                  
-                  <div class="form-grid">
-                    <div class="form-group" style="grid-column: 1 / -1;">
-                      <label for="config" style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <polyline points="10,9 9,9 8,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+                <div class="form-grid">
+                  <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="config" style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor"
+                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                          stroke-linejoin="round" />
+                        <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2"
+                          stroke-linecap="round" stroke-linejoin="round" />
+                        <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2"
+                          stroke-linecap="round" stroke-linejoin="round" />
+                        <polyline points="10,9 9,9 8,9" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                          stroke-linejoin="round" />
+                      </svg>
+                      服务器配置 (JSON)
+                    </label>
+                    <div class="textarea-wrapper">
+                      <textarea id="config" v-model="formData.config as string" rows="10"
+                        :placeholder="configPlaceholder" :class="{ 'error': formErrors.config }"
+                        style="font-family: monospace; font-size: 15px; line-height: 1.6;"></textarea>
+                      <div class="json-indicator">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M16 3l4 4-4 4" stroke="#909399" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                          <path d="M8 21l-4-4 4-4" stroke="#909399" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                          <path d="M15 14l-6-6" stroke="#909399" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
                         </svg>
-                        服务器配置 (JSON)
-                      </label>
-                      <div class="textarea-wrapper">
-                        <textarea 
-                          id="config"
-                          v-model="formData.config as string" 
-                          rows="10"
-                          :placeholder="configPlaceholder"
-                          :class="{ 'error': formErrors.config }"
-                          style="font-family: monospace; font-size: 15px; line-height: 1.6;"
-                        ></textarea>
-                        <div class="json-indicator">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M16 3l4 4-4 4" stroke="#909399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M8 21l-4-4 4-4" stroke="#909399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M15 14l-6-6" stroke="#909399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          </svg>
-                          JSON
-                        </div>
+                        JSON
                       </div>
-                      <span v-if="formErrors.config" class="error-text">{{ formErrors.config }}</span>
                     </div>
+                    <span v-if="formErrors.config" class="error-text">{{ formErrors.config }}</span>
                   </div>
+                </div>
               </form>
             </div>
           </div>
-          
+
           <div class="modal-footer">
             <button type="button" @click="closeDialog" class="dialog-btn cancel-btn">
               取消
             </button>
-            <button 
-              type="button" 
-              @click="handleSubmit"
-              :disabled="formLoading"
-              class="dialog-btn save-btn"
-            >
+            <button type="button" @click="handleSubmit" :disabled="formLoading" class="dialog-btn save-btn">
               <span v-if="formLoading" class="loading-spinner" style="border-top-color: #007aff;"></span>
               {{ editingServer ? '保存' : '添加' }}
             </button>
@@ -555,16 +525,19 @@ onUnmounted(() => {
             <h3>{{ selectedServerName }} - 可用工具</h3>
             <button class="close-btn" @click="closeToolsDialog">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
               </svg>
             </button>
           </div>
-          
+
           <div class="modal-body tools-content">
             <div v-if="selectedServerTools.length === 0" class="no-tools">
               <div class="empty-icon">
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.77 3.77z" stroke="#c0c4cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path
+                    d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.77 3.77z"
+                    stroke="#c0c4cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </div>
               <div class="empty-text">
@@ -578,7 +551,9 @@ onUnmounted(() => {
                 <div class="stat-card">
                   <div class="stat-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.77 3.77z" stroke="#409eff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path
+                        d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.77 3.77z"
+                        stroke="#409eff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                   </div>
                   <div class="stat-info">
@@ -590,16 +565,14 @@ onUnmounted(() => {
 
               <!-- 工具列表 -->
               <div class="tools-list">
-                <div 
-                  v-for="(tool, index) in selectedServerTools" 
-                  :key="index"
-                  class="tool-card"
-                >
+                <div v-for="(tool, index) in selectedServerTools" :key="index" class="tool-card">
                   <div class="tool-header">
                     <div class="tool-info">
                       <div class="tool-icon">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.77 3.77z" stroke="#409eff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path
+                            d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.77 3.77z"
+                            stroke="#409eff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                       </div>
                       <div class="tool-text">
@@ -609,26 +582,26 @@ onUnmounted(() => {
                     </div>
                     <div class="tool-actions">
                       <span class="tool-switch-label">启用</span>
-                      <el-switch
-                        :model-value="enabledToolNames.includes(tool.name)"
-                        @change="(val) => handleToggleTool(tool, val as boolean)"
-                      />
+                      <el-switch :model-value="enabledToolNames.includes(tool.name)"
+                        @change="(val) => handleToggleTool(tool, val as boolean)" />
                     </div>
                   </div>
-                  
+
                   <div class="tool-description">
                     <p>{{ tool.description || '暂无描述' }}</p>
                   </div>
-                  
+
                   <div class="tool-schema" v-if="tool.input_schema">
                     <div class="schema-header">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <polyline points="16 18 22 12 16 6" stroke="#409eff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <polyline points="8 6 2 12 8 18" stroke="#409eff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <polyline points="16 18 22 12 16 6" stroke="#409eff" stroke-width="2" stroke-linecap="round"
+                          stroke-linejoin="round" />
+                        <polyline points="8 6 2 12 8 18" stroke="#409eff" stroke-width="2" stroke-linecap="round"
+                          stroke-linejoin="round" />
                       </svg>
                       <span>参数结构</span>
                     </div>
-                    
+
                     <div class="schema-content">
                       <div class="schema-meta">
                         <div class="meta-item" v-if="tool.input_schema.type">
@@ -640,41 +613,39 @@ onUnmounted(() => {
                           <span class="meta-value">{{ tool.input_schema.title }}</span>
                         </div>
                       </div>
-                      
+
                       <div v-if="tool.input_schema.required?.length" class="required-section">
                         <div class="section-title">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#f56c6c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M9 12l2 2 4-4" stroke="#f56c6c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#f56c6c" stroke-width="2"
+                              stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M9 12l2 2 4-4" stroke="#f56c6c" stroke-width="2" stroke-linecap="round"
+                              stroke-linejoin="round" />
                           </svg>
                           <span>必填参数</span>
                         </div>
                         <div class="required-params">
-                          <span 
-                            v-for="param in tool.input_schema.required" 
-                            :key="param"
-                            class="required-param"
-                          >
+                          <span v-for="param in tool.input_schema.required" :key="param" class="required-param">
                             {{ param }}
                           </span>
                         </div>
                       </div>
-                      
+
                       <div v-if="tool.input_schema.properties" class="properties-section">
                         <div class="section-title">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="#67c23a" stroke-width="2"/>
-                            <circle cx="8.5" cy="8.5" r="1.5" stroke="#67c23a" stroke-width="2"/>
-                            <path d="M21 15l-5-5L5 21l5-5z" stroke="#67c23a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="#67c23a" stroke-width="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" stroke="#67c23a" stroke-width="2" />
+                            <path d="M21 15l-5-5L5 21l5-5z" stroke="#67c23a" stroke-width="2" stroke-linecap="round"
+                              stroke-linejoin="round" />
                           </svg>
                           <span>参数详情</span>
                         </div>
                         <div class="properties-grid">
-                          <div 
-                            v-for="(prop, propName) in tool.input_schema.properties" 
-                            :key="propName"
-                            class="property-card"
-                          >
+                          <div v-for="(prop, propName) in tool.input_schema.properties" :key="propName"
+                            class="property-card">
                             <div class="property-header">
                               <span class="property-name">{{ propName }}</span>
                               <span class="property-type">{{ prop.type }}</span>
@@ -705,10 +676,12 @@ onUnmounted(() => {
         <div v-if="deleteDialogVisible" class="confirm-dialog-overlay" @click="cancelDelete">
           <div class="confirm-dialog" @click.stop>
             <h3 class="dialog-title">确认删除服务器</h3>
-            <p class="dialog-message" v-if="serverToDelete">确定要删除 MCP 服务器 <strong>"{{ serverToDelete.server_name }}"</strong> 吗？</p>
+            <p class="dialog-message" v-if="serverToDelete">确定要删除 MCP 服务器 <strong>"{{ serverToDelete.server_name
+            }}"</strong> 吗？</p>
             <div class="dialog-footer">
               <button class="dialog-btn cancel-btn" @click="cancelDelete" :disabled="deleteLoading">取消</button>
-              <button class="dialog-btn delete-btn" @click="confirmDelete" :disabled="deleteLoading">{{ deleteLoading ? '删除中...' : '删除' }}</button>
+              <button class="dialog-btn delete-btn" @click="confirmDelete" :disabled="deleteLoading">{{ deleteLoading ?
+                '删除中...' : '删除' }}</button>
             </div>
           </div>
         </div>
@@ -747,7 +720,7 @@ onUnmounted(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  
+
   &.tools-dialog {
     max-width: 800px;
   }
@@ -760,14 +733,14 @@ onUnmounted(() => {
   padding: 24px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   background: transparent;
-  
+
   h3 {
     margin: 0;
     font-size: 20px;
     font-weight: 700;
     color: #1c1c1e;
   }
-  
+
   .close-btn {
     width: 32px;
     height: 32px;
@@ -780,7 +753,7 @@ onUnmounted(() => {
     justify-content: center;
     border-radius: 50%;
     transition: all 0.2s ease;
-    
+
     &:hover {
       background: rgba(0, 0, 0, 0.1);
       color: #1c1c1e;
@@ -831,7 +804,7 @@ onUnmounted(() => {
       &:hover {
         background: #ecf5ff;
       }
-      
+
       &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
@@ -842,30 +815,21 @@ onUnmounted(() => {
 
 // 表单样式
 .mcp-form {
-  .form-section {
-    background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-radius: 24px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-  }
-  
+
+
   .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
-    
+
     @media (max-width: 768px) {
       grid-template-columns: 1fr;
     }
   }
-  
+
   .form-group {
     margin-bottom: 24px;
-    
+
     label {
       display: flex;
       align-items: center;
@@ -874,21 +838,15 @@ onUnmounted(() => {
       color: #303133;
       margin-bottom: 12px;
       font-size: 14px;
-      
-      &[for$="_name"]::after,
-      &[for$="_url"]::after,
-      &[for$="_type"]::after {
-        content: " *";
-        color: #f56c6c;
-        margin-left: 4px;
-      }
-      
+
+
+
       svg {
         opacity: 0.7;
       }
     }
-    
-    input, select, textarea {
+
+    textarea {
       width: 100%;
       padding: 12px 16px;
       border: 1px solid #dcdfe6;
@@ -898,40 +856,40 @@ onUnmounted(() => {
       background: white;
       box-sizing: border-box;
       font-family: inherit;
-      
+
       &:focus {
         outline: none;
         border-color: #409eff;
         box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
       }
-      
+
       &:hover {
         border-color: #c0c4cc;
       }
-      
+
       &.error {
         border-color: #f56c6c;
         background-color: #fef0f0;
       }
-      
+
       &::placeholder {
         color: #c0c4cc;
         font-size: 13px;
       }
-      
+
       &:disabled,
       &[readonly] {
         background-color: #f5f7fa;
         border-color: #e4e7ed;
         color: #c0c4cc;
         cursor: not-allowed;
-        
+
         &::placeholder {
           color: #c0c4cc;
         }
       }
     }
-    
+
     textarea {
       resize: vertical;
       min-height: 100px;
@@ -940,13 +898,16 @@ onUnmounted(() => {
       font-size: 13px;
       border-radius: 24px;
       padding: 20px 24px;
-      scrollbar-width: none; /* Firefox */
-      -ms-overflow-style: none; /* IE and Edge */
-      
+      scrollbar-width: none;
+      /* Firefox */
+      -ms-overflow-style: none;
+      /* IE and Edge */
+
       &::-webkit-scrollbar {
-        display: none; /* Chrome, Safari and Opera */
+        display: none;
+        /* Chrome, Safari and Opera */
       }
-      
+
       &::placeholder {
         font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
         font-size: 14px;
@@ -956,17 +917,9 @@ onUnmounted(() => {
         opacity: 1;
       }
     }
-    
-    select {
-      cursor: pointer;
-      appearance: none;
-      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-      background-size: 16px;
-      padding-right: 40px;
-    }
-    
+
+
+
     .error-text {
       display: block;
       color: #f56c6c;
@@ -974,10 +927,10 @@ onUnmounted(() => {
       margin-top: 6px;
       font-weight: 500;
     }
-    
+
     .textarea-wrapper {
       position: relative;
-      
+
       .json-indicator {
         position: absolute;
         top: 16px;
@@ -1010,24 +963,26 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-// 页面样式已移至底部scoped样式中，避免重复
+
 
 // 工具详情样式
 .tools-content {
   background: #fafbfc;
-  
+
   .no-tools {
     text-align: center;
     padding: 80px 40px;
-    
+
     .empty-icon {
       margin-bottom: 20px;
       opacity: 0.6;
     }
-    
+
     .empty-text {
       h3 {
         margin: 0 0 8px 0;
@@ -1035,7 +990,7 @@ onUnmounted(() => {
         font-weight: 600;
         color: #909399;
       }
-      
+
       p {
         color: #c0c4cc;
         font-size: 14px;
@@ -1044,11 +999,11 @@ onUnmounted(() => {
       }
     }
   }
-  
+
   .tools-overview {
     .tools-stats {
       margin-bottom: 24px;
-      
+
       .stat-card {
         background: white;
         border: 1px solid #ebeef5;
@@ -1058,7 +1013,7 @@ onUnmounted(() => {
         align-items: center;
         gap: 16px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        
+
         .stat-icon {
           width: 48px;
           height: 48px;
@@ -1068,19 +1023,19 @@ onUnmounted(() => {
           align-items: center;
           justify-content: center;
         }
-        
+
         .stat-info {
           display: flex;
           flex-direction: column;
           gap: 4px;
-          
+
           .stat-number {
             font-size: 24px;
             font-weight: 700;
             color: #409eff;
             line-height: 1;
           }
-          
+
           .stat-label {
             font-size: 14px;
             color: #606266;
@@ -1089,9 +1044,9 @@ onUnmounted(() => {
         }
       }
     }
-    
+
     .tools-list {
-        .tool-card {
+      .tool-card {
         background: white;
         border: 1px solid #ebeef5;
         border-radius: 20px;
@@ -1099,22 +1054,22 @@ onUnmounted(() => {
         margin-bottom: 20px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         transition: all 0.2s ease;
-        
+
         &:hover {
           box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
           transform: translateY(-2px);
         }
-        
+
         .tool-header {
           margin-bottom: 16px;
           display: flex;
           align-items: center;
-          
+
           .tool-info {
             display: flex;
             align-items: center;
             gap: 12px;
-            
+
             .tool-icon {
               width: 40px;
               height: 40px;
@@ -1125,7 +1080,7 @@ onUnmounted(() => {
               justify-content: center;
               flex-shrink: 0;
             }
-            
+
             .tool-text {
               .tool-name {
                 margin: 0 0 4px 0;
@@ -1133,7 +1088,7 @@ onUnmounted(() => {
                 font-weight: 600;
                 color: #303133;
               }
-              
+
               .tool-tag {
                 background: #ecf5ff;
                 color: #409eff;
@@ -1159,24 +1114,24 @@ onUnmounted(() => {
             }
           }
         }
-        
+
         .tool-description {
           color: #606266;
           line-height: 1.6;
           margin-bottom: 20px;
           font-size: 14px;
-          
+
           p {
             margin: 0;
           }
         }
-        
+
         .tool-schema {
           background: #f8f9fa;
           border: 1px solid #ebeef5;
           border-radius: 16px;
           padding: 20px;
-          
+
           .schema-header {
             display: flex;
             align-items: center;
@@ -1188,26 +1143,26 @@ onUnmounted(() => {
             color: #303133;
             font-size: 14px;
           }
-          
+
           .schema-content {
             .schema-meta {
               margin-bottom: 16px;
-              
+
               .meta-item {
                 display: flex;
                 align-items: center;
                 gap: 8px;
                 margin-bottom: 8px;
-                
+
                 .meta-label {
                   font-weight: 500;
                   color: #606266;
                   min-width: 60px;
                 }
-                
+
                 .meta-value {
                   color: #303133;
-                  
+
                   &.type {
                     background: #f0f2f5;
                     padding: 4px 10px;
@@ -1218,10 +1173,10 @@ onUnmounted(() => {
                 }
               }
             }
-            
+
             .required-section {
               margin-bottom: 16px;
-              
+
               .section-title {
                 display: flex;
                 align-items: center;
@@ -1231,12 +1186,12 @@ onUnmounted(() => {
                 color: #f56c6c;
                 font-size: 14px;
               }
-              
+
               .required-params {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 8px;
-                
+
                 .required-param {
                   background: #fef0f0;
                   color: #f56c6c;
@@ -1248,7 +1203,7 @@ onUnmounted(() => {
                 }
               }
             }
-            
+
             .properties-section {
               .section-title {
                 display: flex;
@@ -1259,29 +1214,29 @@ onUnmounted(() => {
                 color: #67c23a;
                 font-size: 14px;
               }
-              
+
               .properties-grid {
                 display: grid;
                 gap: 12px;
-                
+
                 .property-card {
                   background: white;
                   border: 1px solid #ebeef5;
                   border-radius: 16px;
                   padding: 16px;
-                  
+
                   .property-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
                     margin-bottom: 8px;
-                    
+
                     .property-name {
                       font-weight: 600;
                       color: #303133;
                       font-size: 14px;
                     }
-                    
+
                     .property-type {
                       background: #ecf5ff;
                       color: #409eff;
@@ -1291,7 +1246,7 @@ onUnmounted(() => {
                       font-weight: 500;
                     }
                   }
-                  
+
                   .property-body {
                     .property-desc {
                       color: #606266;
@@ -1299,17 +1254,17 @@ onUnmounted(() => {
                       line-height: 1.5;
                       margin: 0 0 8px 0;
                     }
-                    
+
                     .property-default {
                       display: flex;
                       align-items: center;
                       gap: 6px;
-                      
+
                       .default-label {
                         font-size: 12px;
                         color: #909399;
                       }
-                      
+
                       .default-value {
                         background: #f4f4f5;
                         color: #303133;
@@ -1334,7 +1289,7 @@ onUnmounted(() => {
   padding: 30px;
   min-height: calc(100vh - 60px);
   background-color: #ffffff;
-  
+
   .page-header {
     display: flex;
     justify-content: space-between;
@@ -1413,11 +1368,11 @@ onUnmounted(() => {
       }
     }
   }
-  
+
   .server-list {
     min-height: 300px;
     position: relative;
-    
+
     .static-server-list {
       border-radius: 24px;
       overflow: hidden;
@@ -1428,7 +1383,7 @@ onUnmounted(() => {
         display: flex;
         background-color: #f8fafc;
         border-bottom: 2px solid #e2e8f0;
-        
+
         .header-col {
           padding: 12px 16px;
           color: #64748b;
@@ -1478,11 +1433,11 @@ onUnmounted(() => {
       .col-actions {
         width: 200px;
       }
-      
+
       .server-info-cell {
         display: flex;
         align-items: center;
-        
+
         .server-avatar {
           width: 44px;
           height: 44px;
@@ -1497,7 +1452,7 @@ onUnmounted(() => {
           font-size: 20px;
           background: linear-gradient(135deg, #409eff 0%, #3a7be2 100%);
         }
-        
+
         .server-title {
           .server-name {
             font-size: 15px;
@@ -1505,13 +1460,14 @@ onUnmounted(() => {
             color: #303133;
             margin-bottom: 4px;
           }
+
           .server-provider {
             font-size: 13px;
             color: #909399;
           }
         }
       }
-      
+
       .tools-count {
         .el-button {
           font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
@@ -1521,31 +1477,32 @@ onUnmounted(() => {
           border-radius: 100px;
           font-size: 13px;
           border: 1px dashed rgba(64, 158, 255, 0.3);
-          
+
           &:hover {
             background-color: rgba(64, 158, 255, 0.15);
             border-color: rgba(64, 158, 255, 0.5);
           }
         }
       }
-      
+
       .config-status-align-left {
         display: flex;
         justify-content: flex-start;
         align-items: center;
       }
-      
+
       .action-buttons-cell {
         display: flex;
         justify-content: flex-start;
         gap: 8px;
-        
+
         .action-btn {
           border-radius: 100px;
           transition: all 0.3s;
         }
       }
     }
+
     .empty-state {
       text-align: center;
       padding: 80px 20px;
@@ -1573,7 +1530,7 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .mcp-server-page {
     padding: 16px;
-    
+
     .page-header {
       flex-direction: column;
       gap: 16px;
@@ -1593,7 +1550,7 @@ onUnmounted(() => {
   text-align: center;
   margin: 20px auto;
   max-width: 600px;
-  
+
   .empty-icon {
     width: 120px;
     height: 120px;
@@ -1603,25 +1560,25 @@ onUnmounted(() => {
     background: rgba(64, 158, 255, 0.1);
     border-radius: 50%;
     margin-bottom: 20px;
-    
+
     .empty-icon-symbol {
       font-size: 60px;
     }
   }
-  
+
   h3 {
     font-size: 20px;
     color: #303133;
     margin: 0 0 16px;
   }
-  
+
   p {
     margin: 0 0 20px;
     font-size: 16px;
     color: #909399;
     max-width: 300px;
   }
-  
+
 
 }
 
@@ -1743,7 +1700,7 @@ onUnmounted(() => {
         .list-header {
           background-color: #2c2c2e;
           border-bottom-color: #3a3a3c;
-          
+
           .header-col {
             color: #e5e5ea;
           }
@@ -1822,8 +1779,6 @@ onUnmounted(() => {
           color: #e5e5ea;
         }
 
-        input,
-        select,
         textarea {
           background: #2c2c2e;
           border-color: #3a3a3c;
@@ -2078,6 +2033,7 @@ onUnmounted(() => {
     transform: scale(0.9);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -2088,6 +2044,7 @@ onUnmounted(() => {
 .fade-leave-active {
   transition: opacity 0.2s ease;
 }
+
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
@@ -2095,6 +2052,3 @@ onUnmounted(() => {
 </style>
 
 <!-- 页面本身的样式使用scoped -->
-<style lang="scss" scoped>
-// 页面样式已移至底部scoped样式中，避免重复
-</style>

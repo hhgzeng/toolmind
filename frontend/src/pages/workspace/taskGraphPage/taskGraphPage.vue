@@ -1,21 +1,18 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, onBeforeUnmount, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
-import { 
-  startMindTaskAPI 
-} from '../../../apis/mind'
-import { getSessionInfoAPI } from '../../../apis/session'
-import { taskSessionStore } from '../../../store/taskSessionStore'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import {
+  startMindTaskAPI
+} from '../../../api/mind'
+import { getSessionInfoAPI } from '../../../api/session'
 import type { TaskSessionState } from '../../../store/taskSessionStore'
+import { taskSessionStore } from '../../../store/taskSessionStore'
 
 const route = useRoute()
 const router = useRouter()
-
-// 标记当前组件是否正在显示该 sessionId（活跃视图）
-const isActiveView = ref(true)
 
 interface GraphNode {
   start: string
@@ -145,7 +142,7 @@ const archiveCurrentResult = () => {
 const parsedTaskResult = computed(() => {
   let text = taskResultContent.value || '';
   const feedbacks: { title: string; isSuccess: boolean; content: string }[] = [];
-  
+
   // 匹配后端的 blockquote 原始字符串 (✅ 或 ⚠️)
   const blockquoteRegex = /(?:\n\n|\n)*> \*\*(✅ 自我反馈通过|⚠️ 自我反馈未通过)\*\* \((匹配度:\s*\d+\/100)\)\n> \*\*理由\*\*: ([\s\S]*?)(?=\n> __|\n\n---|\n*$)(?:\n> __.*)?(?:\n\n---)?/g;
   text = text.replace(blockquoteRegex, (match, status, score, reasonText) => {
@@ -169,7 +166,7 @@ const parsedTaskResult = computed(() => {
   });
 
   text = text.replace(/(?:\n\n---|\n)+$/, '');
-  
+
   return { text, feedbacks };
 });
 
@@ -189,10 +186,6 @@ let scrollPending = false
 const showJudgingAnimation = computed(() => {
   return !isHistoryMode.value && isJudging.value
 })
-
-const maybeEnterJudging = () => {
-  // 废弃，由SSE显式事件驱动代替
-}
 
 const exitJudging = () => {
   if (isJudging.value && !isJudgeSuccess.value) {
@@ -228,7 +221,7 @@ const startReceivingResults = () => {
   console.log('  - showTaskResult:', showTaskResult.value)
   console.log('  - resultBuffer 长度:', resultBuffer.value.length)
   console.log('  - resultBuffer 前100字符:', resultBuffer.value.substring(0, 100))
-  
+
   if (isReceivingResult.value) {
     console.log('⚠️ [startReceivingResults] 已在接收中，跳过')
     return
@@ -247,7 +240,7 @@ const startDrain = () => {
   console.log('  - isDraining:', isDraining.value)
   console.log('  - drainTimer:', drainTimer)
   console.log('  - resultBuffer 长度:', resultBuffer.value.length)
-  
+
   if (isDraining.value) {
     console.log('⚠️ [startDrain] 已在排空中，跳过')
     return
@@ -257,7 +250,7 @@ const startDrain = () => {
     window.clearInterval(drainTimer)
     drainTimer = null
   }
-  
+
   console.log('✅ [startDrain] 开始设置定时器，间隔:', drainIntervalMs, 'ms，块大小:', drainChunkSize)
   const tick = () => {
     if (!resultBuffer.value.length) {
@@ -269,8 +262,6 @@ const startDrain = () => {
       }
       isDraining.value = false
       isReceivingResult.value = false
-      // 主结果回放结束后，进入评判计算期（直到评判结果开始输出）
-      maybeEnterJudging()
       return
     }
     const chunk = resultBuffer.value.slice(0, drainChunkSize)
@@ -349,15 +340,14 @@ const getTodoStatusClass = (title: string) => {
 onMounted(async () => {
   console.log('=== taskGraphPage onMounted ===')
   console.log('路由参数:', route.query)
-  
+
   const sessionId = route.query.session_id as string
-  
+
   if (sessionId) {
     // 优先检查 store 中是否有保存的运行状态（组件销毁重建时，如"开启新对话"再点回）
     if (taskSessionStore.hasSession(sessionId)) {
       console.log('从 store 恢复运行中会话:', sessionId)
       restoreStateFromStore(sessionId)
-      isActiveView.value = true
     } else {
       // 正常历史会话模式：加载后端数据
       console.log('历史会话模式，session_id:', sessionId)
@@ -369,32 +359,32 @@ onMounted(async () => {
   } else {
     // 新任务模式：直接开始执行任务
     console.log('新任务模式')
-    
+
     // 保存参数
     originalParams.value.query = route.query.query as string || ''
     originalParams.value.web_search = route.query.webSearch === 'true'
-    
+
     const tools = route.query.tools as string
     originalParams.value.tools = tools ? JSON.parse(tools) : []
     originalParams.value.plugins = originalParams.value.tools
     const mcpQuery = route.query.mcp_servers as string
     originalParams.value.mcp_servers = mcpQuery ? JSON.parse(mcpQuery) : []
-    
+
     taskParams.value.query = originalParams.value.query
     taskParams.value.web_search = originalParams.value.web_search
     taskParams.value.plugins = originalParams.value.plugins
     taskParams.value.mcp_servers = originalParams.value.mcp_servers
-    
+
     // 保存用户问题用于显示
     userQuery.value = originalParams.value.query
-    
+
     console.log('✅ 用户问题:', originalParams.value.query)
     console.log('✅ 选中工具:', originalParams.value.tools)
     console.log('✅ 联网搜索:', originalParams.value.web_search)
-    
+
     // 清理 URL 参数（保留功能，隐藏参数）
     router.replace({ path: '/session/taskGraph' })
-    
+
     // 直接开始执行任务（AI 自行分解）
     if (originalParams.value.query) {
       console.log('🚀 开始自动执行任务...')
@@ -403,7 +393,7 @@ onMounted(async () => {
       console.warn('⚠️ 缺少用户问题，无法执行任务')
     }
   }
-  
+
   console.log('=== taskGraphPage onMounted 结束 ===')
 })
 
@@ -659,7 +649,6 @@ const rebindCallbacks = (callbacks: NonNullable<TaskSessionState['callbacks']>) 
     startReceivingResults()
     isTaskRunning.value = false
     isTaskFinished.value = true
-    maybeEnterJudging()
   }
 }
 
@@ -675,7 +664,6 @@ watch(
     const leavingSessionId = currentSessionId.value || (oldSessionId as string)
     if (leavingSessionId && isTaskRunning.value) {
       // 运行中的会话：保存状态到 store，不清空
-      isActiveView.value = false
       saveCurrentStateToStore(leavingSessionId)
       // 停止本地 drain 定时器（store 中的回调会继续接收数据到 store）
       if (drainTimer !== null) {
@@ -692,7 +680,6 @@ watch(
         // 从 store 恢复
         resetPageState()
         restoreStateFromStore(sid)
-        isActiveView.value = true
       } else {
         // 正常历史会话模式
         resetPageState()
@@ -713,13 +700,13 @@ const loadSessionInfo = async (sessionId: string) => {
   try {
     isHistoryMode.value = true
     const response = await getSessionInfoAPI(sessionId)
-    
+
     console.log('📦 会话信息响应:', response.data)
-    
+
     if (response.data.status_code === 200) {
       const sessionData = response.data.data
       console.log('📦 会话数据:', sessionData)
-      
+
       // 加载历史上下文
       if (sessionData.contexts && Array.isArray(sessionData.contexts) && sessionData.contexts.length > 0) {
         historyContexts.value = sessionData.contexts
@@ -821,10 +808,10 @@ const switchToPrevRun = () => {
     return
   }
   if (currentContextIndex.value <= 0) return
-  
+
   isHistorySwitching.value = true
   taskResultContent.value = ''
-  
+
   setTimeout(() => {
     currentContextIndex.value -= 1
     applyContextByIndex(currentContextIndex.value)
@@ -848,10 +835,10 @@ const switchToNextRun = () => {
     return
   }
   if (currentContextIndex.value >= historyContexts.value.length - 1) return
-  
+
   isHistorySwitching.value = true
   taskResultContent.value = ''
-  
+
   setTimeout(() => {
     currentContextIndex.value += 1
     applyContextByIndex(currentContextIndex.value)
@@ -868,7 +855,7 @@ const updateNodeStatus = (title: string, status: 'pending' | 'executing' | 'comp
 const handleNodeClick = (nodeId: string) => {
   selectedNode.value = nodeId
   const nodeStatus = nodeStatusMap.value.get(nodeId)
-  
+
   if (nodeStatus && nodeStatus.status === 'completed' && nodeStatus.message) {
     showNodeDetail.value = true
   } else if (nodeStatus && nodeStatus.status === 'executing') {
@@ -891,7 +878,6 @@ onBeforeUnmount(() => {
   }
   // 如果有运行中的任务，保存状态到 store（组件销毁但 SSE 继续在后台运行）
   if (isTaskRunning.value && currentSessionId.value) {
-    isActiveView.value = false
     saveCurrentStateToStore(currentSessionId.value)
   }
 })
@@ -913,7 +899,7 @@ const scrollResultToBottom = () => {
 // 开始执行任务
 const startTask = async () => {
   console.log('开始执行任务')
-  
+
   taskGraph.value = []
   nodeStatusMap.value.clear()
   taskResultContent.value = ''
@@ -928,7 +914,6 @@ const startTask = async () => {
   isTaskFinished.value = false
   showGraph.value = false
   isTaskRunning.value = true
-  isActiveView.value = true
   // 清理可能遗留的回放定时器
   if (drainTimer !== null) {
     window.clearInterval(drainTimer)
@@ -998,7 +983,7 @@ const startTask = async () => {
       console.log('🔍 收到评判开始事件, isJudging变为true')
       isJudging.value = true
       if (!isReceivingResult.value && resultBuffer.value.length === 0) {
-         isReceivingResult.value = true
+        isReceivingResult.value = true
       }
     },
     onError: (error: any) => {
@@ -1016,7 +1001,6 @@ const startTask = async () => {
       startReceivingResults()
       isTaskRunning.value = false
       isTaskFinished.value = true
-      maybeEnterJudging()
       // 任务完成，清理 store 中的运行状态
       if (currentSessionId.value) {
         taskSessionStore.removeSession(currentSessionId.value)
@@ -1100,7 +1084,9 @@ const startTask = async () => {
           <div class="column-header">
             <span class="header-icon">
               <!-- 统一的聊天图标 -->
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; color: white;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                style="width: 20px; height: 20px; color: white;">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
               </svg>
             </span>
@@ -1117,7 +1103,9 @@ const startTask = async () => {
           <div class="column-header">
             <span class="header-icon">
               <!-- 系统内置流程图标 -->
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; color: white;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                style="width: 20px; height: 20px; color: white;">
                 <rect x="3" y="3" width="7" height="7" rx="2" />
                 <rect x="14" y="3" width="7" height="7" rx="2" />
                 <rect x="14" y="14" width="7" height="7" rx="2" />
@@ -1131,17 +1119,12 @@ const startTask = async () => {
             <h2 class="header-title">任务流程</h2>
 
           </div>
-          
+
           <div class="column-content">
             <!-- To-dos 列表：按串行步骤顺序展示每个子任务 -->
             <div v-if="showGraph && todos.length" class="todos-list">
-              <div
-                v-for="(title, index) in todos"
-                :key="title + index"
-                class="todo-item"
-                :class="getTodoStatusClass(title)"
-                @click="handleNodeClick(title)"
-              >
+              <div v-for="(title, index) in todos" :key="title + index" class="todo-item"
+                :class="getTodoStatusClass(title)" @click="handleNodeClick(title)">
                 <div class="todo-status-dot" />
                 <div class="todo-main">
                   <div class="todo-title-row">
@@ -1152,14 +1135,14 @@ const startTask = async () => {
               </div>
             </div>
 
-          <div v-else-if="!isLoading" class="empty-placeholder">
-            <span class="empty-icon">🔄</span>
-            <p>等待任务流程生成...</p>
+            <div v-else-if="!isLoading" class="empty-placeholder">
+              <span class="empty-icon">🔄</span>
+              <p>等待任务流程生成...</p>
+            </div>
+            <div v-else class="empty-placeholder"></div>
           </div>
-          <div v-else class="empty-placeholder"></div>
         </div>
-      </div>
-      <!-- 结束左侧容器 -->
+        <!-- 结束左侧容器 -->
       </div>
 
       <!-- 第二列：任务执行结果 -->
@@ -1167,7 +1150,9 @@ const startTask = async () => {
         <div class="column-header">
           <span class="header-icon">
             <!-- 系统内置文档图标 -->
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; color: white;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+              style="width: 20px; height: 20px; color: white;">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
               <line x1="16" y1="13" x2="8" y2="13" />
@@ -1176,57 +1161,31 @@ const startTask = async () => {
             </svg>
           </span>
           <h2 class="header-title">任务结果</h2>
-          <div
-            v-if="showPagination"
-            class="run-toggle"
-          >
-            <button
-              class="run-arrow"
-              :disabled="isHistoryMode ? currentContextIndex === 0 : liveResultPageIndex === 0"
-              @click.stop="switchToPrevRun"
-            >
+          <div v-if="showPagination" class="run-toggle">
+            <button class="run-arrow" :disabled="isHistoryMode ? currentContextIndex === 0 : liveResultPageIndex === 0"
+              @click.stop="switchToPrevRun">
               ‹
             </button>
             <span class="run-label">{{ currentRunLabel }}</span>
-            <button
-              class="run-arrow"
+            <button class="run-arrow"
               :disabled="isHistoryMode ? currentContextIndex === totalContexts - 1 : liveResultPageIndex >= liveResultPages.length"
-              @click.stop="switchToNextRun"
-            >
+              @click.stop="switchToNextRun">
               ›
             </button>
           </div>
         </div>
         <div class="column-content">
-          <div
-            v-if="showTaskResult"
-            class="result-wrapper"
-            ref="resultContainer"
-          >
-            <MdPreview
-              editorId="task-result-preview"
-              :modelValue="parsedTaskResult.text"
-              :showCodeRowNumber="true"
-            />
-            
+          <div v-if="showTaskResult" class="result-wrapper" ref="resultContainer">
+            <MdPreview editorId="task-result-preview" :modelValue="parsedTaskResult.text" :showCodeRowNumber="true" />
+
             <!-- 独立呈现的反馈卡片(从Markdown中抽离的iOS 26圆角风格卡片) -->
             <Transition :name="isHistorySwitching ? '' : 'feedback-container'">
-              <div
-                v-if="parsedTaskResult.feedbacks.length > 0"
-                class="feedback-cards-container"
-              >
+              <div v-if="parsedTaskResult.feedbacks.length > 0" class="feedback-cards-container">
                 <!-- 动态绑定 name，如果是历史上下轮次切换则取消入场动画避免闪烁 -->
-                <TransitionGroup
-                  :name="isHistorySwitching ? '' : 'feedback-reveal'"
-                  tag="div"
-                  class="feedback-cards-list"
-                >
-                  <details 
-                    v-for="(fb, i) in parsedTaskResult.feedbacks" 
-                    :key="fb.title + i"
-                    class="feedback-card-native"
-                    :class="fb.isSuccess ? 'success' : 'error'"
-                  >
+                <TransitionGroup :name="isHistorySwitching ? '' : 'feedback-reveal'" tag="div"
+                  class="feedback-cards-list">
+                  <details v-for="(fb, i) in parsedTaskResult.feedbacks" :key="fb.title + i"
+                    class="feedback-card-native" :class="fb.isSuccess ? 'success' : 'error'">
                     <summary>
                       <span class="summary-title">{{ fb.title }}</span>
                     </summary>
@@ -1243,13 +1202,16 @@ const startTask = async () => {
               <div v-if="showJudgingAnimation" class="judge-overlay" aria-live="polite">
                 <div class="judge-surface" :class="{ 'is-success': isJudgeSuccess }">
                   <div class="judge-icon-wrapper" v-if="isJudgeSuccess">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="success-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="success-icon">
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                   </div>
                   <div class="judge-text">
-                    <div class="judge-title" :class="{ 'success-text': isJudgeSuccess }">{{ isJudgeSuccess ? '评判完成' : '正在评判任务结果' }}</div>
-                    <div class="judge-subtitle" :class="{ 'success-text': isJudgeSuccess }">{{ isJudgeSuccess ? '已生成评估与反馈' : '匹配度分析与理由生成中…' }}</div>
+                    <div class="judge-title" :class="{ 'success-text': isJudgeSuccess }">{{ isJudgeSuccess ? '评判完成' :
+                      '正在评判任务结果' }}</div>
+                    <div class="judge-subtitle" :class="{ 'success-text': isJudgeSuccess }">{{ isJudgeSuccess ?
+                      '已生成评估与反馈' : '匹配度分析与理由生成中…' }}</div>
                   </div>
                   <div v-if="!isJudgeSuccess" class="judge-meter" aria-hidden="true">
                     <div class="judge-meter-track">
@@ -1284,10 +1246,7 @@ const startTask = async () => {
           <div class="detail-item">
             <label class="detail-label">执行结果</label>
             <div class="detail-value message-content">
-              <MdPreview
-                editorId="node-detail-preview"
-                :modelValue="selectedNodeDetail?.message || '该节点尚未执行'"
-              />
+              <MdPreview editorId="node-detail-preview" :modelValue="selectedNodeDetail?.message || '该节点尚未执行'" />
             </div>
           </div>
         </div>
@@ -1315,7 +1274,7 @@ $error: #ef4444;
   background-color: #ffffff;
   overflow: hidden;
   position: relative;
-  
+
   // 动态背景网格
   &::before {
     content: '';
@@ -1324,14 +1283,14 @@ $error: #ef4444;
     left: 0;
     right: 0;
     bottom: 0;
-    background-image: 
+    background-image:
       linear-gradient(rgba(6, 182, 212, 0.08) 1px, transparent 1px),
       linear-gradient(90deg, rgba(59, 130, 246, 0.08) 1px, transparent 1px);
     background-size: 50px 50px;
     pointer-events: none;
     animation: gridMove 20s linear infinite;
   }
-  
+
   // 发光圆形装饰
   &::after {
     content: '';
@@ -1351,6 +1310,7 @@ $error: #ef4444;
   0% {
     transform: translate(0, 0);
   }
+
   100% {
     transform: translate(50px, 50px);
   }
@@ -1385,14 +1345,14 @@ $error: #ef4444;
   border-radius: 32px !important;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.08),
     0 0 0 1px rgba(255, 255, 255, 0.3) inset;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
     transform: translateY(-6px) scale(1.01);
-    box-shadow: 
+    box-shadow:
       0 16px 48px rgba(0, 0, 0, 0.18),
       0 0 0 1px rgba(255, 255, 255, 0.15) inset,
       0 0 60px rgba(59, 130, 246, 0.15);
@@ -1403,9 +1363,9 @@ $error: #ef4444;
     align-items: center;
     gap: 14px;
     padding: 26px 32px;
-    background: linear-gradient(135deg, 
-      rgba(6, 182, 212, 0.08) 0%, 
-      rgba(59, 130, 246, 0.08) 100%);
+    background: linear-gradient(135deg,
+        rgba(6, 182, 212, 0.08) 0%,
+        rgba(59, 130, 246, 0.08) 100%);
     border-bottom: 1px solid rgba(6, 182, 212, 0.12);
     flex-shrink: 0;
     position: relative;
@@ -1419,13 +1379,13 @@ $error: #ef4444;
       left: 0;
       right: 0;
       height: 3px;
-      background: linear-gradient(90deg, 
-        $primary-start 0%, 
-        $primary-end 50%, 
-        $secondary-start 100%);
+      background: linear-gradient(90deg,
+          $primary-start 0%,
+          $primary-end 50%,
+          $secondary-start 100%);
       box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
     }
-    
+
     // 动态光效
     &::after {
       content: '';
@@ -1434,10 +1394,10 @@ $error: #ef4444;
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, 
-        transparent, 
-        rgba(255, 255, 255, 0.1), 
-        transparent);
+      background: linear-gradient(90deg,
+          transparent,
+          rgba(255, 255, 255, 0.1),
+          transparent);
       animation: shimmer 3s infinite;
     }
 
@@ -1450,13 +1410,13 @@ $error: #ef4444;
       font-size: 24px;
       background: linear-gradient(135deg, $primary-start 0%, $primary-end 100%);
       border-radius: 14px;
-      box-shadow: 
+      box-shadow:
         0 6px 20px rgba(6, 182, 212, 0.4),
         0 0 0 4px rgba(6, 182, 212, 0.1);
       flex-shrink: 0;
       position: relative;
       transition: all 0.3s ease;
-      
+
       // 发光效果
       &::after {
         content: '';
@@ -1469,13 +1429,13 @@ $error: #ef4444;
         z-index: -1;
         filter: blur(12px);
       }
-      
+
       &:hover {
         transform: scale(1.1) rotate(5deg);
-        box-shadow: 
+        box-shadow:
           0 8px 28px rgba(6, 182, 212, 0.6),
           0 0 0 4px rgba(6, 182, 212, 0.15);
-          
+
         &::after {
           opacity: 0.8;
         }
@@ -1487,39 +1447,14 @@ $error: #ef4444;
       font-size: 19px;
       font-weight: 800;
       flex: 1;
-      background: linear-gradient(135deg, 
-        $primary-start 0%, 
-        $primary-end 60%, 
-        $secondary-start 100%);
+      background: linear-gradient(135deg,
+          $primary-start 0%,
+          $primary-end 60%,
+          $secondary-start 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
       letter-spacing: -0.5px;
-    }
-
-    /* 编辑/预览切换按钮（新） */
-    .mode-toggle {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-left: auto;
-      margin-right: 8px;
-    }
-    .mode-toggle .mode-btn {
-      appearance: none;
-      border: 1px solid var(--border, #e5e7eb);
-      background: #fff;
-      color: #374151;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .mode-toggle .mode-btn.active {
-      background: var(--primary, #2563eb);
-      border-color: var(--primary, #2563eb);
-      color: #fff;
     }
   }
 
@@ -1535,11 +1470,11 @@ $error: #ef4444;
     padding: 0 20px 20px;
 
     // 隐藏滚动条但保持滚动功能
-    scrollbar-width: none;  // Firefox
-    -ms-overflow-style: none;  // IE/Edge
-    
+    scrollbar-width: none; // Firefox
+    -ms-overflow-style: none; // IE/Edge
+
     &::-webkit-scrollbar {
-      display: none;  // Chrome/Safari/Edge
+      display: none; // Chrome/Safari/Edge
     }
   }
 }
@@ -1548,19 +1483,9 @@ $error: #ef4444;
   0% {
     left: -100%;
   }
+
   100% {
     left: 100%;
-  }
-}
-
-@keyframes pulseGlow {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 8px rgba(234, 88, 12, 0.6);
-  }
-  50% {
-    transform: scale(1.15);
-    box-shadow: 0 0 16px rgba(234, 88, 12, 0.8), 0 0 0 8px rgba(234, 88, 12, 0);
   }
 }
 
@@ -1732,12 +1657,13 @@ $error: #ef4444;
     overflow-y: auto;
     overflow-x: hidden; // 防止水平滚动条由于代码块溢出导致整个卡片可滚动
     position: relative;
-    will-change: scroll-position;  // 提示浏览器优化滚动性能
-    contain: layout style paint;   // 隔离渲染层，减少重排
+    will-change: scroll-position; // 提示浏览器优化滚动性能
+    contain: layout style paint; // 隔离渲染层，减少重排
 
     // 移除滚动条显示
     scrollbar-width: none;
     -ms-overflow-style: none;
+
     &::-webkit-scrollbar {
       display: none;
     }
@@ -1750,7 +1676,7 @@ $error: #ef4444;
       box-shadow: none;
       border: none;
       position: relative;
-      will-change: contents;  // 提示浏览器内容会频繁变化
+      will-change: contents; // 提示浏览器内容会频繁变化
 
       p {
         margin: 12px 0;
@@ -1758,7 +1684,12 @@ $error: #ef4444;
         color: #374151;
       }
 
-      h1, h2, h3, h4, h5, h6 {
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
         margin: 20px 0 12px 0;
         font-weight: 600;
         color: #1f2937;
@@ -1789,7 +1720,7 @@ $error: #ef4444;
       }
     }
 
- 
+
   }
 }
 
@@ -1798,7 +1729,8 @@ $error: #ef4444;
   margin: 16px 0 24px 0;
   display: flex;
   justify-content: center;
-  pointer-events: none; /* 不阻挡滚动、选择文本 */
+  pointer-events: none;
+  /* 不阻挡滚动、选择文本 */
   z-index: 3;
 }
 
@@ -1845,8 +1777,15 @@ $error: #ef4444;
 }
 
 @keyframes successPop {
-  0% { transform: scale(0.5); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .judge-text {
@@ -1855,6 +1794,7 @@ $error: #ef4444;
   gap: 4px;
   min-width: 0;
 }
+
 .judge-title {
   font-size: 14px;
   font-weight: 600;
@@ -1862,9 +1802,11 @@ $error: #ef4444;
   line-height: 1.2;
   transition: color 0.3s ease;
 }
+
 .judge-title.success-text {
   color: var(--success, #16a34a);
 }
+
 .judge-subtitle {
   font-size: 12px;
   color: var(--muted, #6b7280);
@@ -1874,6 +1816,7 @@ $error: #ef4444;
   text-overflow: ellipsis;
   transition: color 0.3s ease;
 }
+
 .judge-subtitle.success-text {
   color: var(--success, #16a34a);
 }
@@ -1883,6 +1826,7 @@ $error: #ef4444;
   display: flex;
   align-items: center;
 }
+
 .judge-meter-track {
   width: 100px;
   height: 6px;
@@ -1891,6 +1835,7 @@ $error: #ef4444;
   overflow: hidden;
   position: relative;
 }
+
 .judge-meter-bar {
   position: absolute;
   top: 0;
@@ -1902,12 +1847,26 @@ $error: #ef4444;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
+
 @keyframes judgeIndeterminate {
-  0% { transform: translateX(-100%); opacity: 0.85; }
-  50% { transform: translateX(150%); opacity: 1; }
-  100% { transform: translateX(-100%); opacity: 0.85; }
+  0% {
+    transform: translateX(-100%);
+    opacity: 0.85;
+  }
+
+  50% {
+    transform: translateX(150%);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(-100%);
+    opacity: 0.85;
+  }
 }
 
 /* 过渡：悬浮评判层淡入淡出 */
@@ -1915,6 +1874,7 @@ $error: #ef4444;
 .judge-fade-leave-active {
   transition: opacity 0.22s ease, transform 0.22s ease, filter 0.22s ease;
 }
+
 .judge-fade-enter-from,
 .judge-fade-leave-to {
   opacity: 0;
@@ -1927,6 +1887,7 @@ $error: #ef4444;
 .feedback-container-leave-active {
   transition: opacity 0.22s ease, transform 0.22s ease;
 }
+
 .feedback-container-enter-from,
 .feedback-container-leave-to {
   opacity: 0;
@@ -1942,21 +1903,23 @@ $error: #ef4444;
 .feedback-reveal-enter-active {
   transition: opacity 0.26s ease, transform 0.26s ease;
 }
+
 .feedback-reveal-enter-from {
   opacity: 0;
   transform: translateY(8px);
 }
+
 .feedback-reveal-move {
   transition: transform 0.26s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .judge-orb,
-  .judge-orb::after,
+
   .judge-meter-bar,
   .empty-placeholder .empty-icon {
     animation: none !important;
   }
+
   .judge-fade-enter-active,
   .judge-fade-leave-active,
   .feedback-container-enter-active,
@@ -1992,22 +1955,15 @@ $error: #ef4444;
     color: #64748b;
     font-weight: 500;
   }
-
-  .debug-info {
-    font-size: 13px;
-    color: #667eea;
-    margin-top: 12px;
-    font-weight: 600;
-    padding: 6px 16px;
-    background: rgba(102, 126, 234, 0.08);
-    border-radius: 24px;
-  }
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -2112,6 +2068,7 @@ $error: #ef4444;
             /* 隐藏滚动条但保留滚动能力 */
             scrollbar-width: none; // Firefox
             -ms-overflow-style: none; // IE/Edge
+
             &::-webkit-scrollbar {
               display: none; // WebKit
             }
@@ -2149,6 +2106,7 @@ $error: #ef4444;
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -2159,61 +2117,10 @@ $error: #ef4444;
     transform: translateY(20px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes typingBounce {
-  0%, 80%, 100% {
-    transform: scale(0) translateY(0);
-    opacity: 0.5;
-  }
-  40% {
-    transform: scale(1.2) translateY(-8px);
-    opacity: 1;
-  }
-}
-
-// 全局动画效果
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
   }
 }
 
@@ -2241,6 +2148,7 @@ $error: #ef4444;
 .task-graph-page {
   background: var(--bg);
 }
+
 .task-graph-page::before,
 .task-graph-page::after {
   display: none !important;
@@ -2260,6 +2168,7 @@ $error: #ef4444;
   backdrop-filter: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
+
 .column:hover {
   transform: none;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
@@ -2270,10 +2179,12 @@ $error: #ef4444;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
+
 .column .column-header::before,
 .column .column-header::after {
   display: none !important;
 }
+
 .column .column-header .header-icon {
   width: 36px;
   height: 36px;
@@ -2283,13 +2194,16 @@ $error: #ef4444;
   border-radius: 12px;
   box-shadow: none;
 }
+
 .column .column-header .header-icon::after {
   display: none !important;
 }
+
 .column .column-header .header-icon:hover {
   transform: none;
   box-shadow: none;
 }
+
 .column .column-header .header-title {
   background: none;
   -webkit-text-fill-color: initial;
@@ -2303,70 +2217,6 @@ $error: #ef4444;
 
 
 /* 流程图区 */
-.column-graph .graph-wrapper {
-  padding: 12px;
-}
-.column-graph .graph-wrapper .legend-bar {
-  background: #fff;
-  border: 1px solid var(--border);
-  box-shadow: none;
-}
-.column-graph .graph-wrapper .legend-bar .legend-item {
-  background: transparent;
-  box-shadow: none;
-}
-.column-graph .graph-wrapper .legend-bar .legend-item:hover {
-  transform: none;
-}
-.column-graph .graph-wrapper .legend-bar .legend-item .legend-dot.pending {
-  background: var(--pending);
-  box-shadow: none;
-}
-.column-graph .graph-wrapper .legend-bar .legend-item .legend-dot.executing {
-  background: var(--warning);
-}
-.column-graph .graph-wrapper .legend-bar .legend-item .legend-dot.executing::after {
-  border-color: var(--warning);
-}
-.column-graph .graph-wrapper .legend-bar .legend-item .legend-dot.completed {
-  background: var(--success);
-  box-shadow: none;
-}
-.column-graph .graph-wrapper .legend-bar .legend-item .legend-text {
-  color: var(--muted);
-}
-
-.column-graph .graph-wrapper .graph-container {
-  border: none;
-  box-shadow: none;
-}
-.column-graph .graph-wrapper .graph-container .graph-svg .edge-path {
-  stroke: #c7d2fe;
-  opacity: 1;
-  stroke-width: 1.5;
-}
-.column-graph .graph-wrapper .graph-container .graph-svg .node-group .node-rect {
-  fill: #fff !important;
-  stroke-width: 1.5;
-  filter: none;
-  /* 统一节点圆角为 24px（SVG rect 支持通过 CSS 设置 rx/ry） */
-  rx: 24px;
-  ry: 24px;
-}
-.column-graph .graph-wrapper .graph-container .graph-svg .node-group .node-label {
-  fill: var(--text);
-  font-size: 12px;
-}
-.column-graph .graph-wrapper .graph-container .graph-svg .node-group.node-completed .node-icon {
-  fill: var(--success);
-}
-.column-graph .graph-wrapper .graph-container .graph-svg .node-group.node-executing .node-icon {
-  fill: var(--warning);
-}
-.column-graph .graph-wrapper .graph-container .graph-svg .node-group.node-pending .node-icon {
-  fill: var(--pending);
-}
-
 /* 执行结果区 */
 .column-result .result-wrapper :deep(.md-editor-preview) {
   background: #fff;
@@ -2374,9 +2224,11 @@ $error: #ef4444;
   box-shadow: none;
   padding: 0;
 }
+
 .column-result .result-wrapper :deep(.md-editor-preview)::before {
   display: none !important;
 }
+
 .column-result .result-wrapper :deep(.md-editor-preview) p {
   color: var(--text);
 }
@@ -2392,6 +2244,7 @@ $error: #ef4444;
   color: var(--text);
   border-bottom: 1px solid var(--border);
 }
+
 .node-detail-modal .modal-content .modal-header .modal-close {
   color: var(--muted);
 }
@@ -2418,7 +2271,8 @@ $error: #ef4444;
   font-size: 15px;
   color: #1c1c1e;
   cursor: pointer;
-  list-style: none; /* remove default triangle in some browsers */
+  list-style: none;
+  /* remove default triangle in some browsers */
   position: relative;
   user-select: none;
   display: flex;
@@ -2429,12 +2283,13 @@ $error: #ef4444;
 }
 
 .feedback-card-native summary::-webkit-details-marker {
-  display: none; /* remove default triangle in safari */
+  display: none;
+  /* remove default triangle in safari */
 }
 
 /* Custom icon for details */
 .feedback-card-native summary::after {
-  content: "›"; 
+  content: "›";
   display: inline-block;
   font-size: 22px;
   line-height: 1;
@@ -2451,10 +2306,12 @@ $error: #ef4444;
 .feedback-content-native {
   padding: 0 20px 20px 20px;
 }
+
 .feedback-content-native :deep(.md-editor-preview) {
   background: transparent !important;
   padding: 0;
 }
+
 .feedback-content-native :deep(.md-editor-preview) p {
   color: #3a3a3c;
   font-size: 14.5px;
@@ -2465,6 +2322,7 @@ $error: #ef4444;
   background-color: #f2fcf5;
   border-color: #d1f4e0;
 }
+
 .feedback-card-native.success summary {
   color: #0b6833;
 }
@@ -2473,6 +2331,7 @@ $error: #ef4444;
   background-color: #fff8f8;
   border-color: #ffe5e5;
 }
+
 .feedback-card-native.error summary {
   color: #c92a2a;
 }
@@ -2608,7 +2467,7 @@ $error: #ef4444;
         color: var(--text);
         padding: 12px 16px;
         border-radius: 4px;
-        
+
         p,
         span,
         strong,
@@ -2673,6 +2532,7 @@ $error: #ef4444;
 
     .modal-body {
       background: #1c1c1e;
+
       .detail-label {
         color: var(--muted) !important;
       }
@@ -2716,7 +2576,7 @@ $error: #ef4444;
               color: var(--text);
               padding: 12px 16px;
               border-radius: 4px;
-              
+
               p,
               span,
               strong,
@@ -2750,21 +2610,6 @@ $error: #ef4444;
               color: #f9fafb;
             }
           }
-        }
-
-        .status-tag.completed {
-          background: rgba(48, 209, 88, 0.16);
-          color: #30d158;
-        }
-
-        .status-tag.executing {
-          background: rgba(255, 214, 10, 0.18);
-          color: #ffd60a;
-        }
-
-        .status-tag.pending {
-          background: #2c2c2e;
-          color: var(--muted);
         }
       }
     }
@@ -2821,10 +2666,6 @@ $error: #ef4444;
 
   .judge-meter-track {
     background: rgba(148, 163, 184, 0.22);
-  }
-
-  .judge-orb::before {
-    background: rgba(28, 28, 30, 0.85);
   }
 }
 </style>

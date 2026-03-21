@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
 import { ChatDotRound, Connection, Cpu, Operation } from '@element-plus/icons-vue'
-import { 
-  getVisibleLLMsAPI, 
+import { ElMessage } from 'element-plus'
+import { onMounted, ref } from 'vue'
+import {
   getMindConfigAPI,
+  getVisibleLLMsAPI,
   updateMindConfigAPI,
   type LLMResponse,
   type MindModelConfig
-} from '../../apis/llm'
+} from '../../api/llm'
 
 const models = ref<LLMResponse[]>([])
 const loading = ref(true)
@@ -24,17 +24,17 @@ const fetchModels = async () => {
   loading.value = true
   try {
     const response = await getVisibleLLMsAPI()
-    
+
     if (response.data.status_code === 200) {
       const data = response.data.data || {}
       const allModels: LLMResponse[] = []
-      
+
       Object.values(data).forEach((typeModels: any) => {
         if (Array.isArray(typeModels)) {
           allModels.push(...typeModels)
         }
       })
-      
+
       models.value = allModels
     } else {
       ElMessage.error(response.data.status_message || '获取模型列表失败')
@@ -82,7 +82,9 @@ onMounted(() => {
   <div class="mind-config-page">
     <div class="page-header">
       <h2>
-        <el-icon class="page-icon"><Operation /></el-icon>
+        <el-icon class="page-icon">
+          <Operation />
+        </el-icon>
         模型配置
       </h2>
     </div>
@@ -92,89 +94,59 @@ onMounted(() => {
         <h3>ToolMind 核心模型配置</h3>
         <p>为 ToolMind 的不同功能组件配置专属的 AI 模型</p>
       </div>
-      
+
       <div class="config-grid">
         <div class="config-card">
           <div class="config-icon">
-            <el-icon><ChatDotRound /></el-icon>
+            <el-icon>
+              <ChatDotRound />
+            </el-icon>
           </div>
           <div class="config-info">
             <h4>对话与任务生成模型</h4>
             <p>负责理解用户意图并规划任务执行路径</p>
           </div>
-          <el-select 
-            v-model="mindConfig.conversation_model_id" 
-            placeholder="请选择会话模型" 
-            class="model-select"
-            clearable
-            no-data-text="无模型"
-            :loading="loading || savingMind"
-            :teleported="false"
-            fit-input-width
-            @change="saveMindConfig"
-          >
-            <el-option
-              v-for="m in models"
-              :key="m.llm_id"
-              :label="m.model + ' (' + m.provider + ')'"
-              :value="m.llm_id"
-            />
+          <el-select v-model="mindConfig.conversation_model_id" placeholder="请选择会话模型" class="model-select" clearable
+            no-data-text="无模型" :loading="loading || savingMind" :teleported="false" fit-input-width
+            @change="saveMindConfig">
+            <el-option v-for="m in models" :key="m.llm_id" :label="m.model + ' (' + m.provider + ')'"
+              :value="m.llm_id" />
           </el-select>
         </div>
-        
+
         <div class="config-card">
           <div class="config-icon">
-            <el-icon><Connection /></el-icon>
+            <el-icon>
+              <Connection />
+            </el-icon>
           </div>
           <div class="config-info">
             <h4>工具调用模型</h4>
             <p>负责执行 MCP 协议和外部工具调用</p>
           </div>
-          <el-select 
-            v-model="mindConfig.tool_call_model_id" 
-            placeholder="请选择工具模型" 
-            class="model-select"
-            clearable
-            no-data-text="无模型"
-            :loading="loading || savingMind"
-            :teleported="false"
-            fit-input-width
-            @change="saveMindConfig"
-          >
-            <el-option
-              v-for="m in models"
-              :key="m.llm_id"
-              :label="m.model + ' (' + m.provider + ')'"
-              :value="m.llm_id"
-            />
+          <el-select v-model="mindConfig.tool_call_model_id" placeholder="请选择工具模型" class="model-select" clearable
+            no-data-text="无模型" :loading="loading || savingMind" :teleported="false" fit-input-width
+            @change="saveMindConfig">
+            <el-option v-for="m in models" :key="m.llm_id" :label="m.model + ' (' + m.provider + ')'"
+              :value="m.llm_id" />
           </el-select>
         </div>
-        
+
         <div class="config-card">
           <div class="config-icon">
-            <el-icon><Cpu /></el-icon>
+            <el-icon>
+              <Cpu />
+            </el-icon>
           </div>
           <div class="config-info">
             <h4>结果推理与评估模型</h4>
             <p>对任务执行的最终结果进行自我验证和评估</p>
           </div>
-          <el-select 
-            v-model="mindConfig.reasoning_model_id" 
-            placeholder="请选择评估模型" 
-            class="model-select"
-            clearable
-            no-data-text="无模型"
-            :loading="loading || savingMind"
-            :teleported="false"
-            fit-input-width
-            @change="saveMindConfig"
-          >
-            <el-option
-              v-for="m in models"
-              :key="m.llm_id"
-              :label="m.model + ' (' + m.provider + ')'"
-              :value="m.llm_id"
-            />
+          <el-select v-model="mindConfig.reasoning_model_id" placeholder="请选择评估模型" class="model-select" clearable
+            no-data-text="无模型" :loading="loading || savingMind" :teleported="false" fit-input-width
+            @change="saveMindConfig">
+            <el-option v-for="m in models" :key="m.llm_id" :label="m.model + ' (' + m.provider + ')'"
+              :value="m.llm_id" />
           </el-select>
         </div>
       </div>
@@ -217,11 +189,6 @@ onMounted(() => {
         color: #303133;
       }
     }
-
-    .header-subtitle {
-      font-size: 14px;
-      color: #64748b;
-    }
   }
 }
 
@@ -236,14 +203,14 @@ onMounted(() => {
 
   .section-title {
     margin-bottom: 24px;
-    
+
     h3 {
       font-size: 22px;
       font-weight: 700;
       color: #303133;
       margin: 0 0 8px 0;
     }
-    
+
     p {
       color: #909399;
       font-size: 14px;
@@ -264,13 +231,13 @@ onMounted(() => {
     padding: 24px;
     border: 1px solid #ebeef5;
     transition: all 0.3s;
-    
+
     &:hover {
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
       transform: translateY(-2px);
       border-color: #c6e2ff;
     }
-    
+
     .config-icon {
       width: 48px;
       height: 48px;
@@ -280,23 +247,23 @@ onMounted(() => {
       align-items: center;
       justify-content: center;
       margin-bottom: 16px;
-      
+
       .el-icon {
         font-size: 24px;
         color: #409eff;
       }
     }
-    
+
     .config-info {
       margin-bottom: 20px;
-      
+
       h4 {
         margin: 0 0 8px 0;
         font-size: 16px;
         font-weight: 600;
         color: #303133;
       }
-      
+
       p {
         margin: 0;
         font-size: 13px;
@@ -304,18 +271,18 @@ onMounted(() => {
         line-height: 1.5;
       }
     }
-    
+
     .model-select {
       width: 100%;
-      
+
       :deep(.el-select__wrapper) {
         border-radius: 100px !important;
       }
-      
+
       :deep(.el-popper) {
         border-radius: 24px !important;
       }
-      
+
       :deep(.el-select-dropdown__item) {
         border-radius: 24px !important;
         margin: 0 8px;
@@ -328,15 +295,13 @@ onMounted(() => {
 @media (max-width: 768px) {
   .mind-config-page {
     padding: 20px;
-    
+
     .page-header {
       padding: 20px;
+
       h2 {
         text-align: center;
         justify-content: center;
-      }
-      .header-subtitle {
-        text-align: center;
       }
     }
   }
@@ -357,10 +322,6 @@ onMounted(() => {
         .page-icon {
           color: #f5f5f7;
         }
-      }
-
-      .header-subtitle {
-        color: rgba(255, 255, 255, 0.55);
       }
     }
   }
@@ -461,4 +422,3 @@ onMounted(() => {
   }
 }
 </style>
-

@@ -57,19 +57,3 @@ export const logoutAPI = () => {
     method: 'POST'
   })
 }
-
-// 获取用户信息接口
-export const getUserInfoAPI = (userId: string) => {
-  return request({
-    url: `/api/v1/user/info?user_id=${userId}`,
-    method: 'GET'
-  })
-}
-
-// 检查token是否有效
-export const checkTokenAPI = () => {
-  return request({
-    url: '/api/v1/auth/check',
-    method: 'GET'
-  })
-} 

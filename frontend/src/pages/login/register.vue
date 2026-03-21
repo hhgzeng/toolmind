@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { Lock, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { User, Lock } from '@element-plus/icons-vue'
-import { registerAPI } from '../../apis/auth'
-import type { RegisterForm } from '../../apis/auth'
+import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import type { RegisterForm } from '../../api/auth'
+import { registerAPI } from '../../api/auth'
 
 const router = useRouter()
 
@@ -21,27 +21,27 @@ const validateForm = () => {
     ElMessage.warning('请输入用户名')
     return false
   }
-  
+
   if (registerForm.user_name.length > 20) {
     ElMessage.warning('用户名长度不应该超过20个字符')
     return false
   }
-  
+
   if (!registerForm.user_password) {
     ElMessage.warning('请输入密码')
     return false
   }
-  
+
   if (registerForm.user_password.length < 6) {
     ElMessage.warning('密码长度至少6个字符')
     return false
   }
-  
+
   if (registerForm.user_password !== confirmPassword.value) {
     ElMessage.warning('两次输入的密码不一致')
     return false
   }
-  
+
   return true
 }
 
@@ -53,7 +53,7 @@ const handleRegister = async () => {
   try {
     loading.value = true
     const response = await registerAPI(registerForm)
-    
+
     if (response.data.status_code === 200) {
       ElMessage.success('注册成功，请登录')
       // 跳转到登录页面
@@ -111,36 +111,14 @@ const goToLogin = () => {
 
         <!-- 注册表单 -->
         <div class="register-form">
-          <el-input
-            v-model="registerForm.user_name"
-            placeholder="请输入用户名（最多20个字符）"
-            size="large"
-            class="register-input"
-            :prefix-icon="User"
-            @keyup.enter="handleRegister"
-          />
+          <el-input v-model="registerForm.user_name" placeholder="请输入用户名（最多20个字符）" size="large" class="register-input"
+            :prefix-icon="User" @keyup.enter="handleRegister" />
 
-          <el-input
-            v-model="registerForm.user_password"
-            type="password"
-            placeholder="请输入密码（至少6个字符）"
-            size="large"
-            class="register-input"
-            :prefix-icon="Lock"
-            show-password
-            @keyup.enter="handleRegister"
-          />
+          <el-input v-model="registerForm.user_password" type="password" placeholder="请输入密码（至少6个字符）" size="large"
+            class="register-input" :prefix-icon="Lock" show-password @keyup.enter="handleRegister" />
 
-          <el-input
-            v-model="confirmPassword"
-            type="password"
-            placeholder="请再次输入密码"
-            size="large"
-            class="register-input"
-            :prefix-icon="Lock"
-            show-password
-            @keyup.enter="handleRegister"
-          />
+          <el-input v-model="confirmPassword" type="password" placeholder="请再次输入密码" size="large" class="register-input"
+            :prefix-icon="Lock" show-password @keyup.enter="handleRegister" />
 
           <div class="form-actions">
             <div class="login-link">
@@ -149,13 +127,7 @@ const goToLogin = () => {
             </div>
           </div>
 
-          <el-button
-            type="primary"
-            size="large"
-            class="register-button"
-            :loading="loading"
-            @click="handleRegister"
-          >
+          <el-button type="primary" size="large" class="register-button" :loading="loading" @click="handleRegister">
             注册
           </el-button>
         </div>
@@ -200,7 +172,7 @@ const goToLogin = () => {
     position: relative;
     width: 400px;
     height: 400px;
-    
+
     .cube-3d {
       position: absolute;
       width: 120px;
@@ -216,13 +188,30 @@ const goToLogin = () => {
         height: 120px;
         background: linear-gradient(45deg, #4f81ff, #3b66db);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        
-        &.front { transform: rotateY(0deg) translateZ(60px); }
-        &.back { transform: rotateY(180deg) translateZ(60px); }
-        &.right { transform: rotateY(90deg) translateZ(60px); }
-        &.left { transform: rotateY(-90deg) translateZ(60px); }
-        &.top { transform: rotateX(90deg) translateZ(60px); }
-        &.bottom { transform: rotateX(-90deg) translateZ(60px); }
+
+        &.front {
+          transform: rotateY(0deg) translateZ(60px);
+        }
+
+        &.back {
+          transform: rotateY(180deg) translateZ(60px);
+        }
+
+        &.right {
+          transform: rotateY(90deg) translateZ(60px);
+        }
+
+        &.left {
+          transform: rotateY(-90deg) translateZ(60px);
+        }
+
+        &.top {
+          transform: rotateX(90deg) translateZ(60px);
+        }
+
+        &.bottom {
+          transform: rotateX(-90deg) translateZ(60px);
+        }
       }
     }
 
@@ -248,7 +237,8 @@ const goToLogin = () => {
       animation: floatDown 8s ease-in-out infinite;
     }
   }
-.graphic-right {
+
+  .graphic-right {
     transform: scaleX(-1);
   }
 }
@@ -381,77 +371,42 @@ const goToLogin = () => {
       }
     }
 
-    .footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 36px;
-      color: #667084;
-      font-size: 13px;
-      font-family: 'PingFang SC', 'Helvetica Neue', 'Arial', sans-serif;
-      font-weight: 400;
-      border-top: 1px solid #eef2f7;
-      padding-top: 16px;
 
-      .version-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 4px 10px;
-        border-radius: 999px;
-        background: #f2f8ff;
-        color: #3b82f6;
-        border: 1px solid rgba(59, 130, 246, 0.25);
-        font-weight: 600;
-        letter-spacing: 0.3px;
-      }
-
-      .footer-icons {
-        display: flex;
-        gap: 10px;
-
-        a {
-          width: 28px;
-          height: 28px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #f8fafc;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          transition: all 0.2s ease;
-          overflow: hidden;
-
-          &:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.2);
-            border-color: rgba(59, 130, 246, 0.4);
-          }
-
-          .icon-img {
-            width: 18px;
-            height: 18px;
-            object-fit: contain;
-            filter: saturate(0.9) contrast(1.05);
-          }
-        }
-      }
-    }
   }
 }
 
 @keyframes rotateCube {
-  0% { transform: rotateX(0deg) rotateY(0deg); }
-  100% { transform: rotateX(360deg) rotateY(360deg); }
+  0% {
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+
+  100% {
+    transform: rotateX(360deg) rotateY(360deg);
+  }
 }
 
 @keyframes floatUp {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-15px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-15px);
+  }
 }
 
 @keyframes floatDown {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(10px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(10px);
+  }
 }
 
 /* 深色模式 */
@@ -462,6 +417,7 @@ const goToLogin = () => {
 
   .side-section {
     background: #18181b;
+
     .graphic-container {
       .cube-3d {
         .cube-face {
@@ -544,29 +500,8 @@ const goToLogin = () => {
         }
       }
 
-      .footer {
-        border-top-color: #27272a;
-        color: #9ca3af;
 
-        .version-badge {
-          background: rgba(37, 99, 235, 0.18);
-          border-color: rgba(59, 130, 246, 0.45);
-          color: #bfdbfe;
-        }
-
-        .footer-icons {
-          a {
-            background: #18181b;
-            border-color: #27272a;
-
-            &:hover {
-              border-color: rgba(59, 130, 246, 0.6);
-              box-shadow: 0 6px 18px rgba(37, 99, 235, 0.7);
-            }
-          }
-        }
-      }
     }
   }
 }
-</style> 
+</style>

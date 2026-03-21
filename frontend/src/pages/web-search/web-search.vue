@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
+import { Search } from "@element-plus/icons-vue"
 import { ElMessage } from "element-plus"
-import { Connection, Search } from "@element-plus/icons-vue"
-import { getWebSearchAPI, updateWebSearchAPI, type WebSearchSettings } from "../../apis/web-search"
+import { onMounted, ref } from "vue"
+import { getWebSearchAPI, updateWebSearchAPI, type WebSearchSettings } from "../../api/web-search"
 
 const loading = ref(false)
 const saving = ref(false)
@@ -34,7 +34,6 @@ const saveConfig = async () => {
   try {
     const res = await updateWebSearchAPI(websearch.value)
     if (res.data.status_code === 200) {
-      // ElMessage.success("已保存联网搜索配置")
       websearch.value.api_key = res.data.data.api_key || ""
       websearch.value.enabled = res.data.data.enabled ?? true
     } else {
@@ -56,7 +55,9 @@ onMounted(() => {
   <div class="web-search-config-page">
     <div class="page-header">
       <h2>
-        <el-icon class="page-icon"><Search /></el-icon>
+        <el-icon class="page-icon">
+          <Search />
+        </el-icon>
         联网搜索
       </h2>
     </div>
@@ -69,13 +70,8 @@ onMounted(() => {
             <p>请填入 Tavily API Key，以支持联网搜索功能。</p>
           </div>
           <div class="switch-wrapper" style="min-height: 32px;">
-            <el-switch
-              v-if="!loading"
-              v-model="websearch.enabled"
-              active-text="开启"
-              inactive-text="关闭"
-              @change="saveConfig"
-            />
+            <el-switch v-if="!loading" v-model="websearch.enabled" active-text="开启" inactive-text="关闭"
+              @change="saveConfig" />
           </div>
         </div>
       </div>
@@ -83,15 +79,8 @@ onMounted(() => {
       <el-form label-position="top" class="config-form">
         <el-form-item>
           <div v-if="loading" class="skeleton-input"></div>
-          <el-input
-            v-else
-            v-model="websearch.api_key"
-            type="password"
-            show-password
-            placeholder="请输入 Tavily API Key，例如 tvly-xxxxxx"
-            autocomplete="off"
-            @change="saveConfig"
-          >
+          <el-input v-else v-model="websearch.api_key" type="password" show-password
+            placeholder="请输入 Tavily API Key，例如 tvly-xxxxxx" autocomplete="off" @change="saveConfig">
           </el-input>
         </el-form-item>
       </el-form>
@@ -227,15 +216,17 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .tavily-config-page {
+  .web-search-config-page {
     padding: 20px;
 
     .page-header {
       padding: 20px;
+
       h2 {
         text-align: center;
         justify-content: center;
       }
+
       .header-subtitle {
         text-align: center;
       }
@@ -244,15 +235,37 @@ onMounted(() => {
 }
 
 @keyframes skeleton-pulse {
-  0% { background-color: #ffffff; box-shadow: 0 0 0 1px #dcdfe6 inset; }
-  50% { background-color: #f1f5f9; box-shadow: 0 0 0 1px #dcdfe6 inset; }
-  100% { background-color: #ffffff; box-shadow: 0 0 0 1px #dcdfe6 inset; }
+  0% {
+    background-color: #ffffff;
+    box-shadow: 0 0 0 1px #dcdfe6 inset;
+  }
+
+  50% {
+    background-color: #f1f5f9;
+    box-shadow: 0 0 0 1px #dcdfe6 inset;
+  }
+
+  100% {
+    background-color: #ffffff;
+    box-shadow: 0 0 0 1px #dcdfe6 inset;
+  }
 }
 
 @keyframes skeleton-pulse-dark {
-  0% { background-color: #2c2c2e; box-shadow: 0 0 0 1px #3a3a3c inset; }
-  50% { background-color: #363638; box-shadow: 0 0 0 1px #3a3a3c inset; }
-  100% { background-color: #2c2c2e; box-shadow: 0 0 0 1px #3a3a3c inset; }
+  0% {
+    background-color: #2c2c2e;
+    box-shadow: 0 0 0 1px #3a3a3c inset;
+  }
+
+  50% {
+    background-color: #363638;
+    box-shadow: 0 0 0 1px #3a3a3c inset;
+  }
+
+  100% {
+    background-color: #2c2c2e;
+    box-shadow: 0 0 0 1px #3a3a3c inset;
+  }
 }
 
 /* 深色模式 */
@@ -332,4 +345,3 @@ onMounted(() => {
   }
 }
 </style>
-

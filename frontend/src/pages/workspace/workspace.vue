@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { useUserStore } from '../../store/user'
-import { logoutAPI, getUserInfoAPI } from '../../apis/auth'
-import { 
-  getSessionsAPI,
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { logoutAPI } from '../../api/auth'
+import {
   deleteSessionAPI,
+  getSessionsAPI,
   updateSessionAPI
-} from '../../apis/session'
+} from '../../api/session'
+import { useUserStore } from '../../store/user'
 
 const router = useRouter()
 const route = useRoute()
@@ -33,10 +33,6 @@ const activeMenuId = ref<string | null>(null)
 const toggleMenu = (sessionId: string, event: Event) => {
   event.stopPropagation()
   activeMenuId.value = activeMenuId.value === sessionId ? null : sessionId
-}
-
-const closeMenu = () => {
-  activeMenuId.value = null
 }
 
 // 用户菜单状态
@@ -192,7 +188,6 @@ const fetchSessions = async () => {
         contexts: session.contexts || [],
         isPinned: session.is_pinned ?? session.isPinned ?? false
       }))
-      console.log('工作区会话列表:', sessions.value)
     } else {
       ElMessage.error('获取会话列表失败')
     }
@@ -221,12 +216,12 @@ const cancelDelete = () => {
 const executeDelete = async () => {
   if (!sessionToDelete.value) return
   const sessionId = sessionToDelete.value
-  
+
   try {
     const response = await deleteSessionAPI(sessionId)
     if (response.data.status_code === 200) {
       await fetchSessions()
-      
+
       if (selectedSession.value === sessionId) {
         selectedSession.value = ''
         router.push('/session')
@@ -301,7 +296,7 @@ const executeRename = async () => {
   if (!sessionToRename.value || !newTitle.value.trim()) return
   const sessionId = sessionToRename.value.sessionId
   const title = newTitle.value.trim()
-  
+
   if (title === sessionToRename.value.title) {
     sessionToRename.value = null
     return
@@ -342,7 +337,6 @@ const selectSession = (sessionId: string) => {
     console.error('未找到会话:', sessionId)
     return
   }
-  console.log('选择会话:', sessionId)
   router.push({
     name: 'taskGraphPage',
     query: { session_id: sessionId }
@@ -407,155 +401,143 @@ onBeforeUnmount(() => {
   <div class="workspace-container">
     <!-- 工作区主内容 -->
     <div class="workspace-main">
-    <!-- 左侧边栏 -->
-    <div class="sidebar">
-      <!-- 侧边栏顶部 Logo -->
-      <div class="sidebar-header">
-        <img src="../../assets/toolmind.png" alt="Logo" class="sidebar-logo" />
-        <span class="sidebar-brand">ToolMind</span>
-      </div>
-
-      <!-- 新对话按钮 -->
-      <div class="create-section">
-        <button @click="goToHomepage" class="create-btn-native">
-          <el-icon class="btn-icon"><ChatDotRound /></el-icon>
-          <span>开启新对话</span>
-        </button>
-      </div>
-
-      <!-- 会话列表 -->
-      <div class="session-list">
-        <!-- 加载且无数据状态（避免一闪而过的空状态文本） -->
-        <div v-if="loading && sessions.length === 0"></div>
-
-        <!-- 空状态 -->
-        <div v-else-if="sessions.length === 0" class="empty-state">
-          <div class="empty-text">暂无会话记录</div>
+      <!-- 左侧边栏 -->
+      <div class="sidebar">
+        <!-- 侧边栏顶部 Logo -->
+        <div class="sidebar-header">
+          <img src="../../assets/toolmind.png" alt="Logo" class="sidebar-logo" />
+          <span class="sidebar-brand">ToolMind</span>
         </div>
 
-        <!-- 按时间分组的会话列表 -->
-        <template v-else>
-          <div v-for="group in groupedSessions" :key="group.label" class="session-group">
-            <div class="group-label">{{ group.label }}</div>
-            <div
-              v-for="session in group.items"
-              :key="session.sessionId"
-              :class="['session-item', { active: selectedSession === session.sessionId, 'is-renaming': sessionToRename?.sessionId === session.sessionId }]"
-              @click="selectSession(session.sessionId)"
-            >
-              <template v-if="sessionToRename?.sessionId === session.sessionId">
-                <input 
-                  ref="renameInput"
-                  v-model="newTitle" 
-                  class="inline-rename-input" 
-                  @keyup.enter="executeRename"
-                  @keyup.esc="cancelRename"
-                  @blur="executeRename"
-                  @click.stop
-                />
-              </template>
-              <template v-else>
-                <span class="session-title">{{ session.title }}</span>
-                <button
-                  class="more-btn"
-                  @click="toggleMenu(session.sessionId, $event)"
-                >
-                  ⋯
-                </button>
-                <!-- 操作菜单 -->
-                <transition name="menu-fade">
-                  <div v-if="activeMenuId === session.sessionId" class="action-menu">
-                    <button class="menu-item" @click="handlePinSession(session, $event)">
-                      <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <g transform="rotate(45 12 12)">
-                          <path d="M12 17v5"></path>
-                          <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"></path>
-                        </g>
-                      </svg>
-                      {{ session.isPinned ? '取消置顶' : '置顶' }}
-                    </button>
-                    <button class="menu-item" @click="startRename(session, $event)">
-                      <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                      </svg>
-                      重命名
-                    </button>
-                    <button class="menu-item delete" @click="confirmDeleteSession(session.sessionId, $event)">
-                      <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 6h18"></path>
-                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                        <line x1="10" y1="11" x2="10" y2="17"></line>
-                        <line x1="14" y1="11" x2="14" y2="17"></line>
-                      </svg>
-                      删除
-                    </button>
-                  </div>
-                </transition>
-              </template>
-            </div>
-          </div>
-        </template>
-      </div>
+        <!-- 新对话按钮 -->
+        <div class="create-section">
+          <button @click="goToHomepage" class="create-btn-native">
+            <el-icon class="btn-icon">
+              <ChatDotRound />
+            </el-icon>
+            <span>开启新对话</span>
+          </button>
+        </div>
 
-      <!-- 底部用户信息 -->
-      <div class="sidebar-footer">
-        <div class="user-profile-wrapper" @click.stop>
-          <!-- 用户菜单弹出层 -->
-          <transition name="user-menu-fade">
-            <div v-if="showUserMenu" class="user-popup-menu">
-              <div class="popup-user-info">
-                <img
-                  src="/src/assets/user.svg"
-                  alt="头像"
-                  class="popup-avatar"
-                  @error="handleAvatarError"
-                  referrerpolicy="no-referrer"
-                />
-                <div class="popup-user-text">
-                  <div class="popup-username">{{ userStore.userInfo?.username || '用户' }}</div>
-                </div>
+        <!-- 会话列表 -->
+        <div class="session-list">
+          <!-- 加载且无数据状态（避免一闪而过的空状态文本） -->
+          <div v-if="loading && sessions.length === 0"></div>
+
+          <!-- 空状态 -->
+          <div v-else-if="sessions.length === 0" class="empty-state">
+            <div class="empty-text">暂无会话记录</div>
+          </div>
+
+          <!-- 按时间分组的会话列表 -->
+          <template v-else>
+            <div v-for="group in groupedSessions" :key="group.label" class="session-group">
+              <div class="group-label">{{ group.label }}</div>
+              <div v-for="session in group.items" :key="session.sessionId"
+                :class="['session-item', { active: selectedSession === session.sessionId, 'is-renaming': sessionToRename?.sessionId === session.sessionId }]"
+                @click="selectSession(session.sessionId)">
+                <template v-if="sessionToRename?.sessionId === session.sessionId">
+                  <input ref="renameInput" v-model="newTitle" class="inline-rename-input" @keyup.enter="executeRename"
+                    @keyup.esc="cancelRename" @blur="executeRename" @click.stop />
+                </template>
+                <template v-else>
+                  <span class="session-title">{{ session.title }}</span>
+                  <button class="more-btn" @click="toggleMenu(session.sessionId, $event)">
+                    ⋯
+                  </button>
+                  <!-- 操作菜单 -->
+                  <transition name="menu-fade">
+                    <div v-if="activeMenuId === session.sessionId" class="action-menu">
+                      <button class="menu-item" @click="handlePinSession(session, $event)">
+                        <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                          stroke-linecap="round" stroke-linejoin="round">
+                          <g transform="rotate(45 12 12)">
+                            <path d="M12 17v5"></path>
+                            <path
+                              d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z">
+                            </path>
+                          </g>
+                        </svg>
+                        {{ session.isPinned ? '取消置顶' : '置顶' }}
+                      </button>
+                      <button class="menu-item" @click="startRename(session, $event)">
+                        <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                          stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        重命名
+                      </button>
+                      <button class="menu-item delete" @click="confirmDeleteSession(session.sessionId, $event)">
+                        <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                          stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 6h18"></path>
+                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                          <line x1="10" y1="11" x2="10" y2="17"></line>
+                          <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                        删除
+                      </button>
+                    </div>
+                  </transition>
+                </template>
               </div>
-              <div class="popup-divider"></div>
-              <button class="popup-menu-item" @click="handleUserCommand('settings')">
-                <svg class="popup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="3"></circle>
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-                系统设置
-              </button>
-              <button class="popup-menu-item" @click="handleUserCommand('logout')">
-                <svg class="popup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                  <polyline points="16 17 21 12 16 7"></polyline>
-                  <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-                退出登录
-              </button>
             </div>
-          </transition>
+          </template>
+        </div>
 
-          <!-- 用户资料区域（可点击） -->
-          <div class="user-profile" @click="toggleUserMenu">
-            <img
-            src="/src/assets/user.svg"
-              alt="头像"
-              class="profile-avatar"
-              @error="handleAvatarError"
-              referrerpolicy="no-referrer"
-            />
-            <span class="profile-name">{{ userStore.userInfo?.username || '用户' }}</span>
-            <span class="profile-dots">⋯</span>
+        <!-- 底部用户信息 -->
+        <div class="sidebar-footer">
+          <div class="user-profile-wrapper" @click.stop>
+            <!-- 用户菜单弹出层 -->
+            <transition name="user-menu-fade">
+              <div v-if="showUserMenu" class="user-popup-menu">
+                <div class="popup-user-info">
+                  <img src="/src/assets/user.svg" alt="头像" class="popup-avatar" @error="handleAvatarError"
+                    referrerpolicy="no-referrer" />
+                  <div class="popup-user-text">
+                    <div class="popup-username">{{ userStore.userInfo?.username || '用户' }}</div>
+                  </div>
+                </div>
+                <div class="popup-divider"></div>
+                <button class="popup-menu-item" @click="handleUserCommand('settings')">
+                  <svg class="popup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                      d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
+                  </svg>
+                  系统设置
+                </button>
+                <button class="popup-menu-item" @click="handleUserCommand('logout')">
+                  <svg class="popup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                  </svg>
+                  退出登录
+                </button>
+              </div>
+            </transition>
+
+            <!-- 用户资料区域（可点击） -->
+            <div class="user-profile" @click="toggleUserMenu">
+              <img src="/src/assets/user.svg" alt="头像" class="profile-avatar" @error="handleAvatarError"
+                referrerpolicy="no-referrer" />
+              <span class="profile-name">{{ userStore.userInfo?.username || '用户' }}</span>
+              <span class="profile-dots">⋯</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 右侧内容区域 -->
-    <div class="content">
-      <router-view />
-    </div>
+      <!-- 右侧内容区域 -->
+      <div class="content">
+        <router-view />
+      </div>
     </div>
 
     <!-- 确认删除对话框 -->
@@ -581,6 +563,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   background-color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
 }
 
 /* ===== 侧边栏 - DeepSeek 白色风格 ===== */
@@ -637,8 +620,6 @@ onBeforeUnmount(() => {
         color: #333333;
         border: 1px solid #d9d9d9;
         cursor: pointer;
-        font-size: 14px;
-        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
         letter-spacing: 0.3px;
         display: flex;
         align-items: center;
@@ -672,29 +653,9 @@ onBeforeUnmount(() => {
       overflow-y: auto;
       scrollbar-width: none;
       -ms-overflow-style: none;
-      &::-webkit-scrollbar { display: none; }
 
-      .loading-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 120px;
-        gap: 12px;
-
-        .loading-spinner {
-          width: 20px;
-          height: 20px;
-          border: 2px solid #e5e5e5;
-          border-top-color: #999;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-        }
-
-        .loading-text {
-          font-size: 13px;
-          color: #999;
-        }
+      &::-webkit-scrollbar {
+        display: none;
       }
 
       .empty-state {
@@ -718,7 +679,6 @@ onBeforeUnmount(() => {
           color: #8e8e93;
           padding: 14px 12px 6px;
           letter-spacing: 0.3px;
-          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
         }
 
         .session-item {
@@ -739,7 +699,6 @@ onBeforeUnmount(() => {
             text-overflow: ellipsis;
             white-space: nowrap;
             line-height: 1.4;
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
           }
 
           .more-btn {
@@ -791,7 +750,6 @@ onBeforeUnmount(() => {
               border-radius: 24px;
               text-align: left;
               transition: background 0.15s ease;
-              font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
 
               .menu-icon {
                 width: 16px;
@@ -836,26 +794,29 @@ onBeforeUnmount(() => {
 
           &.is-renaming {
             background: #ffffff;
-            padding: 0; /* Clear padding to let input fill exactly */
-            transition: none; /* Remove any transition animation when entering renaming state */
+            padding: 0;
+            /* Clear padding to let input fill exactly */
+            transition: none;
+            /* Remove any transition animation when entering renaming state */
             /* Add correct border matching Figure 1's clicking state, remove box shadow */
             border: 1px solid #4D6BFE;
             border-radius: 24px;
-            
+
             .inline-rename-input {
-               width: 100%;
-               height: 100%;
-               min-height: 42px; /* adjust match to correct active button height with 1.5px border subtracted */
-               padding: 8px 11px; /* adjusted padding for pill-shaped input */
-               box-sizing: border-box;
-               border: none;
-               background: transparent;
-               outline: none;
-               font-size: 14px;
-               color: #1a1a1a;
-               line-height: 1.4;
-               font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
-               border-radius: 24px;
+              width: 100%;
+              height: 100%;
+              min-height: 42px;
+              /* adjust match to correct active button height with 1.5px border subtracted */
+              padding: 8px 11px;
+              /* adjusted padding for pill-shaped input */
+              box-sizing: border-box;
+              border: none;
+              background: transparent;
+              outline: none;
+              font-size: 14px;
+              color: #1a1a1a;
+              line-height: 1.4;
+              border-radius: 24px;
             }
           }
         }
@@ -916,7 +877,6 @@ onBeforeUnmount(() => {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
         }
 
         .profile-dots {
@@ -969,7 +929,6 @@ onBeforeUnmount(() => {
               overflow: hidden;
               text-overflow: ellipsis;
               white-space: nowrap;
-              font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
             }
           }
         }
@@ -994,7 +953,6 @@ onBeforeUnmount(() => {
           border-radius: 24px;
           text-align: left;
           transition: background 0.15s ease;
-          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
 
           .popup-icon {
             width: 18px;
@@ -1026,6 +984,7 @@ onBeforeUnmount(() => {
 .menu-fade-leave-active {
   transition: all 0.15s ease;
 }
+
 .menu-fade-enter-from,
 .menu-fade-leave-to {
   opacity: 0;
@@ -1037,6 +996,7 @@ onBeforeUnmount(() => {
 .user-menu-fade-leave-active {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .user-menu-fade-enter-from,
 .user-menu-fade-leave-to {
   opacity: 0;
@@ -1044,24 +1004,12 @@ onBeforeUnmount(() => {
 }
 
 // 动画
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 // 响应式设计
 @media (max-width: 768px) {
   .workspace-main {
     .sidebar {
       width: 240px;
-    }
-
-    .content {
-      margin: 0;
+      min-width: 240px;
     }
   }
 }
@@ -1162,6 +1110,7 @@ onBeforeUnmount(() => {
     transform: scale(0.9);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -1172,6 +1121,7 @@ onBeforeUnmount(() => {
 .fade-leave-active {
   transition: opacity 0.2s ease;
 }
+
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
@@ -1191,12 +1141,6 @@ onBeforeUnmount(() => {
       border-color: #2c2c2e;
       box-shadow: none;
 
-      .sidebar-header {
-        .sidebar-brand {
-          color: #4d6bfe;
-        }
-      }
-
       .create-section {
         .create-btn-native {
           background: #2c2c2e;
@@ -1215,10 +1159,6 @@ onBeforeUnmount(() => {
       }
 
       .session-list {
-        .loading-text {
-          color: rgba(255, 255, 255, 0.6);
-        }
-
         .empty-text {
           color: rgba(255, 255, 255, 0.4);
         }
