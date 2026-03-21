@@ -25,7 +25,7 @@ const goCurrent = (item: string) => {
     "general-settings": "/general-settings",
     "user-management": "/user-management"
   }
-  
+
   router.push(routes[item] || "/")
 }
 
@@ -46,58 +46,70 @@ watch(
       <div class="sidebar">
         <!-- 系统设置侧边栏 -->
         <div class="sidebar-nav">
-          <el-menu
-            :active-text-color="menuActiveTextColor"
-            background-color="transparent"
-            class="el-menu-vertical-demo"
-            :default-active="current"
-            :text-color="menuTextColor"
-          >
+          <el-menu :active-text-color="menuActiveTextColor" background-color="transparent" class="el-menu-vertical-demo"
+            :default-active="current" :text-color="menuTextColor">
             <el-menu-item index="session" @click="goCurrent('session')">
               <template #title>
-                <el-icon><Back /></el-icon>
+                <el-icon>
+                  <Back />
+                </el-icon>
                 <span>返回</span>
               </template>
             </el-menu-item>
             <el-menu-item index="general-settings" @click="goCurrent('general-settings')">
               <template #title>
-                <el-icon><Setting /></el-icon>
+                <el-icon>
+                  <Setting />
+                </el-icon>
                 <span>通用设置</span>
               </template>
             </el-menu-item>
-            <el-menu-item v-if="userStore.userInfo?.role === 'admin'" index="user-management" @click="goCurrent('user-management')">
+            <el-menu-item v-if="userStore.userInfo?.role === 'admin'" index="user-management"
+              @click="goCurrent('user-management')">
               <template #title>
-                <el-icon><User /></el-icon>
+                <el-icon>
+                  <User />
+                </el-icon>
                 <span>用户管理</span>
               </template>
             </el-menu-item>
             <el-menu-item index="mind-config" @click="goCurrent('mind-config')">
               <template #title>
-                <el-icon><Operation /></el-icon>
+                <el-icon>
+                  <Operation />
+                </el-icon>
                 <span>模型配置</span>
               </template>
             </el-menu-item>
             <el-menu-item index="web-search" @click="goCurrent('web-search')">
               <template #title>
-                <el-icon><Search /></el-icon>
+                <el-icon>
+                  <Search />
+                </el-icon>
                 <span>联网搜索</span>
               </template>
             </el-menu-item>
             <el-menu-item index="model" @click="goCurrent('model')">
               <template #title>
-                <el-icon><Cpu /></el-icon>
+                <el-icon>
+                  <Cpu />
+                </el-icon>
                 <span>模型管理</span>
               </template>
             </el-menu-item>
             <el-menu-item index="mcp-server" @click="goCurrent('mcp-server')">
               <template #title>
-                <el-icon><Connection /></el-icon>
+                <el-icon>
+                  <Connection />
+                </el-icon>
                 <span>MCP 服务器</span>
               </template>
             </el-menu-item>
             <el-menu-item index="dashboard" @click="goCurrent('dashboard')">
               <template #title>
-                <el-icon><DataAnalysis /></el-icon>
+                <el-icon>
+                  <DataAnalysis />
+                </el-icon>
                 <span>数据看板</span>
               </template>
             </el-menu-item>
@@ -115,12 +127,12 @@ watch(
 .ai-body {
   @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap');
   overflow: hidden;
-  
+
   .ai-main {
     display: flex;
     height: 100vh;
     background-color: #ffffff;
-    
+
     .sidebar {
       height: calc(100% - 32px);
       margin: 16px;
@@ -155,7 +167,7 @@ watch(
   border-right: none;
   background: transparent;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
-  
+
   .el-menu-item {
     border-radius: 100px;
     margin: 4px 10px;
@@ -169,28 +181,28 @@ watch(
     position: relative;
     overflow: hidden;
     color: var(--el-menu-text-color);
-    
+
     &:hover {
       background: rgba(0, 0, 0, 0.04);
       color: #1a1a1a;
     }
-    
+
     &.is-active {
       background: #f0f0f4;
       color: #1a1a1a;
       box-shadow: none;
       border: none;
-      
+
       .el-icon {
         color: #1a1a1a;
       }
-      
+
       span {
         font-weight: 500;
         color: #1a1a1a !important;
       }
     }
-    
+
     .el-icon {
       margin-right: 12px;
       display: flex;
@@ -202,7 +214,7 @@ watch(
       transition: all 0.2s ease;
       color: inherit;
     }
-    
+
     span {
       position: relative;
       z-index: 1;
@@ -232,7 +244,7 @@ watch(
 .ai-body.is-dark :deep(.el-menu-vertical-demo) {
   .el-menu-item {
     color: rgba(255, 255, 255, 0.6);
-    
+
     span {
       color: rgba(255, 255, 255, 0.6);
     }

@@ -1,95 +1,85 @@
 import warnings
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi_jwt_auth import AuthJWT
 from fastapi_jwt_auth.exceptions import AuthJWTException
+from pyfiglet import Figlet
 from toolmind.middleware.trace_id_middleware import TraceIDMiddleware
 from toolmind.middleware.white_list_middleware import WhitelistMiddleware
 from toolmind.settings import app_settings, initialize_app_settings
 
-warnings.filterwarnings("ignore")
 
-
-async def register_router(app: FastAPI):
+def register_router(app: FastAPI):
+    """注册 API 路由和健康检查接口"""
     from toolmind.api.router import router
 
     app.include_router(router)
 
-    # 健康探针
     @app.get("/health")
     def check_health():
         return {"status": "OK"}
 
 
 def register_middleware(app: FastAPI):
-    origins = [
-        "*",
-    ]
+    """注册全局中间件"""
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
+        allow_origins=["*"],
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    # Trace ID的中间件操作
     app.add_middleware(TraceIDMiddleware)
-
-    # 注册白名单中间件
     app.add_middleware(WhitelistMiddleware)
-
     return app
 
 
 async def init_config():
+    """初始化应用配置和数据库"""
     await initialize_app_settings()
 
-    # 必须放到init settings 之后 import
-    from toolmind.database.init_data import init_database  # init_default_agent
+    # 导入必须在 settings 初始化之后
+    from toolmind.database.init_data import init_database
 
     await init_database()
-    # await init_default_agent()
 
 
 def print_logo():
-    from pyfiglet import Figlet
-
+    """在终端打印启动 Logo"""
     f = Figlet(font="slant")
     print(f.renderText("ToolMind"))
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 启动前执行
+    """应用生命周期管理：启动前初始化配置"""
     await init_config()
-    await register_router(app)
+    register_router(app)
     print_logo()
     yield
-    # 关闭时执行
-    # pass
 
 
 def create_app():
+    """创建并配置 FastAPI 实例"""
     app = FastAPI(
         title=app_settings.server.get("project_name", "ToolMind"),
         lifespan=lifespan,
     )
 
-    app = register_middleware(app)
-
-    from toolmind.api.JWT import Settings
+    # 注册中间件 (中间件不依赖数据库导入)
+    register_middleware(app)
 
     # 配置 AuthJWT
+    from toolmind.api.JWT import Settings
+
     @AuthJWT.load_config
     def get_config():
         return Settings()
 
-    # 处理 AuthJWT 异常
+    # 全局异常处理：AuthJWTException
     @app.exception_handler(AuthJWTException)
     def authjwt_exception_handler(request, exc):
         return JSONResponse(

@@ -14,7 +14,7 @@ from toolmind.database.models.user import AdminUser, UserTable
 from toolmind.schema.schemas import CreateUserReq
 from toolmind.utils.constants import RSA_KEY
 from toolmind.utils.hash import md5_hash
-from toolmind.utils.JWT import ACCESS_TOKEN_EXPIRE_TIME
+from toolmind.api.JWT import ACCESS_TOKEN_EXPIRE_TIME
 
 
 class UserPayload:

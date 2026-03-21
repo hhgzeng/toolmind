@@ -10,7 +10,7 @@ from toolmind.database.dao.user import UserDao
 from toolmind.database.models.user import AdminUser
 from toolmind.schema.schemas import UnifiedResponseModel, resp_200
 from toolmind.utils.constants import USER_CURRENT_SESSION
-from toolmind.utils.JWT import ACCESS_TOKEN_EXPIRE_TIME
+from toolmind.api.JWT import ACCESS_TOKEN_EXPIRE_TIME
 
 router = APIRouter(tags=["User"])
 
