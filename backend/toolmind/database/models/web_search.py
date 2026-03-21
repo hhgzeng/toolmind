@@ -5,7 +5,7 @@ from toolmind.database.models.base import SQLModelSerializable
 
 
 class WebSearchConfigTable(SQLModelSerializable, table=True):
-    __tablename__ = "web_search_config"
+    __tablename__ = "web_search"
 
     config_id: str = Field(default_factory=lambda: uuid4().hex, primary_key=True)
     user_id: str = Field(description="用户ID", unique=True, index=True)

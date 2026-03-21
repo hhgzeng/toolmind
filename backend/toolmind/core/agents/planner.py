@@ -7,12 +7,12 @@
 import json
 from typing import List
 
-from toolmind.core.agents.state import MindState
+from toolmind.core.agents.state import AgentState
 from toolmind.core.agents.tool_manager import ToolManager
 from toolmind.core.callbacks import usage_metadata_callback
 from toolmind.core.models.manager import ModelManager
-from toolmind.prompts.mind import FixJsonPrompt, GenerateTaskPrompt
-from toolmind.schema.mind import MindTaskStep
+from toolmind.prompts.agent import FixJsonPrompt, GenerateTaskPrompt
+from toolmind.schema.agent import AgentTaskStep
 from toolmind.utils.date_utils import get_beijing_time
 from toolmind.utils.json_utils import extract_and_parse_json
 
@@ -24,7 +24,7 @@ class Planner:
         self.user_id = user_id
         self.tool_manager = tool_manager
 
-    async def __call__(self, state: MindState) -> dict:
+    async def __call__(self, state: AgentState) -> dict:
         """LangGraph 节点函数：执行规划，返回状态更新"""
         # 确保工具已加载（利用缓存，不会重复获取）
         await self.tool_manager.obtain_tools(
@@ -34,21 +34,21 @@ class Planner:
         tools_summary = self.tool_manager.get_tools_summary()
         tools_str = json.dumps(tools_summary, ensure_ascii=False, indent=2)
 
-        mind_task_prompt = GenerateTaskPrompt.format(
-            tools_str=tools_str,
-            query=state["query"],
+        agent_task_prompt = GenerateTaskPrompt.format(
             current_time=get_beijing_time(),
+            tools_str=await self.tool_manager.get_tools_info(),
+            query=state["query"],
         )
 
-        response_task = await self._generate_tasks(mind_task_prompt)
+        response_task = await self._generate_tasks(agent_task_prompt)
 
         # 构建步骤对象
-        tasks_graph: dict[str, MindTaskStep] = {}
+        tasks_graph: dict[str, AgentTaskStep] = {}
         tasks_show = []
         raw_steps = response_task.get("steps", [])
-        steps: List[MindTaskStep] = []
+        steps: List[AgentTaskStep] = []
         for raw_step in raw_steps:
-            task_step = MindTaskStep(**raw_step)
+            task_step = AgentTaskStep(**raw_step)
             steps.append(task_step)
             tasks_graph[task_step.step_id] = task_step
 
@@ -72,12 +72,13 @@ class Planner:
             "events": [{"event": "generate_tasks", "data": {"graph": tasks_show}}],
         }
 
-    async def _generate_tasks(self, mind_task_prompt) -> dict:
-        """调用 LLM 生成任务步骤 JSON"""
-        model = await ModelManager.get_conversation_model(user_id=self.user_id)
-        conversation_json_model = model.bind(response_format={"type": "json_object"})
-        response = await conversation_json_model.ainvoke(
-            input=mind_task_prompt, config={"callbacks": [usage_metadata_callback]}
+    async def _generate_tasks(self, agent_task_prompt) -> dict:
+        """调用模型进行任务规划"""
+        conversation_model = await ModelManager.get_conversation_model(
+            user_id=self.user_id
+        )
+        response = await conversation_model.ainvoke(
+            input=agent_task_prompt, config={"callbacks": [usage_metadata_callback]}
         )
 
         try:

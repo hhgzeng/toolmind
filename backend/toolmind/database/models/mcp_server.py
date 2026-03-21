@@ -14,10 +14,10 @@ class MCPServerTable(SQLModelSerializable, table=True):
     user_id: str = Field(description="MCP Server对应的创建用户")
     description: str = Field(description="该MCP Server的描述，用来当作sub-agent使用")
     mcp_as_tool_name: str = Field(description="用来当作sub-agent使用时的名称")
-    url: Optional[str] = Field(None, description="MCP Server的连接地址")
+    url: Optional[str] = Field(None, description="MCP Server 的连接地址")
     type: str = Field(
         sa_column=Column(VARCHAR(255), nullable=False),
-        description="连接类型，只允许三种，sse、websocket、stdio",
+        description="连接类型只支持 sse",
     )
     config: dict = Field(
         sa_column=Column(JSON),

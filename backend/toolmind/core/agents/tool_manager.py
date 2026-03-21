@@ -5,13 +5,11 @@
 """
 
 import asyncio
-import json
 from typing import List, Optional
 
 from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.tools.base import ToolException
 from langchain_core.utils.function_calling import convert_to_openai_tool
-from loguru import logger
 from toolmind.api.services.mcp_server import MCPService
 from toolmind.api.services.web_search import tavily_search as web_search
 from toolmind.core.mcp.manager import MCPManager
@@ -39,7 +37,7 @@ class ToolManager:
         """查询并缓存 web search 配置（整个生命周期只查一次 DB）"""
         if self._web_search_config_cached:
             return
-        from toolmind.database.dao.web_search_config import WebSearchConfigDao
+        from toolmind.database.dao.web_search import WebSearchConfigDao
 
         user_config = await WebSearchConfigDao.get_config_by_user_id(self.user_id)
         if user_config:

@@ -61,7 +61,7 @@ watch(
                 <span>用户管理</span>
               </template>
             </el-menu-item>
-            <el-menu-item index="core" @click="goCurrent('core')">
+            <el-menu-item index="config" @click="goCurrent('config')">
               <template #title>
                 <el-icon>
                   <Operation />

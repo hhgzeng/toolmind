@@ -338,7 +338,7 @@ const selectSession = (sessionId: string) => {
     return
   }
   router.push({
-    name: 'taskGraphPage',
+    name: 'Sessions',
     params: { session_id: sessionId }
   })
 }

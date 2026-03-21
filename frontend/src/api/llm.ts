@@ -25,7 +25,7 @@ export interface UpdateLLMRequest {
   provider?: string
 }
 
-export interface MindModelConfig {
+export interface AgentModelConfig {
   config_id?: string
   user_id?: string
   conversation_model_id?: string | null
@@ -74,19 +74,19 @@ export function deleteLLMAPI(data: { llm_id: string }) {
   })
 }
 
-// 获取 Mind 模型配置
-export function getMindConfigAPI() {
-  return request<ApiResponse<MindModelConfig>>({
-    url: '/api/v1/model/mind_config',
-    method: 'GET'
+// 获取 Agent 模型配置
+export function getAgentConfigAPI() {
+  return request<ApiResponse<AgentModelConfig>>({
+    url: '/api/v1/agent_config',
+    method: 'get'
   })
 }
 
-// 更新 Mind 模型配置
-export function updateMindConfigAPI(data: MindModelConfig) {
-  return request<ApiResponse<MindModelConfig>>({
-    url: '/api/v1/model/mind_config',
-    method: 'POST',
+// 更新 Agent 模型配置
+export function updateAgentConfigAPI(data: AgentModelConfig) {
+  return request<ApiResponse<AgentModelConfig>>({
+    url: '/api/v1/agent_config',
+    method: 'post',
     data
   })
 }

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from toolmind.api.services.user import UserPayload, get_login_user
-from toolmind.database.dao.web_search_config import WebSearchConfigDao
+from toolmind.database.dao.web_search import WebSearchConfigDao
 from toolmind.schema.schemas import resp_200, resp_500
 
 router = APIRouter(prefix="/tools", tags=["Tools Config"])

@@ -3,22 +3,22 @@ import { ChatDotRound, Connection, Cpu, Operation } from '@element-plus/icons-vu
 import { ElMessage } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import {
-  getMindConfigAPI,
+  getAgentConfigAPI,
   getVisibleLLMsAPI,
-  updateMindConfigAPI,
-  type LLMResponse,
-  type MindModelConfig
+  updateAgentConfigAPI,
+  type AgentModelConfig,
+  type LLMResponse
 } from '../../api/llm'
 
 const models = ref<LLMResponse[]>([])
 const loading = ref(true)
 
-const mindConfig = ref<MindModelConfig>({
+const agentConfig = ref<AgentModelConfig>({
   conversation_model_id: null,
   tool_call_model_id: null,
   reasoning_model_id: null
 })
-const savingMind = ref(false)
+const savingAgent = ref(false)
 
 const fetchModels = async () => {
   loading.value = true
@@ -46,30 +46,30 @@ const fetchModels = async () => {
   }
 
   try {
-    const configRes = await getMindConfigAPI()
+    const configRes = await getAgentConfigAPI()
     if (configRes.data.status_code === 200) {
       if (Object.keys(configRes.data.data).length > 0) {
-        mindConfig.value = configRes.data.data
+        agentConfig.value = configRes.data.data
       }
     }
   } catch (error) {
-    console.error('获取 Mind 配置失败', error)
+    console.error('获取 Agent 配置失败', error)
   }
 }
 
-const saveMindConfig = async () => {
-  savingMind.value = true
+const saveAgentConfig = async () => {
+  savingAgent.value = true
   try {
-    const res = await updateMindConfigAPI(mindConfig.value)
+    const res = await updateAgentConfigAPI(agentConfig.value)
     if (res.data.status_code === 200) {
       if (res.data.data && Object.keys(res.data.data).length > 0) {
-        mindConfig.value = res.data.data
+        agentConfig.value = res.data.data
       }
     }
   } catch (error) {
-    ElMessage.error('保存 Mind 配置失败')
+    ElMessage.error('保存 Agent 配置失败')
   } finally {
-    savingMind.value = false
+    savingAgent.value = false
   }
 }
 
@@ -79,7 +79,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mind-config-page">
+  <div class="agent-config-page">
     <div class="page-header">
       <h2>
         <el-icon class="page-icon">
@@ -89,10 +89,10 @@ onMounted(() => {
       </h2>
     </div>
 
-    <div class="mind-config-section">
+    <div class="agent-config-section">
       <div class="section-title">
-        <h3>ToolMind 核心模型配置</h3>
-        <p>为 ToolMind 的不同功能组件配置专属的 AI 模型</p>
+        <h3>Agent 核心模型配置</h3>
+        <p>为 Agent 的不同功能组件配置专属的 AI 模型</p>
       </div>
 
       <div class="config-grid">
@@ -106,9 +106,9 @@ onMounted(() => {
             <h4>对话与任务生成模型</h4>
             <p>负责理解用户意图并规划任务执行路径</p>
           </div>
-          <el-select v-model="mindConfig.conversation_model_id" placeholder="请选择会话模型" class="model-select" clearable
-            no-data-text="无模型" :loading="loading || savingMind" :teleported="false" fit-input-width
-            @change="saveMindConfig">
+          <el-select v-model="agentConfig.conversation_model_id" placeholder="请选择会话模型" class="model-select" clearable
+            no-data-text="无模型" :loading="loading || savingAgent" :teleported="false" fit-input-width
+            @change="saveAgentConfig">
             <el-option v-for="m in models" :key="m.llm_id" :label="m.model + ' (' + m.provider + ')'"
               :value="m.llm_id" />
           </el-select>
@@ -124,9 +124,9 @@ onMounted(() => {
             <h4>工具调用模型</h4>
             <p>负责执行 MCP 协议和外部工具调用</p>
           </div>
-          <el-select v-model="mindConfig.tool_call_model_id" placeholder="请选择工具模型" class="model-select" clearable
-            no-data-text="无模型" :loading="loading || savingMind" :teleported="false" fit-input-width
-            @change="saveMindConfig">
+          <el-select v-model="agentConfig.tool_call_model_id" placeholder="请选择工具模型" class="model-select" clearable
+            no-data-text="无模型" :loading="loading || savingAgent" :teleported="false" fit-input-width
+            @change="saveAgentConfig">
             <el-option v-for="m in models" :key="m.llm_id" :label="m.model + ' (' + m.provider + ')'"
               :value="m.llm_id" />
           </el-select>
@@ -142,9 +142,9 @@ onMounted(() => {
             <h4>结果推理与评估模型</h4>
             <p>对任务执行的最终结果进行自我验证和评估</p>
           </div>
-          <el-select v-model="mindConfig.reasoning_model_id" placeholder="请选择评估模型" class="model-select" clearable
-            no-data-text="无模型" :loading="loading || savingMind" :teleported="false" fit-input-width
-            @change="saveMindConfig">
+          <el-select v-model="agentConfig.reasoning_model_id" placeholder="请选择评估模型" class="model-select" clearable
+            no-data-text="无模型" :loading="loading || savingAgent" :teleported="false" fit-input-width
+            @change="saveAgentConfig">
             <el-option v-for="m in models" :key="m.llm_id" :label="m.model + ' (' + m.provider + ')'"
               :value="m.llm_id" />
           </el-select>
@@ -155,7 +155,7 @@ onMounted(() => {
 </template>
 
 <style lang="scss" scoped>
-.mind-config-page {
+.agent-config-page {
   padding: 30px;
   min-height: calc(100vh - 60px);
   background-color: #ffffff;
@@ -192,7 +192,7 @@ onMounted(() => {
   }
 }
 
-.mind-config-section {
+.agent-config-section {
   margin-top: 0;
   background: white;
   border-radius: 24px;
@@ -293,7 +293,7 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .mind-config-page {
+  .agent-config-page {
     padding: 20px;
 
     .page-header {
@@ -309,7 +309,7 @@ onMounted(() => {
 
 /* 深色模式 */
 .theme-dark {
-  .mind-config-page {
+  .agent-config-page {
     background-color: #1c1c1e;
 
     .page-header {
@@ -326,7 +326,7 @@ onMounted(() => {
     }
   }
 
-  .mind-config-section {
+  .agent-config-section {
     background: #242426;
     border-color: #2c2c2e;
     box-shadow: none;

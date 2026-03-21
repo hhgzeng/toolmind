@@ -8,7 +8,7 @@ class UsageStatsRequest(BaseModel):
     delta_days: int = 10000
 
 class UsageStatsAgentType(str, Enum):
-    mind_agent = "Mind-Agent"
+    agent = "Agent"
 
 class UsageStatsModelType(str, Enum):
     tool_call_model = "tool_call_model"

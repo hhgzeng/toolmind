@@ -1,7 +1,7 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from toolmind.database import async_engine
-from toolmind.database.models.web_search_config import WebSearchConfigTable
+from toolmind.database.models.web_search import WebSearchConfigTable
 
 
 class WebSearchConfigDao:

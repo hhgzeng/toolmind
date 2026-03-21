@@ -50,7 +50,7 @@ const handleSend = async () => {
   nextTick(autoResize)
 
   router.push({
-    name: 'taskGraphPage',
+    name: 'Sessions',
     query: {
       query: query,
       webSearch: webSearchEnabled.value.toString(),

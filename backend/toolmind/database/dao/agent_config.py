@@ -1,15 +1,15 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from toolmind.database import async_engine
-from toolmind.database.models.mind_config import MindModelConfigTable
+from toolmind.database.models.agent_config import AgentConfigTable
 
 
-class MindModelConfigDao:
+class AgentConfigDao:
     @classmethod
-    async def get_config_by_user_id(cls, user_id: str) -> MindModelConfigTable:
+    async def get_config_by_user_id(cls, user_id: str) -> AgentConfigTable:
         async with AsyncSession(async_engine) as session:
-            statement = select(MindModelConfigTable).where(
-                MindModelConfigTable.user_id == user_id
+            statement = select(AgentConfigTable).where(
+                AgentConfigTable.user_id == user_id
             )
             result = await session.exec(statement)
             return result.first()
@@ -23,8 +23,8 @@ class MindModelConfigDao:
         reasoning_model_id: str = None,
     ):
         async with AsyncSession(async_engine) as session:
-            statement = select(MindModelConfigTable).where(
-                MindModelConfigTable.user_id == user_id
+            statement = select(AgentConfigTable).where(
+                AgentConfigTable.user_id == user_id
             )
             result = await session.exec(statement)
             config = result.first()
@@ -37,7 +37,7 @@ class MindModelConfigDao:
                     config.reasoning_model_id = reasoning_model_id
                 session.add(config)
             else:
-                config = MindModelConfigTable(
+                config = AgentConfigTable(
                     user_id=user_id,
                     conversation_model_id=conversation_model_id,
                     tool_call_model_id=tool_call_model_id,

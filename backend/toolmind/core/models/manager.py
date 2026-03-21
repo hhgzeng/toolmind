@@ -11,7 +11,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
 from toolmind.core.models.reason_model import ReasoningModel
 from toolmind.database.dao.llm import LLMDao
-from toolmind.database.dao.mind_config import MindModelConfigDao
+from toolmind.database.dao.agent_config import AgentConfigDao
 
 
 class _TTLCache:
@@ -47,7 +47,7 @@ class ModelManager:
         if cached is not None:
             return cached
 
-        user_config = await MindModelConfigDao.get_config_by_user_id(user_id)
+        user_config = await AgentConfigDao.get_config_by_user_id(user_id)
         if not user_config:
             return None
 
@@ -129,7 +129,7 @@ class ModelManager:
         return model
 
     @classmethod
-    async def get_mind_intent_model(
+    async def get_agent_intent_model(
         cls, user_id: str = None, **kwargs
     ) -> BaseChatModel:
         return await cls._get_or_create_chat_model(user_id, "tool_call")

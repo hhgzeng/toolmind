@@ -1,7 +1,7 @@
 """
 步骤执行 Agent（LangGraph 节点）
 
-负责逐步串行执行所有 MindTaskStep，每步内部允许多轮工具调用。
+负责逐步串行执行所有 AgentTaskStep，每步内部允许多轮工具调用。
 """
 
 import json
@@ -9,11 +9,11 @@ from typing import List
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
-from toolmind.core.agents.state import MindState
+from toolmind.core.agents.state import AgentState
 from toolmind.core.agents.tool_manager import ToolManager
 from toolmind.core.callbacks import usage_metadata_callback
 from toolmind.core.models.manager import ModelManager
-from toolmind.prompts.mind import ToolCallPrompt
+from toolmind.prompts.agent import ToolCallPrompt
 
 
 class Executor:
@@ -23,12 +23,12 @@ class Executor:
         self.user_id = user_id
         self.tool_manager = tool_manager
 
-    async def __call__(self, state: MindState) -> dict:
+    async def __call__(self, state: AgentState) -> dict:
         """LangGraph 节点函数：执行所有步骤，返回状态更新"""
         tools = await self.tool_manager.obtain_tools(
             state["mcp_servers"], state.get("web_search", True)
         )
-        model = await ModelManager.get_mind_intent_model(user_id=self.user_id)
+        model = await ModelManager.get_agent_intent_model(user_id=self.user_id)
         tool_call_model = model.bind_tools(tools) if len(tools) else model
 
         tasks_graph = {step.step_id: step for step in state["steps"]}

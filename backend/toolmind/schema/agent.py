@@ -3,13 +3,13 @@ from typing import Any, List
 from pydantic import BaseModel
 
 
-class MindTask(BaseModel):
+class AgentTask(BaseModel):
     query: str
     web_search: bool = True
     mcp_servers: List[str] = []
 
 
-class MindTaskStep(BaseModel):
+class AgentTaskStep(BaseModel):
     thought: str
     step_id: str
     title: str

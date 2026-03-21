@@ -1,13 +1,13 @@
 """
-MindAgent 共享状态定义
+Agent 共享状态定义
 
-使用 LangGraph 的 TypedDict State，所有 Agent 节点通过读写 MindState 进行数据传递。
+使用 LangGraph 的 TypedDict State，所有 Agent 节点通过读写 AgentState 进行数据传递。
 """
 
 from typing import Annotated, Any, Dict, List, Optional
 from typing_extensions import TypedDict
 
-from toolmind.schema.mind import MindTaskStep
+from toolmind.schema.agent import AgentTaskStep
 
 
 def _append_events(existing: List[dict], new: List[dict]) -> List[dict]:
@@ -15,7 +15,7 @@ def _append_events(existing: List[dict], new: List[dict]) -> List[dict]:
     return existing + new
 
 
-class MindState(TypedDict, total=False):
+class AgentState(TypedDict, total=False):
     """LangGraph 状态机的共享状态"""
 
     # ── 输入（不变） ──
@@ -25,7 +25,7 @@ class MindState(TypedDict, total=False):
     user_id: str
 
     # ── 规划结果 ──
-    steps: List[MindTaskStep]
+    steps: List[AgentTaskStep]
     tasks_show: List[Dict[str, str]]
 
     # ── 执行结果 ──

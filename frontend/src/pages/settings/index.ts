@@ -1,10 +1,11 @@
-import Core from './Core.vue'
+import AgentConfig from './AgentConfig.vue'
 import Dashboard from './Dashboard.vue'
-import General from './General.vue'
-import LLM from './LLM.vue'
-import MCP from './MCP.vue'
-import Search from './Search.vue'
+import GeneralSettings from './GeneralSettings.vue'
+import MCPServer from './MCPServer.vue'
+import Model from './Model.vue'
 import Settings from './Settings.vue'
-import Users from './Users.vue'
+import UserManagement from './UserManagement.vue'
+import WebSearch from './WebSearch.vue'
 
-export { Core, Dashboard, General, LLM, MCP, Search, Settings, Users }
+export { AgentConfig, Dashboard, GeneralSettings, MCPServer, Model, Settings, UserManagement, WebSearch }
+

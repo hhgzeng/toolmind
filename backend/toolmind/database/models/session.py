@@ -29,7 +29,7 @@ class SessionBase(SQLModelSerializable):
 
 class Session(SessionBase, table=True):
     # 保持表名不变，避免隐式引入数据库迁移
-    __tablename__ = "workspace_session"
+    __tablename__ = "sessions"
 
     session_id: str = Field(
         default_factory=lambda: uuid4().hex,

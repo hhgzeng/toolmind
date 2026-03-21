@@ -1,5 +1,5 @@
 """
-LangGraph 编排器 — MindAgent 的核心入口
+LangGraph 编排器 — Agent 的核心入口
 
 使用 LangGraph StateGraph 构建状态机：
   increment_loop → Planner → Executor → Synthesizer → Evaluator → (条件边: 重跑 / 结束)
@@ -14,20 +14,20 @@ from toolmind.api.services.session import SessionService
 from toolmind.core.agents.evaluator import Evaluator
 from toolmind.core.agents.executor import Executor
 from toolmind.core.agents.planner import Planner
-from toolmind.core.agents.state import MindState
+from toolmind.core.agents.state import AgentState
 from toolmind.core.agents.synthesizer import Synthesizer
 from toolmind.core.agents.tool_manager import ToolManager
 from toolmind.core.callbacks import usage_metadata_callback
 from toolmind.core.models.manager import ModelManager
 from toolmind.database.models.session import SessionContext, SessionCreate
-from toolmind.prompts.mind import GenerateTitlePrompt
-from toolmind.schema.mind import MindTask
+from toolmind.prompts.agent import GenerateTitlePrompt
+from toolmind.schema.agent import AgentTask
 
 
 # ── LangGraph 辅助节点 & 条件边 ──
 
 
-async def _increment_loop(state: MindState) -> dict:
+async def _increment_loop(state: AgentState) -> dict:
     """每次进入规划前递增循环计数"""
     new_count = state.get("loop_count", 0) + 1
     events = []
@@ -42,7 +42,7 @@ async def _increment_loop(state: MindState) -> dict:
     return {"loop_count": new_count, "events": events}
 
 
-def _should_retry(state: MindState) -> str:
+def _should_retry(state: AgentState) -> str:
     """条件边：决定是否重跑"""
     if state["eval_score"] >= 80:
         return "end"
@@ -59,7 +59,7 @@ def _build_graph(user_id: str, tool_manager: ToolManager):
     synthesizer = Synthesizer(user_id)
     evaluator = Evaluator(user_id, tool_manager)
 
-    graph = StateGraph(MindState)
+    graph = StateGraph(AgentState)
 
     # ── 注册节点 ──
     graph.add_node("increment_loop", _increment_loop)
@@ -86,11 +86,11 @@ def _build_graph(user_id: str, tool_manager: ToolManager):
     return graph.compile()
 
 
-class MindAgent:
+class Agent:
     """
-    MindAgent 编排器（基于 LangGraph StateGraph）
+    Agent 编排器（基于 LangGraph StateGraph）
 
-    对外 API 保持与原始 MindAgent 完全一致。
+    对外 API 保持与原始 Agent 完全一致。
     """
 
     def __init__(self, user_id: str):
@@ -98,8 +98,8 @@ class MindAgent:
         self.tool_manager = ToolManager(user_id)
         self.graph = _build_graph(user_id, self.tool_manager)
 
-    async def submit_mind_task(self, mind_task: MindTask):
-        """主入口：接收 MindTask，驱动 LangGraph 状态机，yield SSE 事件"""
+    async def submit_agent_task(self, agent_task: AgentTask):
+        """主入口：接收 AgentTask，驱动 LangGraph 状态机，yield SSE 事件"""
         task_start = time.monotonic()
 
         # ── 创建会话 ──
@@ -121,10 +121,10 @@ class MindAgent:
         }
 
         # ── 初始化状态 ──
-        initial_state: MindState = {
-            "query": mind_task.query,
-            "mcp_servers": mind_task.mcp_servers,
-            "web_search": mind_task.web_search,
+        initial_state: AgentState = {
+            "query": agent_task.query,
+            "mcp_servers": agent_task.mcp_servers,
+            "web_search": agent_task.web_search,
             "user_id": self.user_id,
             "steps": [],
             "tasks_show": [],
@@ -146,7 +146,7 @@ class MindAgent:
         ):
             for node_name, state_update in update.items():
                 node_elapsed = time.monotonic() - node_start
-                logger.info(f"[MindAgent] Node '{node_name}' completed in {node_elapsed:.2f}s")
+                logger.info(f"[Agent] Node '{node_name}' completed in {node_elapsed:.2f}s")
                 node_start = time.monotonic()
 
                 # 实时推送该节点产出的 SSE 事件
@@ -156,7 +156,7 @@ class MindAgent:
                 final_state = {**final_state, **state_update}
 
         total_elapsed = time.monotonic() - task_start
-        logger.info(f"[MindAgent] Total pipeline completed in {total_elapsed:.2f}s")
+        logger.info(f"[Agent] Total pipeline completed in {total_elapsed:.2f}s")
 
         # ── 生成反馈消息 ──
         score = final_state.get("eval_score", 0)
@@ -180,7 +180,7 @@ class MindAgent:
         await SessionService.update_session_contexts(
             session_model.session_id,
             SessionContext(
-                query=mind_task.query,
+                query=agent_task.query,
                 task=final_state.get("context_task", []),
                 task_graph=final_state.get("tasks_show", []),
                 answer=final_response + feedback_msg,
@@ -188,7 +188,7 @@ class MindAgent:
         )
 
         # ── 流式生成标题 ──
-        async for event in self._stream_title(session_model, mind_task.query):
+        async for event in self._stream_title(session_model, agent_task.query):
             yield event
 
     async def _stream_title(self, session_model, query: str):

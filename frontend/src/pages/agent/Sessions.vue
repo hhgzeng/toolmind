@@ -5,7 +5,7 @@ import 'md-editor-v3/lib/style.css'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  startMindTaskAPI
+  startAgentTaskAPI
 } from '../../api/agent'
 import { getSessionInfoAPI } from '../../api/sessions'
 import type { TaskSessionState } from '../../store/session-store'
@@ -209,7 +209,7 @@ watch(
   }
 )
 
-// 当前这次 Mind 任务对应的工作区会话 ID（由后端在任务启动时创建）
+// 当前这次 Agent 任务对应的工作区会话 ID（由后端在任务启动时创建）
 const currentSessionId = ref<string | null>(null)
 
 
@@ -1010,7 +1010,7 @@ const startTask = async () => {
       currentSessionId.value = sessionInfo.sessionId
       // 将 session_id 更新到 URL
       router.replace({
-        name: 'taskGraphPage',
+        name: 'Sessions',
         params: { session_id: sessionInfo.sessionId }
       })
       window.dispatchEvent(
@@ -1052,7 +1052,7 @@ const startTask = async () => {
 
   try {
     // SSE 回调全部通过 proxy 间接调用，支持后台状态切换
-    startMindTaskAPI(
+    const ctrl = await startAgentTaskAPI(
       taskParams.value,
       (data) => proxyCallbacks.onMessage(data),
       (graph) => proxyCallbacks.onTaskGraph(graph),

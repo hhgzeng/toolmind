@@ -1,24 +1,24 @@
 // router/index.ts
 import type { RouteRecordRaw } from 'vue-router';
 import { createRouter, createWebHistory } from 'vue-router';
-import { ChatSidebar as Session, ChatInput as SessionDefaultPage, Sessions as TaskGraphPage } from '../pages/agent';
+import { ChatInput, ChatSidebar, Sessions } from '../pages/agent';
 import { Login, Register } from '../pages/login';
-import NotFound from '../pages/not-found';
+
 import {
+  AgentConfig,
   Dashboard,
-  General as GeneralSettings,
-  Settings as Index,
-  MCP as McpServer,
-  Core as MindConfig,
-  LLM as Model,
-  Users as UserManagement,
-  Search as WebSearchPage
+  GeneralSettings,
+  MCPServer,
+  Model,
+  Settings,
+  UserManagement,
+  WebSearch
 } from '../pages/settings';
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/login',
-    name: 'login',
+    name: 'Login',
     component: Login,
     meta: {
       requiresAuth: false
@@ -26,7 +26,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/register',
-    name: 'register',
+    name: 'Register',
     component: Register,
     meta: {
       requiresAuth: false
@@ -34,67 +34,68 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
-    name: 'session',
-    component: Session,
+    name: 'ChatSidebar',
+    component: ChatSidebar,
     meta: {
       requiresAuth: true
     },
     children: [
       {
         path: '',
-        name: 'sessionDefaultPage',
-        component: SessionDefaultPage,
+        name: 'ChatInput',
+        component: ChatInput,
       },
       {
         path: 'sessions/:session_id?',
-        name: 'taskGraphPage',
-        component: TaskGraphPage,
+        name: 'Sessions',
+        component: Sessions,
       }
     ]
   },
   {
     path: '/settings',
-    name: 'index',
-    component: Index,
+    name: 'Settings',
+    component: Settings,
+    redirect: '/settings/general',
     meta: {
       requiresAuth: true
     },
     children: [
       {
         path: 'mcp',
-        name: 'mcp',
+        name: 'MCPServer',
         meta: {
           current: 'mcp'
         },
-        component: McpServer,
+        component: MCPServer,
       },
       {
         path: 'model',
-        name: 'model',
+        name: 'Model',
         meta: {
           current: 'model'
         },
         component: Model,
       },
       {
-        path: 'core',
-        name: 'core',
+        path: 'config',
+        name: 'AgentConfig',
         meta: {
-          current: 'core'
+          current: 'config'
         },
-        component: MindConfig,
+        component: AgentConfig,
       },
       {
         path: 'search',
-        name: 'search',
+        name: 'WebSearch',
         meta: {
           current: 'search'
         },
-        component: WebSearchPage,
+        component: WebSearch,
       },
       {
         path: 'dashboard',
-        name: 'dashboard',
+        name: 'Dashboard',
         meta: {
           current: 'dashboard'
         },
@@ -102,7 +103,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'general',
-        name: 'general',
+        name: 'GeneralSettings',
         meta: {
           current: 'general'
         },
@@ -110,7 +111,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'users',
-        name: 'users',
+        name: 'UserManagement',
         meta: {
           current: 'users'
         },
@@ -121,7 +122,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/:catchAll(.*)',
     name: 'not-found',
-    component: NotFound,
+    redirect: '/',
   },
 ];
 

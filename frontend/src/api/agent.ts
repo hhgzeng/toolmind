@@ -2,8 +2,8 @@ import { fetchEventSource } from '@microsoft/fetch-event-source'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
-// 开始执行 Mind 任务（流式）
-export const startMindTaskAPI = async (
+// 开始执行 Agent 任务（流式）
+export const startAgentTaskAPI = async (
   data: {
     query: string
     web_search?: boolean
@@ -28,7 +28,7 @@ export const startMindTaskAPI = async (
   const ctrl = externalAbortController || new AbortController()
 
   try {
-    await fetchEventSource(`${BASE_URL}/api/v1/session/mind/task_start`, {
+    await fetchEventSource(`${BASE_URL}/api/v1/session/agent/task_start`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

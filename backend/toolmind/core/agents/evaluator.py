@@ -9,11 +9,11 @@ from typing import List
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from loguru import logger
 
-from toolmind.core.agents.state import MindState
+from toolmind.core.agents.state import AgentState
 from toolmind.core.agents.tool_manager import ToolManager
 from toolmind.core.callbacks import usage_metadata_callback
 from toolmind.core.models.manager import ModelManager
-from toolmind.prompts.mind import EvaluateResultPrompt
+from toolmind.prompts.agent import EvaluateResultPrompt
 from toolmind.utils.json_utils import extract_and_parse_json
 
 
@@ -24,7 +24,7 @@ class Evaluator:
         self.user_id = user_id
         self.tool_manager = tool_manager
 
-    async def __call__(self, state: MindState) -> dict:
+    async def __call__(self, state: AgentState) -> dict:
         """LangGraph 节点函数：评估答案质量，返回状态更新"""
         logger.info("[Evaluator] Start _evaluate_result...")
 

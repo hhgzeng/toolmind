@@ -8,10 +8,10 @@ import json
 
 from langchain_core.messages import HumanMessage
 
-from toolmind.core.agents.state import MindState
+from toolmind.core.agents.state import AgentState
 from toolmind.core.callbacks import usage_metadata_callback
 from toolmind.core.models.manager import ModelManager
-from toolmind.prompts.mind import FinalSynthesisPrompt
+from toolmind.prompts.agent import FinalSynthesisPrompt
 
 
 class Synthesizer:
@@ -20,7 +20,7 @@ class Synthesizer:
     def __init__(self, user_id: str):
         self.user_id = user_id
 
-    async def __call__(self, state: MindState) -> dict:
+    async def __call__(self, state: AgentState) -> dict:
         """LangGraph 节点函数：生成最终答案，返回状态更新"""
         final_steps_payload = [
             {
