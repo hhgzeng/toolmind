@@ -7,7 +7,6 @@
 import json
 
 from langchain_core.messages import HumanMessage
-
 from toolmind.core.agents.state import AgentState
 from toolmind.core.callbacks import usage_metadata_callback
 from toolmind.core.models.manager import ModelManager
@@ -47,9 +46,11 @@ class Synthesizer:
             config={"callbacks": [usage_metadata_callback]},
         ):
             final_response += chunk.content
-            events.append({
-                "event": "task_result",
-                "data": {"message": chunk.content},
-            })
+            events.append(
+                {
+                    "event": "task_result",
+                    "data": {"message": chunk.content},
+                }
+            )
 
         return {"final_response": final_response, "events": events}

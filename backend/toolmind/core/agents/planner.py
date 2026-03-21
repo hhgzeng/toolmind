@@ -36,7 +36,7 @@ class Planner:
 
         agent_task_prompt = GenerateTaskPrompt.format(
             current_time=get_beijing_time(),
-            tools_str=await self.tool_manager.get_tools_info(),
+            tools_str=tools_str,
             query=state["query"],
         )
 
@@ -87,7 +87,7 @@ class Planner:
             fix_message = FixJsonPrompt.format(
                 json_content=response.content, json_error=str(err)
             )
-            fix_response = await conversation_json_model.ainvoke(
+            fix_response = await conversation_model.ainvoke(
                 input=fix_message, config={"callbacks": [usage_metadata_callback]}
             )
             try:

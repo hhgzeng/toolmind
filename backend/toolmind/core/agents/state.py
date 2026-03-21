@@ -5,9 +5,9 @@ Agent 共享状态定义
 """
 
 from typing import Annotated, Any, Dict, List, Optional
-from typing_extensions import TypedDict
 
 from toolmind.schema.agent import AgentTaskStep
+from typing_extensions import TypedDict
 
 
 def _append_events(existing: List[dict], new: List[dict]) -> List[dict]:

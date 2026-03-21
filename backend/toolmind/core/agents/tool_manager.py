@@ -82,10 +82,12 @@ class ToolManager:
         summary = []
         for tool in self._cached_tools:
             func = tool.get("function", tool)
-            summary.append({
-                "name": func.get("name", ""),
-                "description": func.get("description", ""),
-            })
+            summary.append(
+                {
+                    "name": func.get("name", ""),
+                    "description": func.get("description", ""),
+                }
+            )
         return summary
 
     async def _get_mcp_tools(self, mcp_servers: List[str]):

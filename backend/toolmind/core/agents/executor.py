@@ -8,7 +8,6 @@ import json
 from typing import List
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
-
 from toolmind.core.agents.state import AgentState
 from toolmind.core.agents.tool_manager import ToolManager
 from toolmind.core.callbacks import usage_metadata_callback
@@ -63,8 +62,8 @@ class Executor:
                 step_messages.append(response)
 
                 if response.tool_calls:
-                    tool_messages = await self.tool_manager.parse_function_call_response(
-                        response
+                    tool_messages = (
+                        await self.tool_manager.parse_function_call_response(response)
                     )
                     step_messages.extend(tool_messages)
                 else:
@@ -74,12 +73,14 @@ class Executor:
             step_info.result = step_summary
             context_task.append(step_info.model_dump())
 
-            events.append({
-                "event": "step_result",
-                "data": {
-                    "message": step_info.result or " ",
-                    "title": step_info.title,
-                },
-            })
+            events.append(
+                {
+                    "event": "step_result",
+                    "data": {
+                        "message": step_info.result or " ",
+                        "title": step_info.title,
+                    },
+                }
+            )
 
         return {"context_task": context_task, "events": events}

@@ -9,7 +9,6 @@ import time
 
 from langgraph.graph import END, START, StateGraph
 from loguru import logger
-
 from toolmind.api.services.session import SessionService
 from toolmind.core.agents.evaluator import Evaluator
 from toolmind.core.agents.executor import Executor
@@ -23,7 +22,6 @@ from toolmind.database.models.session import SessionContext, SessionCreate
 from toolmind.prompts.agent import GenerateTitlePrompt
 from toolmind.schema.agent import AgentTask
 
-
 # ── LangGraph 辅助节点 & 条件边 ──
 
 
@@ -32,13 +30,15 @@ async def _increment_loop(state: AgentState) -> dict:
     new_count = state.get("loop_count", 0) + 1
     events = []
     if new_count > 1:
-        events.append({
-            "event": "step_result",
-            "data": {
-                "message": "正在重新规划任务并重头执行...",
-                "title": f"第 {new_count} 次重跑",
-            },
-        })
+        events.append(
+            {
+                "event": "step_result",
+                "data": {
+                    "message": "正在重新规划任务并重头执行...",
+                    "title": f"第 {new_count} 次重跑",
+                },
+            }
+        )
     return {"loop_count": new_count, "events": events}
 
 
@@ -141,12 +141,12 @@ class Agent:
         # ── 运行 LangGraph 状态机（带节点级耗时日志）──
         final_state = initial_state
         node_start = time.monotonic()
-        async for update in self.graph.astream(
-            initial_state, stream_mode="updates"
-        ):
+        async for update in self.graph.astream(initial_state, stream_mode="updates"):
             for node_name, state_update in update.items():
                 node_elapsed = time.monotonic() - node_start
-                logger.info(f"[Agent] Node '{node_name}' completed in {node_elapsed:.2f}s")
+                logger.info(
+                    f"[Agent] Node '{node_name}' completed in {node_elapsed:.2f}s"
+                )
                 node_start = time.monotonic()
 
                 # 实时推送该节点产出的 SSE 事件
