@@ -6,10 +6,10 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   startMindTaskAPI
-} from '../../../api/mind'
-import { getSessionInfoAPI } from '../../../api/session'
-import type { TaskSessionState } from '../../../store/taskSessionStore'
-import { taskSessionStore } from '../../../store/taskSessionStore'
+} from '../../api/agent'
+import { getSessionInfoAPI } from '../../api/sessions'
+import type { TaskSessionState } from '../../store/session-store'
+import { taskSessionStore } from '../../store/session-store'
 
 const route = useRoute()
 const router = useRouter()
@@ -341,7 +341,7 @@ onMounted(async () => {
   console.log('=== taskGraphPage onMounted ===')
   console.log('路由参数:', route.query)
 
-  const sessionId = route.query.session_id as string
+  const sessionId = (route.params.session_id || route.query.session_id) as string
 
   if (sessionId) {
     // 优先检查 store 中是否有保存的运行状态（组件销毁重建时，如"开启新对话"再点回）
@@ -383,7 +383,7 @@ onMounted(async () => {
     console.log('✅ 联网搜索:', originalParams.value.web_search)
 
     // 清理 URL 参数（保留功能，隐藏参数）
-    router.replace({ path: '/session/taskGraph' })
+    router.replace({ path: '/sessions' })
 
     // 直接开始执行任务（AI 自行分解）
     if (originalParams.value.query) {
@@ -653,7 +653,7 @@ const rebindCallbacks = (callbacks: NonNullable<TaskSessionState['callbacks']>) 
 }
 
 watch(
-  () => route.query.session_id,
+  () => route.params.session_id || route.query.session_id,
   async (newSessionId, oldSessionId) => {
     if (newSessionId === oldSessionId) return
     // 如果是当前运行中的任务首次获得 session_id（URL 更新），不要重置
@@ -1011,7 +1011,7 @@ const startTask = async () => {
       // 将 session_id 更新到 URL
       router.replace({
         name: 'taskGraphPage',
-        query: { session_id: sessionInfo.sessionId }
+        params: { session_id: sessionInfo.sessionId }
       })
       window.dispatchEvent(
         new CustomEvent('session:new-session', {

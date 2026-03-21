@@ -87,7 +87,7 @@ onMounted(async () => {
     <div class="chat-container">
       <!-- 欢迎区域 -->
       <div class="welcome-section">
-        <img src="../../../assets/toolmind.png" alt="ToolMind" class="welcome-avatar" />
+        <img src="../../assets/toolmind.png" alt="ToolMind" class="welcome-avatar" />
         <h1 class="welcome-title">今天有什么可以帮到你？</h1>
       </div>
 

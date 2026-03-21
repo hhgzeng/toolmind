@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { CloseBold, Edit, Search, User } from '@element-plus/icons-vue'
 import { computed, onMounted, ref } from 'vue'
-import { getUserListAPI, toggleUserStatusAPI, updateUserRoleAPI } from '../../api/user-management'
+import { getUserListAPI, toggleUserStatusAPI, updateUserRoleAPI } from '../../api/users'
 
 const loading = ref(false)
 const users = ref<any[]>([])

@@ -10,7 +10,7 @@ import {
   type CreateMCPServerRequest,
   type MCPServer,
   type MCPServerTool
-} from '../../api/mcp-server'
+} from '../../api/mcp'
 
 const servers = ref<MCPServer[]>([])
 const loading = ref(false)

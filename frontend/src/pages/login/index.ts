@@ -1,5 +1,4 @@
-import Login from './login.vue'
-import Register from './register.vue'
+import Login from './Login.vue'
+import Register from './Register.vue'
 
 export { Login, Register }
-export default Login

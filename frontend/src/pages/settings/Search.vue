@@ -2,7 +2,7 @@
 import { Search } from "@element-plus/icons-vue"
 import { ElMessage } from "element-plus"
 import { onMounted, ref } from "vue"
-import { getWebSearchAPI, updateWebSearchAPI, type WebSearchSettings } from "../../api/web-search"
+import { getWebSearchAPI, updateWebSearchAPI, type WebSearchSettings } from "../../api/search"
 
 const loading = ref(false)
 const saving = ref(false)

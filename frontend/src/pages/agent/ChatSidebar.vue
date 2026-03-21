@@ -7,7 +7,7 @@ import {
   deleteSessionAPI,
   getSessionsAPI,
   updateSessionAPI
-} from '../../api/session'
+} from '../../api/sessions'
 import { useUserStore } from '../../store/user'
 
 const router = useRouter()
@@ -20,7 +20,7 @@ const sessionToRename = ref<any>(null)
 const newTitle = ref('')
 const renameInput = ref<HTMLInputElement | null>(null)
 
-watch(() => route.query.session_id, (newSessionId) => {
+watch(() => route.params.session_id || route.query.session_id, (newSessionId) => {
   selectedSession.value = (newSessionId as string) || ''
 }, { immediate: true })
 
@@ -224,7 +224,7 @@ const executeDelete = async () => {
 
       if (selectedSession.value === sessionId) {
         selectedSession.value = ''
-        router.push('/session')
+        router.push('/')
       }
     } else {
       ElMessage.error('删除会话失败')
@@ -339,7 +339,7 @@ const selectSession = (sessionId: string) => {
   }
   router.push({
     name: 'taskGraphPage',
-    query: { session_id: sessionId }
+    params: { session_id: sessionId }
   })
 }
 
@@ -348,7 +348,7 @@ const handleUserCommand = async (command: string) => {
   showUserMenu.value = false
   switch (command) {
     case 'settings':
-      router.push('/general-settings')
+      router.push('/settings/general')
       break
     case 'logout':
       await handleLogout()
@@ -378,7 +378,7 @@ const handleAvatarError = (event: Event) => {
 // 开启新对话
 const goToHomepage = () => {
   selectedSession.value = ''
-  router.push('/session')
+  router.push('/')
 }
 
 onMounted(async () => {

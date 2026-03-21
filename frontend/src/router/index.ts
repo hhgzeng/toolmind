@@ -1,19 +1,19 @@
 // router/index.ts
 import type { RouteRecordRaw } from 'vue-router';
 import { createRouter, createWebHistory } from 'vue-router';
-import Dashboard from '../pages/dashboard';
-import GeneralSettings from '../pages/general-settings';
-import Index from '../pages/index.vue';
-import Login, { Register } from '../pages/login';
-import McpServer from '../pages/mcp-server';
-import MindConfig from '../pages/mind-config';
-import Model from '../pages/model';
-import NotFound from '../pages/notFound/index';
-import UserManagement from '../pages/user-management';
-import WebSearchPage from '../pages/web-search';
-import SessionDefaultPage from '../pages/workspace/defaultPage/defaultPage.vue';
-import TaskGraphPage from '../pages/workspace/taskGraphPage/taskGraphPage.vue';
-import Session from '../pages/workspace/workspace.vue';
+import { ChatSidebar as Session, ChatInput as SessionDefaultPage, Sessions as TaskGraphPage } from '../pages/agent';
+import { Login, Register } from '../pages/login';
+import NotFound from '../pages/not-found';
+import {
+  Dashboard,
+  General as GeneralSettings,
+  Settings as Index,
+  MCP as McpServer,
+  Core as MindConfig,
+  LLM as Model,
+  Users as UserManagement,
+  Search as WebSearchPage
+} from '../pages/settings';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -33,7 +33,7 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/session',
+    path: '/',
     name: 'session',
     component: Session,
     meta: {
@@ -46,15 +46,14 @@ const routes: RouteRecordRaw[] = [
         component: SessionDefaultPage,
       },
       {
-        path: 'taskGraph',
+        path: 'sessions/:session_id?',
         name: 'taskGraphPage',
         component: TaskGraphPage,
       }
     ]
   },
   {
-    path: '/',
-    redirect: '/session',
+    path: '/settings',
     name: 'index',
     component: Index,
     meta: {
@@ -62,15 +61,15 @@ const routes: RouteRecordRaw[] = [
     },
     children: [
       {
-        path: '/mcp-server',
-        name: 'mcp-server',
+        path: 'mcp',
+        name: 'mcp',
         meta: {
-          current: 'mcp-server'
+          current: 'mcp'
         },
         component: McpServer,
       },
       {
-        path: '/model',
+        path: 'model',
         name: 'model',
         meta: {
           current: 'model'
@@ -78,23 +77,23 @@ const routes: RouteRecordRaw[] = [
         component: Model,
       },
       {
-        path: '/mind-config',
-        name: 'mind-config',
+        path: 'core',
+        name: 'core',
         meta: {
-          current: 'mind-config'
+          current: 'core'
         },
         component: MindConfig,
       },
       {
-        path: '/web-search',
-        name: 'web-search',
+        path: 'search',
+        name: 'search',
         meta: {
-          current: 'web-search'
+          current: 'search'
         },
         component: WebSearchPage,
       },
       {
-        path: '/dashboard',
+        path: 'dashboard',
         name: 'dashboard',
         meta: {
           current: 'dashboard'
@@ -102,18 +101,18 @@ const routes: RouteRecordRaw[] = [
         component: Dashboard,
       },
       {
-        path: '/general-settings',
-        name: 'general-settings',
+        path: 'general',
+        name: 'general',
         meta: {
-          current: 'general-settings'
+          current: 'general'
         },
         component: GeneralSettings,
       },
       {
-        path: '/user-management',
-        name: 'user-management',
+        path: 'users',
+        name: 'users',
         meta: {
-          current: 'user-management'
+          current: 'users'
         },
         component: UserManagement,
       }

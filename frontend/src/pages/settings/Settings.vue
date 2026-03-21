@@ -1,26 +1,30 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { theme as useTheme } from "../api/theme"
-import { useUserStore } from "../store/user"
+import { theme as useTheme } from "../../api/theme"
+import { useUserStore } from "../../store/user"
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const { theme } = useTheme()
 
-const current = ref<string>((route.meta.current as string) || "general-settings")
+const current = ref<string>((route.meta.current as string) || "general")
 const menuTextColor = computed(() => (theme.value === "dark" ? "rgba(255, 255, 255, 0.6)" : "#333"))
 const menuActiveTextColor = computed(() => (theme.value === "dark" ? "#f5f5f7" : "#1a1a1a"))
 
 const goCurrent = (item: string) => {
-  router.push(item ? `/${item}` : "/")
+  if (item === 'session') {
+    router.push('/')
+  } else {
+    router.push(item ? `/settings/${item}` : "/")
+  }
 }
 
 watch(
   route,
   () => {
-    current.value = (route.meta.current as string) || "general-settings"
+    current.value = (route.meta.current as string) || "general"
   }
 )
 </script>
@@ -41,7 +45,7 @@ watch(
                 <span>返回</span>
               </template>
             </el-menu-item>
-            <el-menu-item index="general-settings" @click="goCurrent('general-settings')">
+            <el-menu-item index="general" @click="goCurrent('general')">
               <template #title>
                 <el-icon>
                   <Setting />
@@ -49,8 +53,7 @@ watch(
                 <span>通用设置</span>
               </template>
             </el-menu-item>
-            <el-menu-item v-if="userStore.userInfo?.role === 'admin'" index="user-management"
-              @click="goCurrent('user-management')">
+            <el-menu-item v-if="userStore.userInfo?.role === 'admin'" index="users" @click="goCurrent('users')">
               <template #title>
                 <el-icon>
                   <User />
@@ -58,7 +61,7 @@ watch(
                 <span>用户管理</span>
               </template>
             </el-menu-item>
-            <el-menu-item index="mind-config" @click="goCurrent('mind-config')">
+            <el-menu-item index="core" @click="goCurrent('core')">
               <template #title>
                 <el-icon>
                   <Operation />
@@ -66,7 +69,7 @@ watch(
                 <span>模型配置</span>
               </template>
             </el-menu-item>
-            <el-menu-item index="web-search" @click="goCurrent('web-search')">
+            <el-menu-item index="search" @click="goCurrent('search')">
               <template #title>
                 <el-icon>
                   <Search />
@@ -82,7 +85,7 @@ watch(
                 <span>模型管理</span>
               </template>
             </el-menu-item>
-            <el-menu-item index="mcp-server" @click="goCurrent('mcp-server')">
+            <el-menu-item index="mcp" @click="goCurrent('mcp')">
               <template #title>
                 <el-icon>
                   <Connection />
