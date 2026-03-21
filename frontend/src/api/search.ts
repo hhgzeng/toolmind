@@ -13,15 +13,15 @@ export interface WebSearchSettings {
 
 export function getWebSearchAPI() {
   return request<ApiResponse<WebSearchSettings>>({
-    url: "/api/v1/tools/web_search",
+    url: "/api/v1/tools/web-search",
     method: "GET"
   })
 }
 
 export function updateWebSearchAPI(data: WebSearchSettings) {
   return request<ApiResponse<WebSearchSettings>>({
-    url: "/api/v1/tools/web_search",
-    method: "POST",
+    url: "/api/v1/tools/web-search",
+    method: "PUT",
     data
   })
 }

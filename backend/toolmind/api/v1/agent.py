@@ -8,10 +8,10 @@ from toolmind.schema.agent import AgentTask
 from toolmind.schema.usage_stats import UsageStatsAgentType
 from toolmind.utils.contexts import set_agent_name_context, set_user_id_context
 
-router = APIRouter(prefix="/session/agent", tags=["Agent"])
+router = APIRouter(tags=["Agent"])
 
 
-@router.post("/task_start", summary="Agent 开始执行任务")
+@router.post("/agent/tasks", summary="Agent 开始执行任务")
 async def submit_agent_task(
     *, task: AgentTask, login_user: UserPayload = Depends(get_login_user)
 ):

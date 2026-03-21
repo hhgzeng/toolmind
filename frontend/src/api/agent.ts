@@ -28,7 +28,7 @@ export const startAgentTaskAPI = async (
   const ctrl = externalAbortController || new AbortController()
 
   try {
-    await fetchEventSource(`${BASE_URL}/api/v1/session/agent/task_start`, {
+    await fetchEventSource(`${BASE_URL}/api/v1/agent/tasks`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

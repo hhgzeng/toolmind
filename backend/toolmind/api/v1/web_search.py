@@ -12,7 +12,7 @@ class WebSearchConfigReq(BaseModel):
     enabled: bool = True
 
 
-@router.get("/web_search", summary="获取联网搜索配置")
+@router.get("/web-search", summary="获取联网搜索配置")
 async def get_web_search_config(login_user: UserPayload = Depends(get_login_user)):
     try:
         user_config = await WebSearchConfigDao.get_config_by_user_id(login_user.user_id)
@@ -26,7 +26,7 @@ async def get_web_search_config(login_user: UserPayload = Depends(get_login_user
         return resp_500(message=str(e))
 
 
-@router.post("/web_search", summary="更新联网搜索配置")
+@router.put("/web-search", summary="更新联网搜索配置")
 async def update_web_search_config(
     req: WebSearchConfigReq, login_user: UserPayload = Depends(get_login_user)
 ):

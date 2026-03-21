@@ -32,7 +32,7 @@ export interface LoginResponse {
 // 登录接口
 export const loginAPI = (data: LoginForm) => {
   return request<LoginResponse>({
-    url: '/api/v1/user/login',
+    url: '/api/v1/users/login',
     method: 'POST',
     data: {
       user_name: data.username,
@@ -44,7 +44,7 @@ export const loginAPI = (data: LoginForm) => {
 // 注册接口
 export const registerAPI = (data: RegisterForm) => {
   return request({
-    url: '/api/v1/user/register',
+    url: '/api/v1/users/register',
     method: 'POST',
     data
   })

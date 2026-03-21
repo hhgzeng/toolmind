@@ -3,16 +3,16 @@ from toolmind.api.services.session import SessionService
 from toolmind.api.services.user import UserPayload, get_login_user
 from toolmind.schema.schemas import resp_200
 
-router = APIRouter(prefix="/session", tags=["Session"])
+router = APIRouter(tags=["Session"])
 
 
-@router.get("", summary="获取所有会话列表")
+@router.get("/sessions", summary="获取所有会话列表")
 async def get_sessions(login_user: UserPayload = Depends(get_login_user)):
     results = await SessionService.get_sessions(login_user.user_id)
     return resp_200(data=results)
 
 
-@router.post("", summary="创建会话")
+@router.post("/sessions", summary="创建会话")
 async def create_session(
     *,
     title: str = "",
@@ -23,7 +23,7 @@ async def create_session(
     pass
 
 
-@router.post("/{session_id}", summary="进入会话")
+@router.get("/sessions/{session_id}", summary="进入会话")
 async def session_info(
     session_id: str,
     login_user: UserPayload = Depends(get_login_user),
@@ -37,7 +37,7 @@ async def session_info(
         raise HTTPException(status_code=500, detail=str(err))
 
 
-@router.delete("", summary="删除会话")
+@router.delete("/sessions/{session_id}", summary="删除会话")
 async def delete_session(
     session_id: str,
     login_user: UserPayload = Depends(get_login_user),
@@ -49,7 +49,7 @@ async def delete_session(
         raise HTTPException(status_code=500, detail=str(err))
 
 
-@router.patch("/{session_id}", summary="更新会话")
+@router.patch("/sessions/{session_id}", summary="更新会话")
 async def update_session(
     session_id: str,
     data: dict = Body(...),

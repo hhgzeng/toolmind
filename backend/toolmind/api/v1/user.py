@@ -15,7 +15,7 @@ from toolmind.api.JWT import ACCESS_TOKEN_EXPIRE_TIME
 router = APIRouter(tags=["User"])
 
 
-@router.post("/user/register", response_model=UnifiedResponseModel)
+@router.post("/users/register", response_model=UnifiedResponseModel)
 async def register(
     user_name: str = Body(description="用户名"),
     user_password: str = Body(description="用户密码"),
@@ -43,7 +43,7 @@ async def register(
     return resp_200()
 
 
-@router.post("/user/login", response_model=UnifiedResponseModel)
+@router.post("/users/login", response_model=UnifiedResponseModel)
 async def login(
     user_name: str = Body(description="用户名"),
     user_password: str = Body(description="用户密码"),
@@ -78,7 +78,7 @@ async def login(
     )
 
 
-@router.get("/user/info", response_model=UnifiedResponseModel)
+@router.get("/users/{user_id}", response_model=UnifiedResponseModel)
 async def get_user_info(user_id: str):
     result = UserService.get_user_info_by_id(user_id)
 
@@ -102,7 +102,7 @@ def require_admin(user: UserPayload = Depends(get_login_user)):
     return user
 
 
-@router.get("/user/list", response_model=UnifiedResponseModel)
+@router.get("/users", response_model=UnifiedResponseModel)
 async def get_user_list(
     page: int = 1, limit: int = 20, admin_user: UserPayload = Depends(require_admin)
 ):
@@ -111,31 +111,31 @@ async def get_user_list(
     return resp_200(data)
 
 
-@router.post("/user/reset_password", response_model=UnifiedResponseModel)
+@router.put("/users/{user_id}/password", response_model=UnifiedResponseModel)
 async def reset_user_password(
-    req: UpdateUserPasswordReq, admin_user: UserPayload = Depends(require_admin)
+    user_id: str, req: UpdateUserPasswordReq, admin_user: UserPayload = Depends(require_admin)
 ):
     """管理员修改任意用户密码"""
-    return UserManagementService.update_user_password(req.user_id, req.new_password)
+    return UserManagementService.update_user_password(user_id, req.new_password)
 
 
-@router.post("/user/role", response_model=UnifiedResponseModel)
+@router.put("/users/{user_id}/role", response_model=UnifiedResponseModel)
 async def update_user_role(
-    req: UpdateUserRoleReq, admin_user: UserPayload = Depends(require_admin)
+    user_id: str, req: UpdateUserRoleReq, admin_user: UserPayload = Depends(require_admin)
 ):
     """分配或取消管理员角色"""
-    if req.user_id == admin_user.user_id:
+    if user_id == admin_user.user_id:
         return resp_500(message="你不能修改你自己的角色")
 
-    return UserManagementService.update_user_role(req.user_id, req.role)
+    return UserManagementService.update_user_role(user_id, req.role)
 
 
-@router.post("/user/toggle_status", response_model=UnifiedResponseModel)
+@router.patch("/users/{user_id}/status", response_model=UnifiedResponseModel)
 async def toggle_user_status(
-    req: ToggleUserStatusReq, admin_user: UserPayload = Depends(require_admin)
+    user_id: str, req: ToggleUserStatusReq, admin_user: UserPayload = Depends(require_admin)
 ):
     """启用或禁用应用层账号"""
-    if req.user_id == admin_user.user_id:
+    if user_id == admin_user.user_id:
         return resp_500(message="你不能禁用你自己的账号")
 
-    return UserManagementService.toggle_user_status(req.user_id, req.enable)
+    return UserManagementService.toggle_user_status(user_id, req.enable)

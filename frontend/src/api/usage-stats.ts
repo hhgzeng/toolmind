@@ -47,7 +47,7 @@ export interface ApiResponse<T> {
 // 获取Token使用量统计
 export function getUsageStatsAPI(data: UsageStatsRequest) {
   return request<ApiResponse<UsageDataByDate>>({
-    url: '/api/v1/usage',
+    url: '/api/v1/usage-stats/queries',
     method: 'POST',
     data
   })
@@ -56,7 +56,7 @@ export function getUsageStatsAPI(data: UsageStatsRequest) {
 // 获取调用次数统计
 export function getUsageCountAPI(data: UsageStatsRequest) {
   return request<ApiResponse<UsageCountByDate>>({
-    url: '/api/v1/usage_count',
+    url: '/api/v1/usage-stats/counts',
     method: 'POST',
     data
   })
@@ -65,7 +65,7 @@ export function getUsageCountAPI(data: UsageStatsRequest) {
 // 获取模型列表
 export function getUsageModelsAPI() {
   return request<ApiResponse<string[]>>({
-    url: '/api/v1/usage/models_list',
+    url: '/api/v1/usage-stats/models',
     method: 'GET'
   })
 }

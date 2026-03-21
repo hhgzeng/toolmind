@@ -42,15 +42,15 @@ export interface ApiResponse<T> {
 // 获取可见大模型
 export function getVisibleLLMsAPI() {
   return request<ApiResponse<Record<string, LLMResponse[]>>>({
-    url: '/api/v1/llm/visible',
-    method: 'POST'
+    url: '/api/v1/llms/visible',
+    method: 'GET'
   })
 }
 
 // 创建大模型
 export function createLLMAPI(data: CreateLLMRequest) {
   return request<ApiResponse<null>>({
-    url: '/api/v1/llm/create',
+    url: '/api/v1/llms',
     method: 'POST',
     data
   })
@@ -59,7 +59,7 @@ export function createLLMAPI(data: CreateLLMRequest) {
 // 更新大模型
 export function updateLLMAPI(data: UpdateLLMRequest) {
   return request<ApiResponse<null>>({
-    url: '/api/v1/llm/update',
+    url: `/api/v1/llms/${data.llm_id}`,
     method: 'PUT',
     data
   })
@@ -68,16 +68,15 @@ export function updateLLMAPI(data: UpdateLLMRequest) {
 // 删除大模型
 export function deleteLLMAPI(data: { llm_id: string }) {
   return request<ApiResponse<null>>({
-    url: '/api/v1/llm/delete',
-    method: 'DELETE',
-    data
+    url: `/api/v1/llms/${data.llm_id}`,
+    method: 'DELETE'
   })
 }
 
 // 获取 Agent 模型配置
 export function getAgentConfigAPI() {
   return request<ApiResponse<AgentModelConfig>>({
-    url: '/api/v1/agent_config',
+    url: '/api/v1/agent-config',
     method: 'get'
   })
 }
@@ -85,8 +84,8 @@ export function getAgentConfigAPI() {
 // 更新 Agent 模型配置
 export function updateAgentConfigAPI(data: AgentModelConfig) {
   return request<ApiResponse<AgentModelConfig>>({
-    url: '/api/v1/agent_config',
-    method: 'post',
+    url: '/api/v1/agent-config',
+    method: 'put',
     data
   })
 }

@@ -15,7 +15,7 @@ class AgentConfigReq(BaseModel):
     reasoning_model_id: Optional[str] = None
 
 
-@router.get("/agent_config", summary="获取用户的 Agent 模型配置")
+@router.get("/agent-config", summary="获取用户的 Agent 模型配置")
 async def get_agent_config(login_user: UserPayload = Depends(get_login_user)):
     try:
         config = await AgentConfigDao.get_config_by_user_id(login_user.user_id)
@@ -26,7 +26,7 @@ async def get_agent_config(login_user: UserPayload = Depends(get_login_user)):
         return resp_500(message=str(e))
 
 
-@router.post("/agent_config", summary="更新用户的 Agent 模型配置")
+@router.put("/agent-config", summary="更新用户的 Agent 模型配置")
 async def update_agent_config(
     req: AgentConfigReq, login_user: UserPayload = Depends(get_login_user)
 ):

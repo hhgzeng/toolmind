@@ -14,7 +14,7 @@ from toolmind.utils.convert import convert_mcp_config
 router = APIRouter(tags=["MCP-Server"])
 
 
-@router.post("/mcp_server")
+@router.post("/mcp-servers")
 async def create_mcp_server(
     config: dict = Body(..., description="MCP Server的JSON配置", embed=True),
     login_user: UserPayload = Depends(get_login_user),
@@ -65,7 +65,7 @@ async def create_mcp_server(
         return resp_500(message=str(err))
 
 
-@router.get("/mcp_server")
+@router.get("/mcp-servers")
 async def get_mcp_servers(login_user: UserPayload = Depends(get_login_user)):
     try:
         mcp_servers = await MCPService.get_all_servers(login_user.user_id)
@@ -75,9 +75,9 @@ async def get_mcp_servers(login_user: UserPayload = Depends(get_login_user)):
         return resp_500(message=str(err))
 
 
-@router.delete("/mcp_server")
+@router.delete("/mcp-servers/{server_id}")
 async def delete_mcp_server(
-    server_id: str = Body(..., description="MCP Server 的ID", embed=True),
+    server_id: str,
     login_user: UserPayload = Depends(get_login_user),
 ):
     try:
@@ -91,9 +91,9 @@ async def delete_mcp_server(
         return resp_500(message=str(err))
 
 
-@router.get("/mcp_tools")
+@router.get("/mcp-servers/{server_id}/tools")
 async def get_mcp_tools(
-    server_id: str = Body(..., description="MCP Server 的ID", embed=True),
+    server_id: str,
     login_user: UserPayload = Depends(get_login_user),
 ):
     try:
@@ -107,9 +107,9 @@ async def get_mcp_tools(
         return resp_500(message=str(err))
 
 
-@router.put("/mcp_server")
+@router.put("/mcp-servers/{server_id}")
 async def update_mcp_server(
-    server_id: str = Body(..., description="MCP Server 的ID"),
+    server_id: str,
     config: dict = Body(None, description="MCP Server的JSON配置"),
     is_active: bool = Body(None, description="连接状态"),
     tools: list[str] | None = Body(

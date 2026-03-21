@@ -47,7 +47,7 @@ export interface MCPServerSingleResponse {
 // 创建MCP服务器
 export const createMCPServerAPI = (data: CreateMCPServerRequest) => {
   return request<MCPServerSingleResponse>({
-    url: '/api/v1/mcp_server',
+    url: '/api/v1/mcp-servers',
     method: 'POST',
     data
   })
@@ -56,7 +56,7 @@ export const createMCPServerAPI = (data: CreateMCPServerRequest) => {
 // 获取MCP服务器列表
 export const getMCPServersAPI = () => {
   return request<MCPServerResponse>({
-    url: '/api/v1/mcp_server',
+    url: '/api/v1/mcp-servers',
     method: 'GET'
   })
 }
@@ -64,17 +64,17 @@ export const getMCPServersAPI = () => {
 // 删除MCP服务器
 export const deleteMCPServerAPI = (server_id: string) => {
   return request<MCPServerSingleResponse>({
-    url: '/api/v1/mcp_server',
-    method: 'DELETE',
-    data: { server_id }
+    url: `/api/v1/mcp-servers/${server_id}`,
+    method: 'DELETE'
   })
 }
 
 // 更新MCP服务器
 export const updateMCPServerAPI = (data: { server_id: string; config?: any; is_active?: boolean; tools?: string[] }) => {
+  const { server_id, ...rest } = data;
   return request<MCPServerSingleResponse>({
-    url: '/api/v1/mcp_server',
+    url: `/api/v1/mcp-servers/${server_id}`,
     method: 'PUT',
-    data
+    data: rest
   })
 }
