@@ -26,7 +26,7 @@ from langchain_openai.chat_models.base import WellKnownTools
 from openai import AsyncOpenAI, OpenAI
 from pydantic import Field, PrivateAttr, SecretStr
 from toolmind.api.services.usage_stats import UsageStatsService
-from toolmind.utils.contexts import get_agent_name_context, get_user_id_context
+from toolmind.utils.contexts import get_user_id_context
 from toolmind.utils.convert import convert_langchain_tool_calls
 
 
@@ -42,7 +42,6 @@ class ChatModelWithTokenUsage(BaseChatModel):
 
     # 用户私有配置
     user_id: Optional[str] = Field(default=None)
-    agent_name: Optional[str] = Field(default=None)
 
     # 私有属性用于存储状态
     _client: Optional[OpenAI] = PrivateAttr(default=None)
@@ -310,15 +309,11 @@ class ChatModelWithTokenUsage(BaseChatModel):
 
     def _record_token_usage(self, usage: Any):
         """记录 token 使用（从 usage 对象）"""
-        self.agent_name = (
-            self.agent_name if self.agent_name else get_agent_name_context()
-        )
         self.user_id = self.user_id if self.user_id else get_user_id_context()
 
         if usage and self.user_id:
             record = {
                 "model": self.model_name,
-                "agent": self.agent_name,
                 "user_id": self.user_id,
                 "input_tokens": usage.prompt_tokens,
                 "output_tokens": usage.completion_tokens,
@@ -327,15 +322,11 @@ class ChatModelWithTokenUsage(BaseChatModel):
 
     def _record_token_usage_dict(self, input_tokens: int, output_tokens: int):
         """记录 token 使用（从原始数值）"""
-        self.agent_name = (
-            self.agent_name if self.agent_name else get_agent_name_context()
-        )
         self.user_id = self.user_id if self.user_id else get_user_id_context()
 
         if self.user_id:
             record = {
                 "model": self.model_name,
-                "agent": self.agent_name,
                 "user_id": self.user_id,
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,

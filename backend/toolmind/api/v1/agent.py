@@ -5,8 +5,7 @@ from starlette.responses import StreamingResponse
 from toolmind.api.services.user import UserPayload, get_login_user
 from toolmind.core.agents import Agent
 from toolmind.schema.agent import AgentTask
-from toolmind.schema.usage_stats import UsageStatsAgentType
-from toolmind.utils.contexts import set_agent_name_context, set_user_id_context
+from toolmind.utils.contexts import set_user_id_context
 
 router = APIRouter(tags=["Agent"])
 
@@ -17,7 +16,6 @@ async def submit_agent_task(
 ):
     # 设置全局变量统计调用
     set_user_id_context(login_user.user_id)
-    set_agent_name_context(UsageStatsAgentType.agent)
 
     agent_instance = Agent(login_user.user_id)
 

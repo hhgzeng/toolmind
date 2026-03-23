@@ -38,12 +38,11 @@ class UsageStatsService:
     async def get_usage_by_agent_model(
         cls,
         user_id: str,
-        agent: Optional[str] = None,
         model: Optional[str] = None,
         delta_days: int = 10000,  # 默认值可视为所有数据
     ):
         results = await UsageStatsDao.get_agent_model_time_usage(
-            user_id, agent, model, delta_days
+            user_id, model, delta_days
         )
         # 按日期升序排序
         results.sort(
@@ -52,7 +51,7 @@ class UsageStatsService:
 
         # 初始化嵌套字典（默认结构：日期→{"agent": {}, "model": {}}）
         date_usage_dict: DefaultDict[str, Dict[str, Dict]] = defaultdict(
-            lambda: {"agent": defaultdict(dict), "model": defaultdict(dict)}
+            lambda: {"model": defaultdict(dict)}
         )
 
         # 遍历数据，填充字典
@@ -89,12 +88,11 @@ class UsageStatsService:
     async def get_usage_count_by_agent_model(
         cls,
         user_id: str,
-        agent: Optional[str] = None,
         model: Optional[str] = None,
         delta_days: int = 10000,  # 默认值可视为所有数据
     ):
         results = await UsageStatsDao.get_agent_model_time_usage(
-            user_id, agent, model, delta_days
+            user_id, model, delta_days
         )
         # 按日期升序排序
         results.sort(
@@ -103,7 +101,7 @@ class UsageStatsService:
 
         # 初始化嵌套字典（默认结构：日期→{"agent": {}, "model": {}}）
         date_usage_dict: DefaultDict[str, Dict[str, Dict]] = defaultdict(
-            lambda: {"agent": defaultdict(int), "model": defaultdict(int)}
+            lambda: {"model": defaultdict(int)}
         )
 
         # 遍历数据，填充字典

@@ -3,7 +3,6 @@ import os
 import re
 from datetime import datetime, timedelta, timezone
 
-import requests
 from loguru import logger
 
 
