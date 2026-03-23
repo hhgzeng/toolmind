@@ -13,7 +13,6 @@ from toolmind.core.callbacks import usage_metadata_callback
 from toolmind.core.models.manager import ModelManager
 from toolmind.prompts.agent import FixJsonPrompt, GenerateTaskPrompt
 from toolmind.schema.agent import AgentTaskStep
-from toolmind.utils.date_utils import get_beijing_time
 from toolmind.utils.json_utils import extract_and_parse_json
 
 
@@ -35,7 +34,6 @@ class Planner:
         tools_str = json.dumps(tools_summary, ensure_ascii=False, indent=2)
 
         agent_task_prompt = GenerateTaskPrompt.format(
-            current_time=get_beijing_time(),
             tools_str=tools_str,
             query=state["query"],
         )

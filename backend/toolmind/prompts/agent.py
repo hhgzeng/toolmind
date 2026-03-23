@@ -57,10 +57,6 @@ GenerateTaskPrompt = """<背景>
 ```
 </输出格式>
 
-<标准信息>
-当前时间：{current_time}
-</标准信息>
-
 <用户问题>
 {query}
 </用户问题>

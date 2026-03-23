@@ -32,18 +32,7 @@ def init_dir(path):
         logger.error(f"create dir appear: {err}")
 
 
-def get_now_beijing_time(delta: int = 0):
 
-    # 设置北京时间时区（东八区）
-    beijing_tz = timezone(timedelta(hours=8 + delta))
-
-    # 获取当前时间
-    now = datetime.now(beijing_tz)
-
-    # 格式化输出到分钟
-    current_time = now.strftime("%Y-%m-%d %H:%M")
-
-    return current_time
 
 
 def check_input(user_input):
