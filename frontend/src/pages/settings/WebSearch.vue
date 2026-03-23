@@ -67,7 +67,6 @@ onMounted(() => {
         <div class="section-title-main">
           <div>
             <h3>Tavily API Key</h3>
-            <p>请填入 Tavily API Key，以支持联网搜索功能。</p>
           </div>
           <div class="switch-wrapper" style="min-height: 32px;">
             <el-switch v-if="!loading" v-model="websearch.enabled" active-text="开启" inactive-text="关闭"

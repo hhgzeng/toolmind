@@ -1,14 +1,7 @@
 from toolmind.database.dao.mcp_server import MCPServerDao
-from toolmind.database.dao.user_role import UserRoleDao
-from toolmind.database.models.role import AdminRole
 
 
 class MCPService:
-
-    @classmethod
-    def _is_admin(cls, user_id: str) -> bool:
-        roles = UserRoleDao.get_user_roles(user_id)
-        return any(one.role_id == AdminRole for one in roles)
 
     @classmethod
     async def create_mcp_server(
@@ -97,7 +90,7 @@ class MCPService:
     async def verify_user_permission(cls, server_id, user_id, action: str = "update"):
         mcp_server = await MCPServerDao.get_mcp_server_from_id(server_id)
         if mcp_server:
-            if user_id != mcp_server.user_id and not cls._is_admin(user_id):
+            if user_id != mcp_server.user_id:
                 raise ValueError(f"没有权限访问")
         else:
             raise ValueError(f"服务不存在")
@@ -105,12 +98,7 @@ class MCPService:
     @classmethod
     async def get_all_servers(cls, user_id):
         try:
-            # 管理员可看见所有用户的MCP Server
-            if cls._is_admin(user_id):
-                all_servers = await MCPServerDao.get_all_mcp_servers()
-            else:
-                # 当前系统无共享 MCP Server：普通用户只看自己的
-                all_servers = await MCPServerDao.get_mcp_servers_from_user(user_id)
+            all_servers = await MCPServerDao.get_mcp_servers_from_user(user_id)
             all_servers = [server.to_dict() for server in all_servers]
             return all_servers
         except Exception as err:

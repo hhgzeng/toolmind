@@ -66,7 +66,7 @@ watch(
                 <el-icon>
                   <Operation />
                 </el-icon>
-                <span>模型配置</span>
+                <span>智能体配置</span>
               </template>
             </el-menu-item>
             <el-menu-item index="search" @click="goCurrent('search')">

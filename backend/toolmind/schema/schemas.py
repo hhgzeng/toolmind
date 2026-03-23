@@ -12,7 +12,6 @@ class CreateUserReq(BaseModel):
     password: str = Field(description="创建用户时的密码")
 
 
-
 class UpdateUserRoleReq(BaseModel):
     role: str = Field(description="角色分配（admin 或 user）")
 

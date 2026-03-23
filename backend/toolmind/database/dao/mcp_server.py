@@ -1,4 +1,4 @@
-from sqlmodel import Session, and_, delete, desc, func, or_, select, update
+from sqlmodel import and_, delete, func, select, update
 from toolmind.database.models.mcp_server import MCPServerTable
 from toolmind.database.session import session_getter
 
@@ -117,13 +117,6 @@ class MCPServerDao:
     async def get_mcp_servers_from_user(cls, user_id):
         with session_getter() as session:
             sql = select(MCPServerTable).where(MCPServerTable.user_id == user_id)
-            results = session.exec(sql)
-            return results.all()
-
-    @classmethod
-    async def get_all_mcp_servers(cls):
-        with session_getter() as session:
-            sql = select(MCPServerTable)
             results = session.exec(sql)
             return results.all()
 

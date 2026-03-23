@@ -85,14 +85,13 @@ onMounted(() => {
         <el-icon class="page-icon">
           <Operation />
         </el-icon>
-        模型配置
+        智能体配置
       </h2>
     </div>
 
     <div class="agent-config-section">
       <div class="section-title">
-        <h3>Agent 核心模型配置</h3>
-        <p>为 Agent 的不同功能组件配置专属的 AI 模型</p>
+        <h3>ToolMind 智能体模型配置</h3>
       </div>
 
       <div class="config-grid">
@@ -103,7 +102,7 @@ onMounted(() => {
             </el-icon>
           </div>
           <div class="config-info">
-            <h4>对话与任务生成模型</h4>
+            <h4>任务对话智能体</h4>
             <p>负责理解用户意图并规划任务执行路径</p>
           </div>
           <el-select v-model="agentConfig.conversation_model_id" placeholder="请选择会话模型" class="model-select" clearable
@@ -121,7 +120,7 @@ onMounted(() => {
             </el-icon>
           </div>
           <div class="config-info">
-            <h4>工具调用模型</h4>
+            <h4>工具调用智能体</h4>
             <p>负责执行 MCP 协议和外部工具调用</p>
           </div>
           <el-select v-model="agentConfig.tool_call_model_id" placeholder="请选择工具模型" class="model-select" clearable
@@ -139,7 +138,7 @@ onMounted(() => {
             </el-icon>
           </div>
           <div class="config-info">
-            <h4>结果推理与评估模型</h4>
+            <h4>结果评估智能体</h4>
             <p>对任务执行的最终结果进行自我验证和评估</p>
           </div>
           <el-select v-model="agentConfig.reasoning_model_id" placeholder="请选择评估模型" class="model-select" clearable

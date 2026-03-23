@@ -1,8 +1,4 @@
-"""Session management for MCP (SSE only).
-
-这个项目当前只支持通过 SSE 连接 MCP Server（与前端 MCP Server 配置页面一致）。
-如果未来需要支持 stdio/websocket/streamable_http，可在这里再扩展。
-"""
+"""Session management for MCP (SSE only)."""
 
 from __future__ import annotations
 
