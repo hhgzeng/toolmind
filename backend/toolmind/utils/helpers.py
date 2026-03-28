@@ -13,10 +13,6 @@ def fix_json_text(text: str):
     return text.replace("'", '"')
 
 
-def get_cache_key(client_id, chat_id):
-    return f"{client_id}_{chat_id}"
-
-
 def check_or_create(path):
     if os.path.exists(path):
         pass
@@ -30,9 +26,6 @@ def init_dir(path):
             os.makedirs(path)
     except Exception as err:
         logger.error(f"create dir appear: {err}")
-
-
-
 
 
 def check_input(user_input):

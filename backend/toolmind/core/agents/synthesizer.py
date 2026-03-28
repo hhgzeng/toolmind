@@ -53,4 +53,5 @@ class Synthesizer:
                 }
             )
 
+        events.append({"event": "evaluating_result", "data": {}})
         return {"final_response": final_response, "events": events}

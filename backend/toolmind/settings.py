@@ -1,17 +1,13 @@
 import yaml
 from loguru import logger
-from pydantic.v1 import BaseSettings, Field
+from pydantic.v1 import BaseSettings
 
 
 class Settings(BaseSettings):
-    aliyun_oss: dict = {}
     redis: dict = {}
     mysql: dict = {}
     server: dict = {}
-    langfuse: dict = {}
     whitelist_paths: list = []
-    wechat_config: dict = {}
-    default_config: dict = {}
 
 
 app_settings = Settings()

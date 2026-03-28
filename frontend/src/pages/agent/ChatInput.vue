@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { nextTick, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const route = useRoute()
 const inputMessage = ref('')
-const selectedMcpServers = ref<string[]>([])
-const webSearchEnabled = ref(true)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const isGenerating = ref(false)  // 是否正在生成回复
 
@@ -42,7 +39,6 @@ const handleSend = async () => {
   // 直接跳转到任务流程图页面（三列布局）
   console.log('跳转到灵寻任务页面')
   console.log('query:', query)
-  console.log('webSearch:', webSearchEnabled.value)
 
   // 立即清空输入框
   inputMessage.value = ''
@@ -51,9 +47,7 @@ const handleSend = async () => {
   router.push({
     name: 'Sessions',
     query: {
-      query: query,
-      webSearch: webSearchEnabled.value.toString(),
-      mcp_servers: JSON.stringify(selectedMcpServers.value)
+      query: query
     }
   })
 }

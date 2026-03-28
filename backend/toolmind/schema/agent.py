@@ -5,8 +5,6 @@ from pydantic import BaseModel
 
 class AgentTask(BaseModel):
     query: str
-    web_search: bool = True
-    mcp_servers: List[str] = []
 
 
 class AgentTaskStep(BaseModel):

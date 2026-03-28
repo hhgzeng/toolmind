@@ -6,8 +6,6 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 export const startAgentTaskAPI = async (
   data: {
     query: string
-    web_search?: boolean
-    mcp_servers?: string[]
   },
   onMessage: (data: any) => void,
   onTaskGraph?: (graph: any) => void,  // 处理任务图数据

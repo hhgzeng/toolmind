@@ -20,8 +20,6 @@ class AgentState(TypedDict, total=False):
 
     # ── 输入（不变） ──
     query: str
-    mcp_servers: List[str]
-    web_search: bool
     user_id: str
 
     # ── 规划结果 ──

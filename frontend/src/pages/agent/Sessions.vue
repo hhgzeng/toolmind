@@ -288,18 +288,14 @@ const userQuery = ref('')
 // 保存任务参数
 const taskParams = ref({
   query: '',
-  web_search: false,
-  plugins: [] as string[],
-  mcp_servers: [] as string[],
+  plugins: [] as string[]
 })
 
 // 保存原始参数（用于重新生成）
 const originalParams = ref({
   query: '',
   tools: [] as string[],
-  web_search: false,
-  plugins: [] as string[],
-  mcp_servers: [] as string[],
+  plugins: [] as string[]
 })
 
 // 获取当前选中节点的详情
@@ -360,25 +356,19 @@ onMounted(async () => {
 
     // 保存参数
     originalParams.value.query = route.query.query as string || ''
-    originalParams.value.web_search = route.query.webSearch === 'true'
 
     const tools = route.query.tools as string
     originalParams.value.tools = tools ? JSON.parse(tools) : []
     originalParams.value.plugins = originalParams.value.tools
-    const mcpQuery = route.query.mcp_servers as string
-    originalParams.value.mcp_servers = mcpQuery ? JSON.parse(mcpQuery) : []
 
     taskParams.value.query = originalParams.value.query
-    taskParams.value.web_search = originalParams.value.web_search
     taskParams.value.plugins = originalParams.value.plugins
-    taskParams.value.mcp_servers = originalParams.value.mcp_servers
 
     // 保存用户问题用于显示
     userQuery.value = originalParams.value.query
 
     console.log('✅ 用户问题:', originalParams.value.query)
     console.log('✅ 选中工具:', originalParams.value.tools)
-    console.log('✅ 联网搜索:', originalParams.value.web_search)
 
     // 清理 URL 参数（保留功能，隐藏参数）
     router.replace({ path: '/sessions' })

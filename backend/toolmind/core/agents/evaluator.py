@@ -35,10 +35,7 @@ class Evaluator:
             HumanMessage(content=eval_prompt),
         ]
 
-        # 利用工具缓存，不重复获取
-        tools = await self.tool_manager.obtain_tools(
-            state["mcp_servers"], state.get("web_search", True)
-        )
+        tools = await self.tool_manager.obtain_tools()
         model = await ModelManager.get_reasoning_model(user_id=self.user_id)
         eval_model = model.bind_tools(tools) if len(tools) else model
 
@@ -68,5 +65,5 @@ class Evaluator:
         return {
             "eval_score": score,
             "eval_reasoning": reasoning,
-            "events": [{"event": "evaluating_result", "data": {}}],
+            "events": [],
         }

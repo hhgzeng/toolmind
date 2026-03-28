@@ -7,6 +7,7 @@
 import json
 from typing import List
 
+from loguru import logger
 from toolmind.core.agents.state import AgentState
 from toolmind.core.agents.tool_manager import ToolManager
 from toolmind.core.callbacks import usage_metadata_callback
@@ -25,12 +26,14 @@ class Planner:
 
     async def __call__(self, state: AgentState) -> dict:
         """LangGraph 节点函数：执行规划，返回状态更新"""
-        # 确保工具已加载（利用缓存，不会重复获取）
-        await self.tool_manager.obtain_tools(
-            state["mcp_servers"], state.get("web_search", True)
-        )
+        await self.tool_manager.obtain_tools()
         # 只传精简的工具摘要给 Planner prompt，大幅减少 token
         tools_summary = self.tool_manager.get_tools_summary()
+        # [DEBUG] 打印可用工具信息
+        logger.info(f"Available tools for Planner ({len(tools_summary)}):")
+        for t in tools_summary:
+            logger.info(f"  - {t.get('name')}: {t.get('description')}")
+        
         tools_str = json.dumps(tools_summary, ensure_ascii=False, indent=2)
 
         agent_task_prompt = GenerateTaskPrompt.format(

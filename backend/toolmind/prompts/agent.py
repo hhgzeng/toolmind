@@ -89,6 +89,9 @@ ToolCallPrompt = """
 - 前置步骤上下文：{step_context}
 - 当前子任务规划：{step_info}
 
+## 可用工具
+{tools_str}
+
 ## 用户原始问题
 {user_query}
 """

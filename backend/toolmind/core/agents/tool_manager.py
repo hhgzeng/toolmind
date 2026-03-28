@@ -1,7 +1,7 @@
 """
 工具管理模块
 
-负责 MCP 工具和内置工具（web_search）的获取、缓存和执行。
+负责 MCP 工具和内置工具（web_search）的获取和执行。
 """
 
 import asyncio
@@ -25,18 +25,12 @@ class ToolManager:
         self.mcp_manager: Optional[MCPManager] = None
         self.mcp_tools = []
         self.tool_mcp_server_dict = {}
-        # —— 工具列表缓存 ——
-        self._cached_tools: Optional[list] = None
-        self._cached_tools_key: Optional[tuple] = None
-        # —— web search 配置缓存 ——
-        self._web_search_config_cached = False
+        self.tools = []
         self._web_search_enabled: bool = True
         self._web_search_api_key: Optional[str] = None
 
     async def _ensure_web_search_config(self):
-        """查询并缓存 web search 配置（整个生命周期只查一次 DB）"""
-        if self._web_search_config_cached:
-            return
+        """查询 web search 配置"""
         from toolmind.database.dao.web_search import WebSearchConfigDao
 
         user_config = await WebSearchConfigDao.get_config_by_user_id(self.user_id)
@@ -46,41 +40,32 @@ class ToolManager:
         else:
             self._web_search_enabled = True
             self._web_search_api_key = None
-        self._web_search_config_cached = True
 
-    async def obtain_tools(
-        self, mcp_servers: List[str], enable_web_search: bool = False
-    ) -> list:
-        """获取可用工具列表（MCP + web_search），带实例级缓存"""
-        cache_key = (tuple(sorted(mcp_servers)), enable_web_search)
-        if self._cached_tools is not None and self._cached_tools_key == cache_key:
-            return self._cached_tools
-
+    async def obtain_tools(self) -> list:
+        """获取可用工具列表（MCP + web_search）"""
         tools = []
 
         # 内置搜索工具
         await self._ensure_web_search_config()
-        if enable_web_search and self._web_search_enabled:
+        if self._web_search_enabled:
             tools.append(convert_to_openai_tool(web_search))
 
-        # MCP 工具
-        mcp_tools = await self._get_mcp_tools(mcp_servers)
+        mcp_tools = await self._get_mcp_tools()
         mcp_tools = [
             mcp_tool_to_args_schema(tool.name, tool.description, tool.args_schema)
             for tool in mcp_tools
         ]
         tools.extend(mcp_tools)
 
-        self._cached_tools = tools
-        self._cached_tools_key = cache_key
+        self.tools = tools
         return tools
 
     def get_tools_summary(self) -> list[dict]:
         """返回工具的精简摘要（仅 name + description），供 Planner prompt 使用"""
-        if not self._cached_tools:
+        if not self.tools:
             return []
         summary = []
-        for tool in self._cached_tools:
+        for tool in self.tools:
             func = tool.get("function", tool)
             summary.append(
                 {
@@ -90,13 +75,20 @@ class ToolManager:
             )
         return summary
 
-    async def _get_mcp_tools(self, mcp_servers: List[str]):
-        """获取并缓存 MCP 工具"""
-        if self.mcp_tools:
-            return self.mcp_tools
-
+    async def _get_mcp_tools(self):
+        """获取 MCP 工具"""
+        self.tool_mcp_server_dict = {}
         servers_config = []
         enabled_tools = set()
+
+        # 获取当前用户所有已开启（is_active=True）的服务
+        all_servers = await MCPService.get_all_servers(self.user_id)
+        mcp_servers = [
+            server["mcp_server_id"]
+            for server in all_servers
+            if server.get("is_active")
+        ]
+
         # 批量获取 MCP 配置，记录到 dict 中避免后续重复查询
         mcp_configs: dict[str, MCPConfig] = {}
         for mcp_id in mcp_servers:
@@ -120,7 +112,7 @@ class ToolManager:
             ]
         else:
             filtered_tools = all_mcp_tools
-            # 使用已缓存的 mcp_configs，不再重复查 DB
+            # 使用已查询的 mcp_configs，不再重复查 DB
             for mcp_id, mcp_config in mcp_configs.items():
                 for tool in filtered_tools:
                     self.tool_mcp_server_dict.setdefault(

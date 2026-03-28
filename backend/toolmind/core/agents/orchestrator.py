@@ -74,7 +74,20 @@ def _build_graph(user_id: str, tool_manager: ToolManager):
     graph.add_edge(START, "increment_loop")
     graph.add_edge("increment_loop", "planner")
     graph.add_edge("planner", "executor")
-    graph.add_edge("executor", "synthesizer")
+    
+    def _should_continue_executing(state: AgentState) -> str:
+        """条件边：决定是否继续执行下一个子任务"""
+        steps = state.get("steps", [])
+        context_task = state.get("context_task", [])
+        if len(context_task) < len(steps):
+            return "executor"
+        return "synthesizer"
+
+    graph.add_conditional_edges(
+        "executor",
+        _should_continue_executing,
+        {"executor": "executor", "synthesizer": "synthesizer"},
+    )
     graph.add_edge("synthesizer", "evaluator")
 
     graph.add_conditional_edges(
@@ -123,8 +136,6 @@ class Agent:
         # ── 初始化状态 ──
         initial_state: AgentState = {
             "query": agent_task.query,
-            "mcp_servers": agent_task.mcp_servers,
-            "web_search": agent_task.web_search,
             "user_id": self.user_id,
             "steps": [],
             "tasks_show": [],
@@ -155,37 +166,40 @@ class Agent:
                 # 合并状态以获取最终结果
                 final_state = {**final_state, **state_update}
 
+                # ── 在每一轮评估结束后，保存当前轮次的对话 ──
+                if node_name == "evaluator":
+                    score = final_state.get("eval_score", 0)
+                    reasoning = final_state.get("eval_reasoning", "")
+                    loop_count = final_state.get("loop_count", 0)
+                    max_loop = final_state.get("max_loop", 3)
+
+                    if score >= 80:
+                        feedback_msg = (
+                            f"\n\n\n> **✅ 自我反馈通过** (匹配度: {score}/100)\n"
+                            f"> **理由**: {reasoning}\n\n---\n\n"
+                        )
+                    else:
+                        feedback_msg = (
+                            f"\n\n\n> **⚠️ 自我反馈未通过** (匹配度: {score}/100)\n"
+                            f"> **理由**: {reasoning}\n\n---\n\n"
+                        )
+
+                    yield {"event": "task_result", "data": {"message": feedback_msg}}
+
+                    # ── 持久化当前轮次的会话 ──
+                    final_response = final_state.get("final_response", "")
+                    await SessionService.update_session_contexts(
+                        session_model.session_id,
+                        SessionContext(
+                            query=agent_task.query,
+                            task=final_state.get("context_task", []),
+                            task_graph=final_state.get("tasks_show", []),
+                            answer=final_response + feedback_msg,
+                        ).model_dump(),
+                    )
+
         total_elapsed = time.monotonic() - task_start
         logger.info(f"[Agent] Total pipeline completed in {total_elapsed:.2f}s")
-
-        # ── 生成反馈消息 ──
-        score = final_state.get("eval_score", 0)
-        reasoning = final_state.get("eval_reasoning", "")
-
-        if score >= 80:
-            feedback_msg = (
-                f"\n\n\n> **✅ 自我反馈通过** (匹配度: {score}/100)\n"
-                f"> **理由**: {reasoning}\n\n---\n\n"
-            )
-        else:
-            feedback_msg = (
-                f"\n\n\n> **⚠️ 自我反馈未通过，已达最大重试次数** (匹配度: {score}/100)\n"
-                f"> **理由**: {reasoning}\n\n---\n\n"
-            )
-
-        yield {"event": "task_result", "data": {"message": feedback_msg}}
-
-        # ── 持久化会话 ──
-        final_response = final_state.get("final_response", "")
-        await SessionService.update_session_contexts(
-            session_model.session_id,
-            SessionContext(
-                query=agent_task.query,
-                task=final_state.get("context_task", []),
-                task_graph=final_state.get("tasks_show", []),
-                answer=final_response + feedback_msg,
-            ).model_dump(),
-        )
 
         # ── 流式生成标题 ──
         async for event in self._stream_title(session_model, agent_task.query):
