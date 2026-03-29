@@ -5,10 +5,7 @@ LangGraph 编排器 — Agent 的核心入口
   increment_loop → Planner → Executor → Synthesizer → Evaluator → (条件边: 重跑 / 结束)
 """
 
-import time
-
 from langgraph.graph import END, START, StateGraph
-from loguru import logger
 from toolmind.api.services.session import SessionService
 from toolmind.core.agents.evaluator import Evaluator
 from toolmind.core.agents.executor import Executor
@@ -21,8 +18,6 @@ from toolmind.core.models.manager import ModelManager
 from toolmind.database.models.session import SessionContext, SessionCreate
 from toolmind.prompts.agent import GenerateTitlePrompt
 from toolmind.schema.agent import AgentTask
-
-# ── LangGraph 辅助节点 & 条件边 ──
 
 
 async def _increment_loop(state: AgentState) -> dict:
@@ -51,6 +46,15 @@ def _should_retry(state: AgentState) -> str:
     return "retry"
 
 
+def _should_continue_executing(state: AgentState) -> str:
+    """条件边：决定是否继续执行下一个子任务"""
+    steps = state.get("steps", [])
+    context_task = state.get("context_task", [])
+    if len(context_task) < len(steps):
+        return "executor"
+    return "synthesizer"
+
+
 def _build_graph(user_id: str, tool_manager: ToolManager):
     """构建并编译 LangGraph 状态机"""
 
@@ -69,19 +73,11 @@ def _build_graph(user_id: str, tool_manager: ToolManager):
     graph.add_node("evaluator", evaluator)
 
     # ── 注册边 ──
-    #   START → increment_loop → planner → executor → synthesizer → evaluator
-    #   evaluator →(条件)→ increment_loop（重跑）/ END（结束）
+    # START → increment_loop → planner → executor → synthesizer → evaluator
+    # evaluator → (条件) → increment_loop（重跑）/ END（结束）
     graph.add_edge(START, "increment_loop")
     graph.add_edge("increment_loop", "planner")
     graph.add_edge("planner", "executor")
-    
-    def _should_continue_executing(state: AgentState) -> str:
-        """条件边：决定是否继续执行下一个子任务"""
-        steps = state.get("steps", [])
-        context_task = state.get("context_task", [])
-        if len(context_task) < len(steps):
-            return "executor"
-        return "synthesizer"
 
     graph.add_conditional_edges(
         "executor",
@@ -113,7 +109,6 @@ class Agent:
 
     async def submit_agent_task(self, agent_task: AgentTask):
         """主入口：接收 AgentTask，驱动 LangGraph 状态机，yield SSE 事件"""
-        task_start = time.monotonic()
 
         # ── 创建会话 ──
         session_model = await SessionService.create_session(
@@ -149,16 +144,10 @@ class Agent:
             "events": [],
         }
 
-        # ── 运行 LangGraph 状态机（带节点级耗时日志）──
+        # ── 运行 LangGraph 状态机 ──
         final_state = initial_state
-        node_start = time.monotonic()
         async for update in self.graph.astream(initial_state, stream_mode="updates"):
             for node_name, state_update in update.items():
-                node_elapsed = time.monotonic() - node_start
-                logger.info(
-                    f"[Agent] Node '{node_name}' completed in {node_elapsed:.2f}s"
-                )
-                node_start = time.monotonic()
 
                 # 实时推送该节点产出的 SSE 事件
                 for sse_event in state_update.get("events", []):
@@ -170,8 +159,6 @@ class Agent:
                 if node_name == "evaluator":
                     score = final_state.get("eval_score", 0)
                     reasoning = final_state.get("eval_reasoning", "")
-                    loop_count = final_state.get("loop_count", 0)
-                    max_loop = final_state.get("max_loop", 3)
 
                     if score >= 80:
                         feedback_msg = (
@@ -197,9 +184,6 @@ class Agent:
                             answer=final_response + feedback_msg,
                         ).model_dump(),
                     )
-
-        total_elapsed = time.monotonic() - task_start
-        logger.info(f"[Agent] Total pipeline completed in {total_elapsed:.2f}s")
 
         # ── 流式生成标题 ──
         async for event in self._stream_title(session_model, agent_task.query):

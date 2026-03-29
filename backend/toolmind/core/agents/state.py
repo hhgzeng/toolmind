@@ -18,7 +18,7 @@ def _append_events(existing: List[dict], new: List[dict]) -> List[dict]:
 class AgentState(TypedDict, total=False):
     """LangGraph 状态机的共享状态"""
 
-    # ── 输入（不变） ──
+    # ── 输入 ──
     query: str
     user_id: str
 
