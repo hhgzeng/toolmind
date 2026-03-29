@@ -4,13 +4,13 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi_jwt_auth import AuthJWT
 from loguru import logger
 from toolmind.api.errcode.user import UserValidateError
+from toolmind.api.JWT import ACCESS_TOKEN_EXPIRE_TIME
 from toolmind.api.services.redis import redis_client
 from toolmind.api.services.user import UserService, get_user_jwt
 from toolmind.database.dao.user import UserDao
 from toolmind.database.models.user import AdminUser
 from toolmind.schema.schemas import UnifiedResponseModel, resp_200
 from toolmind.utils.constants import USER_CURRENT_SESSION
-from toolmind.api.JWT import ACCESS_TOKEN_EXPIRE_TIME
 
 router = APIRouter(tags=["User"])
 
@@ -87,11 +87,7 @@ async def get_user_info(user_id: str):
 
 from toolmind.api.services.user import UserPayload, get_login_user
 from toolmind.api.services.user_management import UserManagementService
-from toolmind.schema.schemas import (
-    ToggleUserStatusReq,
-    UpdateUserRoleReq,
-    resp_500,
-)
+from toolmind.schema.schemas import ToggleUserStatusReq, UpdateUserRoleReq, resp_500
 
 
 def require_admin(user: UserPayload = Depends(get_login_user)):
@@ -110,11 +106,11 @@ async def get_user_list(
     return resp_200(data)
 
 
-
-
 @router.put("/users/{user_id}/role", response_model=UnifiedResponseModel)
 async def update_user_role(
-    user_id: str, req: UpdateUserRoleReq, admin_user: UserPayload = Depends(require_admin)
+    user_id: str,
+    req: UpdateUserRoleReq,
+    admin_user: UserPayload = Depends(require_admin),
 ):
     """分配或取消管理员角色"""
     if admin_user.user_id != "1":
@@ -128,7 +124,9 @@ async def update_user_role(
 
 @router.patch("/users/{user_id}/status", response_model=UnifiedResponseModel)
 async def toggle_user_status(
-    user_id: str, req: ToggleUserStatusReq, admin_user: UserPayload = Depends(require_admin)
+    user_id: str,
+    req: ToggleUserStatusReq,
+    admin_user: UserPayload = Depends(require_admin),
 ):
     """启用或禁用应用层账号"""
     if user_id == admin_user.user_id:
@@ -142,6 +140,7 @@ async def toggle_user_status(
             return resp_500(message="普通管理员只能禁用普通用户的账号")
 
     return UserManagementService.toggle_user_status(user_id, req.enable)
+
 
 @router.post("/users/logout", response_model=UnifiedResponseModel)
 async def logout(Authorize: AuthJWT = Depends()):

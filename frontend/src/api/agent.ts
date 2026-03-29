@@ -1,4 +1,4 @@
-import { fetchEventSource } from '@microsoft/fetch-event-source'
+import { fetchEventSource } from '@microsoft/fetch-event-source';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
@@ -26,7 +26,7 @@ export const startAgentTaskAPI = async (
   const ctrl = externalAbortController || new AbortController()
 
   try {
-    await fetchEventSource(`${BASE_URL}/api/v1/agent/tasks`, {
+    await fetchEventSource(`${BASE_URL}/api/v1/sessions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

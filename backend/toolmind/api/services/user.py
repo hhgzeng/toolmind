@@ -6,6 +6,7 @@ import rsa
 from fastapi import Depends, HTTPException, Request
 from fastapi_jwt_auth import AuthJWT
 from toolmind.api.errcode.user import UserNameAlreadyExistError
+from toolmind.api.JWT import ACCESS_TOKEN_EXPIRE_TIME
 from toolmind.api.services.redis import redis_client
 from toolmind.database.dao.user import UserDao
 from toolmind.database.dao.user_role import UserRoleDao
@@ -14,7 +15,6 @@ from toolmind.database.models.user import AdminUser, UserTable
 from toolmind.schema.schemas import CreateUserReq
 from toolmind.utils.constants import RSA_KEY
 from toolmind.utils.hash import md5_hash
-from toolmind.api.JWT import ACCESS_TOKEN_EXPIRE_TIME
 
 
 class UserPayload:
@@ -95,17 +95,10 @@ class UserService:
         return user.user_id
 
 
-async def get_login_user(
-    request: Request, authorize: AuthJWT = Depends()
-) -> UserPayload:
+async def get_login_user(authorize: AuthJWT = Depends()) -> UserPayload:
     """
     获取当前登录的用户
     """
-    if request.state.is_whitelisted:
-        # 白名单路径：直接返回Admin
-        return UserPayload(user_id=AdminUser, user_name="Admin")
-
-    # 非白名单路径：执行 JWT 验证
     try:
         authorize.jwt_required()
         current_user = json.loads(authorize.get_jwt_subject())

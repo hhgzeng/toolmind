@@ -7,7 +7,6 @@ from fastapi_jwt_auth import AuthJWT
 from fastapi_jwt_auth.exceptions import AuthJWTException
 from pyfiglet import Figlet
 from toolmind.middleware.trace_id_middleware import TraceIDMiddleware
-from toolmind.middleware.white_list_middleware import WhitelistMiddleware
 from toolmind.settings import app_settings, initialize_app_settings
 
 
@@ -32,7 +31,6 @@ def register_middleware(app: FastAPI):
         allow_headers=["*"],
     )
     app.add_middleware(TraceIDMiddleware)
-    app.add_middleware(WhitelistMiddleware)
     return app
 
 

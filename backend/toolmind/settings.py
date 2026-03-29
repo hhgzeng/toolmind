@@ -7,7 +7,6 @@ class Settings(BaseSettings):
     redis: dict = {}
     mysql: dict = {}
     server: dict = {}
-    whitelist_paths: list = []
 
 
 app_settings = Settings()
