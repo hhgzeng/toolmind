@@ -5,7 +5,7 @@ import { computed, onMounted, ref } from 'vue'
 import {
   createLLMAPI,
   deleteLLMAPI,
-  getVisibleLLMsAPI,
+  listLLMsAPI,
   updateLLMAPI,
   type CreateLLMRequest,
   type LLMResponse,
@@ -49,7 +49,7 @@ const editForm = ref<UpdateLLMRequest>({
 const fetchModels = async () => {
   loading.value = true
   try {
-    const response = await getVisibleLLMsAPI()
+    const response = await listLLMsAPI()
 
     if (response.data.status_code === 200) {
       const data = response.data.data || {}

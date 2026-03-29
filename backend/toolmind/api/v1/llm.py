@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import APIRouter, Body, Depends
 from loguru import logger
 from toolmind.api.services.llm import LLMService
@@ -70,8 +68,8 @@ async def update_llm(
         return resp_500(message=str(err))
 
 
-@router.get("/llms/visible", response_model=UnifiedResponseModel)
-async def get_visible_llm(login_user: UserPayload = Depends(get_login_user)):
+@router.get("/llms", response_model=UnifiedResponseModel)
+async def list_llms(login_user: UserPayload = Depends(get_login_user)):
     try:
         result = await LLMService.get_visible_llm(user_id=login_user.user_id)
         return resp_200(data=result)

@@ -1,3 +1,15 @@
+:root.theme-dark,
+:root.theme-dark body {
+    background-color: #1c1c1e !important;
+    color-scheme: dark !important;
+}
+
+:root.theme-light,
+:root.theme-light body {
+    background-color: #ffffff !important;
+    color-scheme: light !important;
+}
+
 * {
     margin: 0;
     padding: 0;

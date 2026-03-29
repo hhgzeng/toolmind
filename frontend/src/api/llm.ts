@@ -39,10 +39,10 @@ export interface ApiResponse<T> {
   data: T
 }
 
-// 获取可见大模型
-export function getVisibleLLMsAPI() {
+// 获取大模型列表
+export function listLLMsAPI() {
   return request<ApiResponse<Record<string, LLMResponse[]>>>({
-    url: '/api/v1/llms/visible',
+    url: '/api/v1/llms',
     method: 'GET'
   })
 }
