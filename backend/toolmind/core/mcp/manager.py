@@ -8,8 +8,6 @@ from toolmind.schema.mcp import MCPBaseConfig
 
 logger = logging.getLogger(__name__)
 
-HIDE_FIELDS = ["server_name", "personal_config"]
-
 
 class MCPManager:
     def __init__(self, mcp_configs: List[MCPBaseConfig], timeout=10):
@@ -53,15 +51,7 @@ class MCPManager:
             return {}
 
     async def call_mcp_tools(self, tools_info: List[Dict[str, Any]]):
-        """
-        Asynchronously and concurrently call multiple MCP tools
-
-        Args:
-            tools_info: List of tool names, List of tool parameters, corresponding one-to-one with tool_names
-
-        Returns:
-            list: List of tool execution results
-        """
+        """异步并发调用多个 MCP 工具"""
         # Get tool list
         tools = await self.get_mcp_tools()
         tool_dict = {tool.name: tool for tool in tools}
@@ -74,26 +64,17 @@ class MCPManager:
 
             tool = tool_dict[tool_name]
             try:
-                # Create async task
                 if asyncio.iscoroutinefunction(tool.coroutine):
                     result = await tool.coroutine(**args)
                 else:
-                    # Execute all tasks concurrently
                     result = await asyncio.to_thread(tool.coroutine, **args)
                 return result
             except Exception as e:
                 logger.error(f"Error executing tool: {e}")
                 return f"Error executing tool {tool_name}: {e}"
 
-        # Create task list
-        tasks = []
-        for tool in tools_info:
-            tool_name = tool.get("tool_name")
-            tool_args = tool.get("tool_args")
-            task = execute_tool(tool_name, tool_args)
-            tasks.append(task)
-
-        # Execute all tasks concurrently
+        # 构造并执行并发任务
+        tasks = [execute_tool(t.get("tool_name"), t.get("tool_args")) for t in tools_info]
         try:
             tool_results = await asyncio.gather(*tasks, return_exceptions=True)
             for i, result in enumerate(tool_results):

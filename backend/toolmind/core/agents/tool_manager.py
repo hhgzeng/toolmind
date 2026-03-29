@@ -1,7 +1,5 @@
 """
-工具管理模块
-
-负责 MCP 工具和内置工具（web_search）的获取和执行。
+工具管理：负责 MCP 与内置工具的获取与调度执行
 """
 
 import asyncio
@@ -18,7 +16,7 @@ from toolmind.utils.convert import convert_mcp_config, mcp_tool_to_args_schema
 
 
 class ToolManager:
-    """管理 MCP 工具和内置工具的获取与执行"""
+    """工具管理器"""
 
     def __init__(self, user_id: str):
         self.user_id = user_id
@@ -30,7 +28,7 @@ class ToolManager:
         self._web_search_api_key: Optional[str] = None
 
     async def _ensure_web_search_config(self):
-        """查询 web search 配置"""
+        """获取并同步 Web 搜索配置"""
         from toolmind.database.dao.web_search import WebSearchConfigDao
 
         user_config = await WebSearchConfigDao.get_config_by_user_id(self.user_id)
@@ -42,7 +40,7 @@ class ToolManager:
             self._web_search_api_key = None
 
     async def obtain_tools(self) -> list:
-        """获取可用工具列表（MCP + web_search）"""
+        """汇总所有可用工具（内置 + MCP）"""
         tools = []
 
         # 内置搜索工具
@@ -61,7 +59,7 @@ class ToolManager:
         return tools
 
     def get_tools_summary(self) -> list[dict]:
-        """返回工具的精简摘要（仅 name + description），供 Planner prompt 使用"""
+        """提取工具摘要给 Planner（仅 name/description）"""
         if not self.tools:
             return []
         summary = []
@@ -76,12 +74,11 @@ class ToolManager:
         return summary
 
     async def _get_mcp_tools(self):
-        """获取 MCP 工具"""
+        """从 MCP 服务中加载工具"""
         self.tool_mcp_server_dict = {}
         servers_config = []
         enabled_tools = set()
 
-        # 获取当前用户所有已开启（is_active=True）的服务
         all_servers = await MCPService.get_all_servers(self.user_id)
         mcp_servers = [
             server["mcp_server_id"]
@@ -89,7 +86,6 @@ class ToolManager:
             if server.get("is_active")
         ]
 
-        # 批量获取 MCP 配置，记录到 dict 中避免后续重复查询
         mcp_configs: dict[str, MCPConfig] = {}
         for mcp_id in mcp_servers:
             mcp_server = await MCPService.get_mcp_server_from_id(mcp_id)
@@ -112,7 +108,6 @@ class ToolManager:
             ]
         else:
             filtered_tools = all_mcp_tools
-            # 使用已查询的 mcp_configs，不再重复查 DB
             for mcp_id, mcp_config in mcp_configs.items():
                 for tool in filtered_tools:
                     self.tool_mcp_server_dict.setdefault(
@@ -123,7 +118,7 @@ class ToolManager:
         return filtered_tools
 
     async def process_tool_result(self, tool_name: str, tool_args: dict) -> str:
-        """执行单个工具调用并返回文本结果"""
+        """调用工具并统一返回文本结果"""
 
         def find_mcp_tool(name):
             for tool in self.mcp_tools:
@@ -154,7 +149,7 @@ class ToolManager:
     async def parse_function_call_response(
         self, message: AIMessage
     ) -> List[ToolMessage]:
-        """解析 AI 的 tool_calls 并并发执行，返回 ToolMessage 列表"""
+        """并行执行模型返回的所有 tool_calls"""
         if not message.tool_calls:
             return []
 

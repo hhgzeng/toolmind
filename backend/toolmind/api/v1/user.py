@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi_jwt_auth import AuthJWT
 from loguru import logger

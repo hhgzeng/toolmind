@@ -12,8 +12,6 @@ class MCPServerTable(SQLModelSerializable, table=True):
     mcp_server_id: str = Field(default_factory=lambda: uuid4().hex, primary_key=True)
     server_name: str = Field(default="MCP Server", description="MCP Server名称")
     user_id: str = Field(description="MCP Server对应的创建用户")
-    description: str = Field(description="该MCP Server的描述，用来当作sub-agent使用")
-    mcp_as_tool_name: str = Field(description="用来当作sub-agent使用时的名称")
     url: Optional[str] = Field(None, description="MCP Server 的连接地址")
     type: str = Field(
         sa_column=Column(VARCHAR(255), nullable=False),

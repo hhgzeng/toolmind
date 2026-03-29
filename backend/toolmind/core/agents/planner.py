@@ -1,7 +1,5 @@
 """
-任务规划 Agent（LangGraph 节点）
-
-负责将用户 query 拆解为严格串行的子任务列表。
+任务规划节点：将用户 query 拆解为子任务列表
 """
 
 import json
@@ -11,29 +9,28 @@ from loguru import logger
 from toolmind.core.agents.state import AgentState
 from toolmind.core.agents.tool_manager import ToolManager
 from toolmind.core.callbacks import usage_metadata_callback
-from toolmind.core.models.manager import ModelManager
+from toolmind.core.agents.model import ModelManager
 from toolmind.prompts.agent import FixJsonPrompt, GenerateTaskPrompt
 from toolmind.schema.agent import AgentTaskStep
 from toolmind.utils.json_utils import extract_and_parse_json
 
 
 class Planner:
-    """任务规划节点：将用户问题拆解为子任务列表"""
+    """任务规划节点"""
 
     def __init__(self, user_id: str, tool_manager: ToolManager):
         self.user_id = user_id
         self.tool_manager = tool_manager
 
     async def __call__(self, state: AgentState) -> dict:
-        """LangGraph 节点函数：执行规划，返回状态更新"""
+        """执行规划，更新任务流"""
         await self.tool_manager.obtain_tools()
-        # 只传精简的工具摘要给 Planner prompt，大幅减少 token
+        # 仅传递工具摘要以节省 Token
         tools_summary = self.tool_manager.get_tools_summary()
-        # [DEBUG] 打印可用工具信息
         logger.info(f"Available tools for Planner ({len(tools_summary)}):")
         for t in tools_summary:
             logger.info(f"  - {t.get('name')}: {t.get('description')}")
-        
+
         tools_str = json.dumps(tools_summary, ensure_ascii=False, indent=2)
 
         agent_task_prompt = GenerateTaskPrompt.format(
@@ -53,17 +50,19 @@ class Planner:
             steps.append(task_step)
             tasks_graph[task_step.step_id] = task_step
 
-        # 构建前端展示的简化任务图
+        # 转换并构建前端展示的任务图数据
         for step_info in steps:
             if not step_info.input:
                 tasks_show.append({"start": "用户问题", "end": step_info.title})
             else:
                 for input_step in step_info.input:
                     if input_step in tasks_graph:
-                        tasks_show.append({
-                            "start": tasks_graph[input_step].title,
-                            "end": step_info.title,
-                        })
+                        tasks_show.append(
+                            {
+                                "start": tasks_graph[input_step].title,
+                                "end": step_info.title,
+                            }
+                        )
                     else:
                         tasks_show.append({"start": "用户问题", "end": step_info.title})
 
@@ -74,7 +73,7 @@ class Planner:
         }
 
     async def _generate_tasks(self, agent_task_prompt) -> dict:
-        """调用模型进行任务规划"""
+        """调用 LLM 生成任务 JSON"""
         conversation_model = await ModelManager.get_conversation_model(
             user_id=self.user_id
         )

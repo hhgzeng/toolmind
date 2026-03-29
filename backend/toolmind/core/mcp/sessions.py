@@ -1,4 +1,4 @@
-"""Session management for MCP (SSE only)."""
+"""MCP 会话管理（仅支持 SSE 传输）"""
 
 from __future__ import annotations
 
@@ -18,8 +18,8 @@ DEFAULT_HTTP_TIMEOUT = 5
 DEFAULT_SSE_READ_TIMEOUT = 60 * 5
 
 
-class McpHttpClientFactory(Protocol):
-    """Protocol for creating httpx.AsyncClient instances for MCP connections."""
+class _MCPHttpClientFactory(Protocol):
+    """用于创建 MCP 连接的 httpx.AsyncClient 实例的协议"""
 
     def __call__(
         self,
@@ -29,8 +29,8 @@ class McpHttpClientFactory(Protocol):
     ) -> httpx.AsyncClient: ...
 
 
-class SSEConnection(TypedDict):
-    """Configuration for Server-Sent Events (SSE) transport connections to MCP."""
+class Connection(TypedDict):
+    """MCP 的 SSE 传输连接配置"""
 
     transport: Literal["sse"]
     url: str
@@ -40,16 +40,13 @@ class SSEConnection(TypedDict):
     sse_read_timeout: NotRequired[float]
     session_kwargs: NotRequired[dict[str, Any] | None]
 
-    httpx_client_factory: NotRequired[McpHttpClientFactory | None]
+    httpx_client_factory: NotRequired[_MCPHttpClientFactory | None]
     auth: NotRequired[httpx.Auth]
-
-
-Connection = SSEConnection
 
 
 @asynccontextmanager
 async def create_session(connection: Connection) -> AsyncIterator[ClientSession]:
-    """Create a new session to an MCP server (SSE only)."""
+    """创建与 MCP 服务端的新会话（SSE）"""
     transport = connection.get("transport")
     if transport != "sse":
         raise ValueError(f"Unsupported transport: {transport}. Must be 'sse'.")
@@ -80,4 +77,4 @@ async def create_session(connection: Connection) -> AsyncIterator[ClientSession]
         yield session
 
 
-__all__ = ["Connection", "SSEConnection", "McpHttpClientFactory", "create_session"]
+__all__ = ["Connection", "create_session"]

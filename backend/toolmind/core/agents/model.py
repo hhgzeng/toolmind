@@ -6,7 +6,6 @@ from typing import Optional
 
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
-from toolmind.core.models.reason_model import ReasoningModel
 from toolmind.database.dao.agent_config import AgentConfigDao
 from toolmind.database.dao.llm import LLMDao
 
@@ -16,7 +15,6 @@ class ModelManager:
     @classmethod
     async def _get_model_config(cls, user_id: str, config_type: str) -> Optional[dict]:
         """获取模型配置"""
-
         user_config = await AgentConfigDao.get_config_by_user_id(user_id)
         if not user_config:
             return None
@@ -72,20 +70,10 @@ class ModelManager:
         return await cls._get_or_create_chat_model(user_id, "conversation")
 
     @classmethod
-    async def get_reasoning_model(cls, user_id: str = None) -> ReasoningModel:
-
-        model_config = await cls._get_model_config(user_id, "reasoning")
-        if not model_config:
-            raise ValueError(
-                f"User {user_id} has no reasoning model configuration in database"
-            )
-
-        model = ReasoningModel(
-            model_name=model_config["model"],
-            api_key=model_config["api_key"],
-            base_url=model_config["base_url"],
-        )
-        return model
+    async def get_reasoning_model(
+        cls, user_id: str = None, **kwargs
+    ) -> BaseChatModel:
+        return await cls._get_or_create_chat_model(user_id, "reasoning")
 
     @classmethod
     async def get_agent_intent_model(

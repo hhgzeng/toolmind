@@ -1,7 +1,5 @@
 """
-最终汇总 Agent（LangGraph 节点）
-
-负责将所有步骤结果整合为面向用户的最终答案。
+最终汇总节点：将所有子任务结果整合为最终回答
 """
 
 import json
@@ -9,18 +7,18 @@ import json
 from langchain_core.messages import HumanMessage
 from toolmind.core.agents.state import AgentState
 from toolmind.core.callbacks import usage_metadata_callback
-from toolmind.core.models.manager import ModelManager
+from toolmind.core.agents.model import ModelManager
 from toolmind.prompts.agent import FinalSynthesisPrompt
 
 
 class Synthesizer:
-    """最终汇总节点：整合所有步骤结果生成最终答案"""
+    """最终汇总节点"""
 
     def __init__(self, user_id: str):
         self.user_id = user_id
 
     async def __call__(self, state: AgentState) -> dict:
-        """LangGraph 节点函数：生成最终答案，返回状态更新"""
+        """执行聚合逻辑并流式返回结果"""
         final_steps_payload = [
             {
                 "step_id": step.step_id,

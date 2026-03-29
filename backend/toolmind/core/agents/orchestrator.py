@@ -1,8 +1,6 @@
 """
-LangGraph 编排器 — Agent 的核心入口
-
-使用 LangGraph StateGraph 构建状态机：
-  increment_loop → Planner → Executor → Synthesizer → Evaluator → (条件边: 重跑 / 结束)
+LangGraph 编排器 — Agent 核心入口
+基于状态机驱动任务流转：规划 -> 执行 -> 聚合 -> 评估
 """
 
 from langgraph.graph import END, START, StateGraph
@@ -14,7 +12,7 @@ from toolmind.core.agents.state import AgentState
 from toolmind.core.agents.synthesizer import Synthesizer
 from toolmind.core.agents.tool_manager import ToolManager
 from toolmind.core.callbacks import usage_metadata_callback
-from toolmind.core.models.manager import ModelManager
+from toolmind.core.agents.model import ModelManager
 from toolmind.database.models.session import SessionContext, SessionCreate
 from toolmind.prompts.agent import GenerateTitlePrompt
 from toolmind.schema.agent import AgentTask
@@ -65,16 +63,13 @@ def _build_graph(user_id: str, tool_manager: ToolManager):
 
     graph = StateGraph(AgentState)
 
-    # ── 注册节点 ──
     graph.add_node("increment_loop", _increment_loop)
     graph.add_node("planner", planner)
     graph.add_node("executor", executor)
     graph.add_node("synthesizer", synthesizer)
     graph.add_node("evaluator", evaluator)
 
-    # ── 注册边 ──
-    # START → increment_loop → planner → executor → synthesizer → evaluator
-    # evaluator → (条件) → increment_loop（重跑）/ END（结束）
+    # 编排节点流向：START -> increment_loop -> planner -> executor -> synthesizer -> evaluator
     graph.add_edge(START, "increment_loop")
     graph.add_edge("increment_loop", "planner")
     graph.add_edge("planner", "executor")
@@ -96,11 +91,7 @@ def _build_graph(user_id: str, tool_manager: ToolManager):
 
 
 class Agent:
-    """
-    Agent 编排器（基于 LangGraph StateGraph）
-
-    对外 API 保持与原始 Agent 完全一致。
-    """
+    """基于 LangGraph 的 Agent 编排器，提供 SSE 任务提交接口"""
 
     def __init__(self, user_id: str):
         self.user_id = user_id
@@ -108,9 +99,8 @@ class Agent:
         self.graph = _build_graph(user_id, self.tool_manager)
 
     async def submit_agent_task(self, agent_task: AgentTask):
-        """主入口：接收 AgentTask，驱动 LangGraph 状态机，yield SSE 事件"""
+        """主入口：创建会话、驱动状态机并推送事件"""
 
-        # ── 创建会话 ──
         session_model = await SessionService.create_session(
             SessionCreate(title="新对话", user_id=self.user_id, contexts=[])
         )
@@ -128,7 +118,6 @@ class Agent:
             },
         }
 
-        # ── 初始化状态 ──
         initial_state: AgentState = {
             "query": agent_task.query,
             "user_id": self.user_id,
@@ -144,18 +133,16 @@ class Agent:
             "events": [],
         }
 
-        # ── 运行 LangGraph 状态机 ──
         final_state = initial_state
         async for update in self.graph.astream(initial_state, stream_mode="updates"):
             for node_name, state_update in update.items():
 
-                # 实时推送该节点产出的 SSE 事件
+                # 实时推送节点 SSE 事件并合并状态
                 for sse_event in state_update.get("events", []):
                     yield sse_event
-                # 合并状态以获取最终结果
                 final_state = {**final_state, **state_update}
 
-                # ── 在每一轮评估结束后，保存当前轮次的对话 ──
+                # 评估结束后，推送统计并持久化
                 if node_name == "evaluator":
                     score = final_state.get("eval_score", 0)
                     reasoning = final_state.get("eval_reasoning", "")
@@ -173,7 +160,6 @@ class Agent:
 
                     yield {"event": "task_result", "data": {"message": feedback_msg}}
 
-                    # ── 持久化当前轮次的会话 ──
                     final_response = final_state.get("final_response", "")
                     await SessionService.update_session_contexts(
                         session_model.session_id,
@@ -185,7 +171,6 @@ class Agent:
                         ).model_dump(),
                     )
 
-        # ── 流式生成标题 ──
         async for event in self._stream_title(session_model, agent_task.query):
             yield event
 

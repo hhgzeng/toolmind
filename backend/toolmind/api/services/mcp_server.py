@@ -14,15 +14,11 @@ class MCPService:
         tools: list,
         params: dict,
         is_active: bool,
-        mcp_as_tool_name: str,
-        description: str,
     ):
         try:
             return await MCPServerDao.create_mcp_server(
                 server_name,
                 user_id,
-                mcp_as_tool_name,
-                description,
                 url,
                 type,
                 config,
@@ -48,8 +44,6 @@ class MCPService:
         server_name: str = None,
         url: str = None,
         type: str = None,
-        mcp_as_tool_name=None,
-        description=None,
         config: dict = None,
         tools: list = None,
         params: dict = None,
@@ -59,8 +53,6 @@ class MCPService:
             return await MCPServerDao.update_mcp_server(
                 mcp_server_id,
                 server_name,
-                mcp_as_tool_name,
-                description,
                 url,
                 type,
                 config,

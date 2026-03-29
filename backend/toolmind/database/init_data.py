@@ -3,7 +3,6 @@ from sqlmodel import SQLModel
 from toolmind.database import engine
 
 
-# 创建MySQL数据表
 async def init_database():
     try:
         SQLModel.metadata.create_all(engine)

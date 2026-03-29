@@ -9,8 +9,6 @@ class MCPServerDao:
         cls,
         server_name: str,
         user_id: str,
-        mcp_as_tool_name: str,
-        description: str,
         url: str,
         type: str,
         config: dict,
@@ -28,8 +26,6 @@ class MCPServerDao:
                 tools=tools,
                 params=params,
                 is_active=is_active,
-                mcp_as_tool_name=mcp_as_tool_name,
-                description=description,
             )
             session.add(mcp_server)
             session.commit()
@@ -57,8 +53,6 @@ class MCPServerDao:
         cls,
         mcp_server_id: str,
         server_name: str,
-        mcp_as_tool_name: str,
-        description: str,
         url: str,
         type: str,
         config: dict,
@@ -81,10 +75,6 @@ class MCPServerDao:
                 update_values["tools"] = tools
             if params:
                 update_values["params"] = params
-            if mcp_as_tool_name is not None:
-                update_values["mcp_as_tool_name"] = mcp_as_tool_name
-            if description is not None:
-                update_values["description"] = description
             if is_active is not None:
                 update_values["is_active"] = is_active
 

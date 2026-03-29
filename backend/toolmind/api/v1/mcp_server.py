@@ -1,13 +1,8 @@
-import json
-
 from fastapi import APIRouter, Body, Depends
 from loguru import logger
 from toolmind.api.services.mcp_server import MCPService
 from toolmind.api.services.user import UserPayload, get_login_user
-from toolmind.core.mcp.agent import StructuredResponseAgent
 from toolmind.core.mcp.manager import MCPManager
-from toolmind.prompts.mcp import McpAsToolPrompt
-from toolmind.schema.mcp import MCPResponseFormat
 from toolmind.schema.schemas import resp_200, resp_500
 from toolmind.utils.convert import convert_mcp_config
 
@@ -40,13 +35,6 @@ async def create_mcp_server(
 
         is_active = True
 
-        structured_agent = StructuredResponseAgent(
-            MCPResponseFormat, user_id=login_user.user_id
-        )
-        structured_response = await structured_agent.get_structured_response(
-            McpAsToolPrompt.format(tools_info=json.dumps(tools_params, indent=4))
-        )
-
         await MCPService.create_mcp_server(
             server_name,
             login_user.user_id,
@@ -56,8 +44,6 @@ async def create_mcp_server(
             tools_name_str,
             tools_params.get(server_name, []),
             is_active,
-            structured_response.mcp_as_tool_name,
-            structured_response.description,
         )
         return resp_200()
     except Exception as err:
@@ -146,20 +132,11 @@ async def update_mcp_server(
                 for tool in tools:
                     tools_str.append(tool["name"])
 
-            structured_agent = StructuredResponseAgent(
-                MCPResponseFormat, user_id=login_user.user_id
-            )
-            structured_response = await structured_agent.get_structured_response(
-                McpAsToolPrompt.format(tools_info=json.dumps(tools_params, indent=4))
-            )
-
             await MCPService.update_mcp_server(
                 mcp_server_id=server_id,
                 server_name=server_name,
                 url=url_str,
                 type=type_str,
-                mcp_as_tool_name=structured_response.mcp_as_tool_name,
-                description=structured_response.description,
                 config=config,
                 tools=tools_str,
                 params=tools_params.get(server_name, []),

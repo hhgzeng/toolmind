@@ -1,24 +1,11 @@
-"""Tools adapter for converting MCP tools to LangChain tools.
+"""MCP 工具适配器：将 MCP 工具转换为 LangChain 工具"""
 
-This module provides functionality to convert MCP tools into LangChain-compatible
-tools, handle tool execution, and manage tool conversion between the two formats.
-"""
+from typing import Any, cast
 
-from typing import Any, cast, get_args
-
-from langchain_core.tools import (
-    BaseTool,
-    InjectedToolArg,
-    StructuredTool,
-    ToolException,
-)
-from langchain_core.tools.base import get_all_basemodel_annotations
+from langchain_core.tools import BaseTool, StructuredTool, ToolException
 from mcp import ClientSession
-from mcp.server.fastmcp.tools import Tool as FastMCPTool
-from mcp.server.fastmcp.utilities.func_metadata import ArgModelBase, FuncMetadata
 from mcp.types import CallToolResult, EmbeddedResource, ImageContent, TextContent
 from mcp.types import Tool as MCPTool
-from pydantic import BaseModel, create_model
 from toolmind.core.mcp.sessions import Connection, create_session
 
 NonTextContent = ImageContent | EmbeddedResource
@@ -28,17 +15,7 @@ MAX_ITERATIONS = 1000
 def _convert_call_tool_result(
     call_tool_result: CallToolResult,
 ) -> tuple[str | list[str], list[NonTextContent] | None]:
-    """Convert MCP CallToolResult to LangChain tool result format.
-
-    Args:
-        call_tool_result: The result from calling an MCP tool.
-
-    Returns:
-        A tuple containing the text content and any non-text content.
-
-    Raises:
-        ToolException: If the tool call resulted in an error.
-    """
+    """将 MCP CallToolResult 转换为 LangChain 工具结果格式"""
     text_contents: list[TextContent] = []
     non_text_contents = []
     for content in call_tool_result.content:
@@ -60,7 +37,7 @@ def _convert_call_tool_result(
 
 
 async def _list_all_tools(session: ClientSession) -> list[MCPTool]:
-    """List all available tools from an MCP session with pagination support."""
+    """列出 MCP 会话中的所有工具，支持分页"""
     current_cursor: str | None = None
     all_tools: list[MCPTool] = []
 
@@ -77,8 +54,6 @@ async def _list_all_tools(session: ClientSession) -> list[MCPTool]:
         if list_tools_page_result.tools:
             all_tools.extend(list_tools_page_result.tools)
 
-        # Pagination spec: https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/pagination
-        # compatible with None or ""
         if not list_tools_page_result.nextCursor:
             break
 
@@ -86,16 +61,13 @@ async def _list_all_tools(session: ClientSession) -> list[MCPTool]:
     return all_tools
 
 
-def convert_mcp_tool_to_langchain_tool(
+def _convert_mcp_tool_to_langchain_tool(
     session: ClientSession | None,
     tool: MCPTool,
     *,
     connection: Connection | None = None,
 ) -> BaseTool:
-    """Convert an MCP tool to a LangChain tool.
-
-    NOTE: this tool can be executed only in a context of an active MCP client session.
-    """
+    """内部转换逻辑：封装 MCP 调用为 LangChain StructuredTool 对象"""
     if session is None and connection is None:
         msg = "Either a session or a connection config must be provided"
         raise ValueError(msg)
@@ -130,7 +102,7 @@ async def load_mcp_tools(
     *,
     connection: Connection | None = None,
 ) -> list[BaseTool]:
-    """Load all available MCP tools and convert them to LangChain tools."""
+    """加载所有 MCP 工具并完成格式转换"""
     if session is None and connection is None:
         msg = "Either a session or a connection config must be provided"
         raise ValueError(msg)
@@ -144,63 +116,9 @@ async def load_mcp_tools(
         tools = await _list_all_tools(session)
 
     return [
-        convert_mcp_tool_to_langchain_tool(session, tool, connection=connection)
+        _convert_mcp_tool_to_langchain_tool(session, tool, connection=connection)
         for tool in tools
     ]
 
 
-def _get_injected_args(tool: BaseTool) -> list[str]:
-    """Get the list of injected argument names from a LangChain tool."""
-
-    def _is_injected_arg_type(type_: type) -> bool:
-        return any(
-            isinstance(arg, InjectedToolArg)
-            or (isinstance(arg, type) and issubclass(arg, InjectedToolArg))
-            for arg in get_args(type_)[1:]
-        )
-
-    return [
-        field
-        for field, field_info in get_all_basemodel_annotations(tool.args_schema).items()
-        if _is_injected_arg_type(field_info)
-    ]
-
-
-def to_fastmcp(tool: BaseTool) -> FastMCPTool:
-    """Convert a LangChain tool to a FastMCP tool."""
-    if not issubclass(tool.args_schema, BaseModel):
-        msg = (
-            "Tool args_schema must be a subclass of pydantic.BaseModel. "
-            "Tools with dict args schema are not supported."
-        )
-        raise TypeError(msg)
-
-    parameters = tool.tool_call_schema.model_json_schema()
-    field_definitions = {
-        field: (field_info.annotation, field_info)
-        for field, field_info in tool.tool_call_schema.model_fields.items()
-    }
-    arg_model = create_model(
-        f"{tool.name}Arguments", **field_definitions, __base__=ArgModelBase
-    )
-    fn_metadata = FuncMetadata(arg_model=arg_model)
-
-    async def fn(**arguments: dict[str, Any]) -> Any:  # noqa: ANN401
-        return await tool.ainvoke(arguments)
-
-    injected_args = _get_injected_args(tool)
-    if len(injected_args) > 0:
-        msg = "LangChain tools with injected arguments are not supported"
-        raise NotImplementedError(msg)
-
-    return FastMCPTool(
-        fn=fn,
-        name=tool.name,
-        description=tool.description,
-        parameters=parameters,
-        fn_metadata=fn_metadata,
-        is_async=True,
-    )
-
-
-__all__ = ["convert_mcp_tool_to_langchain_tool", "load_mcp_tools", "to_fastmcp"]
+__all__ = ["load_mcp_tools"]
