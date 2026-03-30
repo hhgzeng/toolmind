@@ -1,12 +1,12 @@
 from typing import Any, Dict, List
 
 from loguru import logger
-from toolmind.api.services.user import UserService
-from toolmind.database.dao.user import UserDao
-from toolmind.database.dao.user_role import UserRoleDao
-from toolmind.database.models.role import AdminRole, DefaultRole
+from toolmind.api.services import UserService
+from toolmind.database.dao import UserDao
+from toolmind.database.dao import UserRoleDao
+from toolmind.database.models import AdminRole, DefaultRole
 from toolmind.database.session import session_getter
-from toolmind.schema.schemas import resp_200, resp_500
+from toolmind.schema import resp_200, resp_500
 
 
 class UserManagementService:

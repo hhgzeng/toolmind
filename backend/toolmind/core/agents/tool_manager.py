@@ -8,11 +8,10 @@ from typing import List, Optional
 from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.tools.base import ToolException
 from langchain_core.utils.function_calling import convert_to_openai_tool
-from toolmind.api.services.mcp_server import MCPService
-from toolmind.api.services.web_search import tavily_search as web_search
-from toolmind.core.mcp.manager import MCPManager
-from toolmind.schema.mcp import MCPConfig
-from toolmind.utils.convert import convert_mcp_config, mcp_tool_to_args_schema
+from toolmind.api.services import MCPService, web_search
+from toolmind.core.mcp import MCPManager
+from toolmind.schema import MCPConfig
+from toolmind.utils import convert_mcp_config, mcp_tool_to_args_schema
 
 
 class ToolManager:
@@ -29,9 +28,9 @@ class ToolManager:
 
     async def _ensure_web_search_config(self):
         """获取并同步 Web 搜索配置"""
-        from toolmind.database.dao.web_search import WebSearchConfigDao
+        from toolmind.database.dao.web_search import WebSearchDao
 
-        user_config = await WebSearchConfigDao.get_config_by_user_id(self.user_id)
+        user_config = await WebSearchDao.get_config_by_user_id(self.user_id)
         if user_config:
             self._web_search_enabled = user_config.enabled
             self._web_search_api_key = user_config.api_key
@@ -81,9 +80,7 @@ class ToolManager:
 
         all_servers = await MCPService.get_all_servers(self.user_id)
         mcp_servers = [
-            server["mcp_server_id"]
-            for server in all_servers
-            if server.get("is_active")
+            server["mcp_server_id"] for server in all_servers if server.get("is_active")
         ]
 
         mcp_configs: dict[str, MCPConfig] = {}
@@ -135,10 +132,10 @@ class ToolManager:
                 text_content = f"[工具执行失败] {tool_name}: {type(e).__name__} - {e}"
         else:
             if tool_name == "web_search":
-                from toolmind.api.services.web_search import _tavily_search
+                from toolmind.api.services.web_search import _web_search
 
                 await self._ensure_web_search_config()
-                text_content = _tavily_search(
+                text_content = _web_search(
                     **tool_args, api_key=self._web_search_api_key
                 )
             else:

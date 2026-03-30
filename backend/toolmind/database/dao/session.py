@@ -1,7 +1,7 @@
 from typing import List
 
 from sqlmodel import and_, delete, select
-from toolmind.database.models.session import Session
+from toolmind.database.models import Session
 from toolmind.database.session import async_session_getter
 
 

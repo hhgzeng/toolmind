@@ -2,12 +2,10 @@ import json
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 from starlette.responses import StreamingResponse
-from toolmind.api.services.session import SessionService
-from toolmind.api.services.user import UserPayload, get_login_user
+from toolmind.api.services import SessionService, UserPayload, get_login_user
 from toolmind.core.agents import Agent
-from toolmind.schema.agent import AgentTask
-from toolmind.schema.schemas import resp_200
-from toolmind.utils.contexts import set_user_id_context
+from toolmind.schema import AgentTask, resp_200
+from toolmind.utils import set_user_id_context
 
 router = APIRouter(tags=["Session"])
 

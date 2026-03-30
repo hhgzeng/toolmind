@@ -6,7 +6,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from loguru import logger
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from toolmind.utils.contexts import set_trace_id_context
+from toolmind.utils import set_trace_id_context
 
 
 class TraceIDMiddleware(BaseHTTPMiddleware):

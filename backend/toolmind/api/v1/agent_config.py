@@ -2,9 +2,9 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from toolmind.api.services.user import UserPayload, get_login_user
-from toolmind.database.dao.agent_config import AgentConfigDao
-from toolmind.schema.schemas import resp_200, resp_500
+from toolmind.api.services import UserPayload, get_login_user
+from toolmind.database.dao import AgentConfigDao
+from toolmind.schema import resp_200, resp_500
 
 router = APIRouter(tags=["Agent Config"])
 

@@ -1,7 +1,3 @@
-"""
-JSON 解析工具函数
-"""
-
 import json
 import re
 

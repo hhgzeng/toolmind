@@ -6,12 +6,12 @@ from langchain_core.messages import AIMessage
 from langchain_core.messages.ai import UsageMetadata, add_usage
 from langchain_core.outputs import ChatGeneration, LLMResult
 from loguru import logger
-from toolmind.api.services.usage_stats import UsageStatsService
-from toolmind.utils.contexts import get_user_id_context
+from toolmind.api.services import UsageStatsService
+from toolmind.utils import get_user_id_context
 from typing_extensions import override
 
 
-class UsageMetadataCallbackHandler(BaseCallbackHandler):
+class UsageMetadataCallback(BaseCallbackHandler):
     """
     Callback Handler that tracks AIMessage.usage_metadata.
     """

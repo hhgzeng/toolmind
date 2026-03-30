@@ -6,12 +6,12 @@ from typing import List
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from loguru import logger
+from toolmind.core.agents.model import ModelManager
 from toolmind.core.agents.state import AgentState
 from toolmind.core.agents.tool_manager import ToolManager
-from toolmind.core.callbacks import usage_metadata_callback
-from toolmind.core.agents.model import ModelManager
-from toolmind.prompts.agent import EvaluateResultPrompt
-from toolmind.utils.json_utils import extract_and_parse_json
+from toolmind.core.callbacks import UsageMetadataCallback
+from toolmind.prompts import EvaluateResultPrompt
+from toolmind.utils import extract_and_parse_json
 
 
 class Evaluator:
@@ -40,7 +40,7 @@ class Evaluator:
         # 循环调用工具进行事实核查，直至给出最终评分
         while True:
             response = await eval_model.ainvoke(
-                input=messages, config={"callbacks": [usage_metadata_callback]}
+                input=messages, config={"callbacks": [UsageMetadataCallback]}
             )
             messages.append(response)
 

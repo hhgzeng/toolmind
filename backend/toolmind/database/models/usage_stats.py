@@ -1,8 +1,7 @@
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Optional
 from uuid import uuid4
 
-from pydantic import BaseModel
 from sqlalchemy import Column, DateTime, text
 from sqlmodel import Field
 from toolmind.database.models.base import SQLModelSerializable

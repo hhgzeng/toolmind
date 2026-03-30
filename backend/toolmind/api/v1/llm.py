@@ -1,9 +1,13 @@
 from fastapi import APIRouter, Body, Depends
 from loguru import logger
-from toolmind.api.services.llm import LLMService
-from toolmind.api.services.user import UserPayload, get_login_user
-from toolmind.schema.common import CreateLLMRequest, UpdateLLMRequest
-from toolmind.schema.schemas import UnifiedResponseModel, resp_200, resp_500
+from toolmind.api.services import LLMService, UserPayload, get_login_user
+from toolmind.schema import (
+    CreateLLMRequest,
+    UnifiedResponseModel,
+    UpdateLLMRequest,
+    resp_200,
+    resp_500,
+)
 
 router = APIRouter(tags=["LLM"])
 
@@ -48,7 +52,7 @@ async def delete_llm(
 async def update_llm(
     llm_id: str,
     llm_request: UpdateLLMRequest = Body(),
-    login_user: UserPayload = Depends(get_login_user)
+    login_user: UserPayload = Depends(get_login_user),
 ):
     try:
         # 验证用户权限

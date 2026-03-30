@@ -1,5 +1,5 @@
 from sqlmodel import and_, delete, func, select, update
-from toolmind.database.models.mcp_server import MCPServerTable
+from toolmind.database.models import MCPServerTable
 from toolmind.database.session import session_getter
 
 

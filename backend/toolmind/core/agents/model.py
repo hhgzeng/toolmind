@@ -6,8 +6,7 @@ from typing import Optional
 
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
-from toolmind.database.dao.agent_config import AgentConfigDao
-from toolmind.database.dao.llm import LLMDao
+from toolmind.database.dao import AgentConfigDao, LLMDao
 
 
 class ModelManager:
@@ -70,9 +69,7 @@ class ModelManager:
         return await cls._get_or_create_chat_model(user_id, "conversation")
 
     @classmethod
-    async def get_reasoning_model(
-        cls, user_id: str = None, **kwargs
-    ) -> BaseChatModel:
+    async def get_reasoning_model(cls, user_id: str = None, **kwargs) -> BaseChatModel:
         return await cls._get_or_create_chat_model(user_id, "reasoning")
 
     @classmethod

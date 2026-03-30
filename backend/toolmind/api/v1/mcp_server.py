@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Body, Depends
 from loguru import logger
-from toolmind.api.services.mcp_server import MCPService
-from toolmind.api.services.user import UserPayload, get_login_user
-from toolmind.core.mcp.manager import MCPManager
-from toolmind.schema.schemas import resp_200, resp_500
-from toolmind.utils.convert import convert_mcp_config
+from toolmind.api.services import MCPService, UserPayload, get_login_user
+from toolmind.core.mcp import MCPManager
+from toolmind.schema import resp_200, resp_500
+from toolmind.utils import convert_mcp_config
 
 router = APIRouter(tags=["MCP-Server"])
 

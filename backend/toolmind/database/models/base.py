@@ -1,20 +1,15 @@
 from datetime import datetime
-from typing import Any, ClassVar, Dict, Set, Union
+from typing import ClassVar
 
 import orjson
 from pydantic import ConfigDict
 from sqlmodel import SQLModel
-from sqlmodel.main import IncEx
-from typing_extensions import Literal
 
 
 def orjson_dumps(v, *, default=None, sort_keys=False, indent_2=True):
     option = orjson.OPT_SORT_KEYS if sort_keys else None
     if indent_2:
-        # orjson.dumps returns bytes, to match standard json.dumps we need to decode
-        # option
-        # To modify how data is serialized, specify option. Each option is an integer constant in orjson.
-        # To specify multiple options, mask them together, e.g., option=orjson.OPT_STRICT_INTEGER | orjson.OPT_NAIVE_UTC
+        # orjson 返回 bytes，需解码为字符串以匹配标准 json.dumps
         if option is None:
             option = orjson.OPT_INDENT_2
         else:
@@ -27,15 +22,15 @@ def orjson_dumps(v, *, default=None, sort_keys=False, indent_2=True):
 class SQLModelSerializable(SQLModel):
     model_config = ConfigDict(from_attributes=True)
 
-    # 使用ClassVar标注类变量，不会被视为模型字段
-    hide_fields: ClassVar[list[str]] = []  # "api_key"
+    # ClassVar 标注的类变量不会被视为数据库字段
+    hide_fields: ClassVar[list[str]] = []  # 隐藏字段，如 "api_key"
 
     def to_dict(self):
         result = self.model_dump(exclude=self.hide_fields)
         for column in result:
             value = getattr(self, column)
             if isinstance(value, datetime):
-                # 将datetime对象转换为字符串
+                # 转换 datetime 对象为字符串
                 value = value.isoformat()
             result[column] = value
         return result

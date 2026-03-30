@@ -1,4 +1,4 @@
-from toolmind.database.dao.mcp_server import MCPServerDao
+from toolmind.database.dao import MCPServerDao
 
 
 class MCPService:

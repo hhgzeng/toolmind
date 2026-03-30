@@ -6,13 +6,13 @@ import json
 from typing import List
 
 from loguru import logger
+from toolmind.core.agents.model import ModelManager
 from toolmind.core.agents.state import AgentState
 from toolmind.core.agents.tool_manager import ToolManager
-from toolmind.core.callbacks import usage_metadata_callback
-from toolmind.core.agents.model import ModelManager
-from toolmind.prompts.agent import FixJsonPrompt, GenerateTaskPrompt
-from toolmind.schema.agent import AgentTaskStep
-from toolmind.utils.json_utils import extract_and_parse_json
+from toolmind.core.callbacks import UsageMetadataCallback
+from toolmind.prompts import FixJsonPrompt, GenerateTaskPrompt
+from toolmind.schema import AgentTaskStep
+from toolmind.utils import extract_and_parse_json
 
 
 class Planner:
@@ -78,7 +78,7 @@ class Planner:
             user_id=self.user_id
         )
         response = await conversation_model.ainvoke(
-            input=agent_task_prompt, config={"callbacks": [usage_metadata_callback]}
+            input=agent_task_prompt, config={"callbacks": [UsageMetadataCallback]}
         )
 
         try:
@@ -88,7 +88,7 @@ class Planner:
                 json_content=response.content, json_error=str(err)
             )
             fix_response = await conversation_model.ainvoke(
-                input=fix_message, config={"callbacks": [usage_metadata_callback]}
+                input=fix_message, config={"callbacks": [UsageMetadataCallback]}
             )
             try:
                 return extract_and_parse_json(fix_response.content)

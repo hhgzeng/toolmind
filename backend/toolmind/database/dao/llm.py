@@ -1,5 +1,5 @@
-from sqlmodel import Session, and_, delete, desc, select, update
-from toolmind.database.models.llm import LLMTable
+from sqlmodel import and_, delete, select, update
+from toolmind.database.models import LLMTable
 from toolmind.database.session import session_getter
 
 

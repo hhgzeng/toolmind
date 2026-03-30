@@ -1,11 +1,11 @@
 from typing import List
 
-from sqlmodel import Session, and_, delete, func, select
-from toolmind.database.models.role import AdminRole, Role, RoleBase, RoleCreate
+from sqlmodel import and_, delete, func, select
+from toolmind.database.models import AdminRole, Role, RoleBase, RoleCreate
 from toolmind.database.session import session_getter
 
 
-class RoleDao(RoleBase):
+class RoleDao:
 
     @classmethod
     def get_role_by_groups(

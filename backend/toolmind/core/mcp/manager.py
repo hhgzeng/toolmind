@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 
 from langchain_core.tools import BaseTool
 from toolmind.core.mcp.multi_client import MultiServerMCPClient
-from toolmind.schema.mcp import MCPBaseConfig
+from toolmind.schema import MCPBaseConfig
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,9 @@ class MCPManager:
                 return f"Error executing tool {tool_name}: {e}"
 
         # 构造并执行并发任务
-        tasks = [execute_tool(t.get("tool_name"), t.get("tool_args")) for t in tools_info]
+        tasks = [
+            execute_tool(t.get("tool_name"), t.get("tool_args")) for t in tools_info
+        ]
         try:
             tool_results = await asyncio.gather(*tasks, return_exceptions=True)
             for i, result in enumerate(tool_results):

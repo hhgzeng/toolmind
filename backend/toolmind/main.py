@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from fastapi_jwt_auth import AuthJWT
 from fastapi_jwt_auth.exceptions import AuthJWTException
 from pyfiglet import Figlet
-from toolmind.middleware.trace_id_middleware import TraceIDMiddleware
+from toolmind.middleware import TraceIDMiddleware
 from toolmind.settings import app_settings, initialize_app_settings
 
 

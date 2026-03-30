@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from toolmind.api.services.usage_stats import UsageStatsService
-from toolmind.api.services.user import UserPayload, get_login_user
-from toolmind.schema.schemas import resp_200
-from toolmind.schema.usage_stats import UsageStatsRequest
+from toolmind.api.services import UsageStatsService, UserPayload, get_login_user
+from toolmind.schema import UsageStatsRequest, resp_200
 
 router = APIRouter(tags=["Usage-Stats"])
 

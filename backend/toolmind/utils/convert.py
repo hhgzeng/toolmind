@@ -1,10 +1,4 @@
-import inspect
-import json
-from typing import List
-
-from langchain_core.messages import ToolCall
-from openai.types.chat import ChatCompletionMessageToolCall
-from toolmind.schema.mcp import MCPSSEConfig
+from toolmind.schema import MCPSSEConfig
 
 
 def convert_mcp_config(servers_info: dict | list):
@@ -39,5 +33,3 @@ def mcp_tool_to_args_schema(name, description, args_schema) -> dict:
             "parameters": args_schema,
         },
     }
-
-

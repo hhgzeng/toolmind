@@ -6,7 +6,7 @@ Agent 共享状态定义
 
 from typing import Annotated, Any, Dict, List, Optional
 
-from toolmind.schema.agent import AgentTaskStep
+from toolmind.schema import AgentTaskStep
 from typing_extensions import TypedDict
 
 

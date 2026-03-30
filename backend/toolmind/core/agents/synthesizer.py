@@ -5,10 +5,10 @@
 import json
 
 from langchain_core.messages import HumanMessage
-from toolmind.core.agents.state import AgentState
-from toolmind.core.callbacks import usage_metadata_callback
 from toolmind.core.agents.model import ModelManager
-from toolmind.prompts.agent import FinalSynthesisPrompt
+from toolmind.core.agents.state import AgentState
+from toolmind.core.callbacks import UsageMetadataCallback
+from toolmind.prompts import FinalSynthesisPrompt
 
 
 class Synthesizer:
@@ -41,7 +41,7 @@ class Synthesizer:
         )
         async for chunk in conversation_model.astream(
             [HumanMessage(content=synthesis_prompt)],
-            config={"callbacks": [usage_metadata_callback]},
+            config={"callbacks": [UsageMetadataCallback]},
         ):
             final_response += chunk.content
             events.append(

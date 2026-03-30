@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from sqlalchemy import Column, DateTime, UniqueConstraint, text
 from sqlmodel import Field, SQLModel
@@ -13,6 +13,7 @@ AdminRole = "1"
 class RoleBase(SQLModel):
     role_name: str = Field(index=False, description="前端展示名称")
     remark: Optional[str] = Field(index=False)
+    group_id: int = Field(index=True, description="所属分组ID")
     create_time: Optional[datetime] = Field(
         sa_column=Column(
             DateTime,
@@ -32,8 +33,14 @@ class RoleBase(SQLModel):
 
 
 class Role(RoleBase, table=True):
-    __table_args__ = (UniqueConstraint("role_name", name="group_role_name_uniq"),)
+    __table_args__ = (
+        UniqueConstraint("role_name", "group_id", name="group_role_name_uniq"),
+    )
     id: Optional[int] = Field(default=None, primary_key=True)
+
+
+class RoleCreate(RoleBase):
+    pass
 
 
 class RoleRead(RoleBase):
@@ -43,7 +50,4 @@ class RoleRead(RoleBase):
 class RoleUpdate(RoleBase):
     role_name: Optional[str]
     remark: Optional[str]
-
-
-class RoleCreate(RoleBase):
-    pass
+    group_id: Optional[int]

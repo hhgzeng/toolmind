@@ -1,5 +1,5 @@
 from fastapi.exceptions import HTTPException
-from toolmind.schema.schemas import UnifiedResponseModel
+from toolmind.schema import UnifiedResponseModel
 
 
 class BaseErrorCode:

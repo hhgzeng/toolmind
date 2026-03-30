@@ -1,10 +1,8 @@
 import uuid
 from typing import List
 
-from sqlmodel import Session, func, select
-from toolmind.database.models.role import AdminRole, DefaultRole
-from toolmind.database.models.user import UserTable
-from toolmind.database.models.user_role import UserRole
+from sqlmodel import func, select
+from toolmind.database.models import AdminRole, DefaultRole, UserRole, UserTable
 from toolmind.database.session import session_getter
 
 

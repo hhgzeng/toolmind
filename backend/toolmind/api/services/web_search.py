@@ -5,14 +5,14 @@ from tavily import TavilyClient
 
 
 @tool("web_search", parse_docstring=True)
-def tavily_search(
+def web_search(
     query: str,
     topic: Optional[str],
     max_results: Optional[int],
     time_range: Optional[Literal["day", "week", "month", "year"]],
 ):
     """
-    根据用户的问题以及查询参数进行联网搜索
+    根据用户的问题以及查询参数进行联网搜索（使用 Tavily Search）
 
     Args:
         query: 用户想要搜索的问题
@@ -23,13 +23,13 @@ def tavily_search(
     Returns:
         将联网搜索到的信息返回给用户
     """
-    # Note: `tavily_search` is typically called via LangChain agent.
+    # Note: `web_search` is typically called via LangChain agent.
     # The actual executing logic is mostly handled in `_process_tools_result` in `agent.py` where we bypass normal tool execution.
-    return _tavily_search(query, topic, max_results, time_range)
+    return _web_search(query, topic, max_results, time_range)
 
 
-def _tavily_search(query, topic, max_results, time_range, api_key: str = None):
-    """使用Tavily搜索工具给用户进行搜索"""
+def _web_search(query, topic, max_results, time_range, api_key: str = None):
+    """使用 Tavily Search 工具进行联网搜索"""
     if not api_key:
         raise ValueError("Tavily API key is required")
 

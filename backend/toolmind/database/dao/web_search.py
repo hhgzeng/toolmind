@@ -1,15 +1,15 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from toolmind.database import async_engine
-from toolmind.database.models.web_search import WebSearchConfigTable
+from toolmind.database.models import WebSearchTable
 
 
-class WebSearchConfigDao:
+class WebSearchDao:
     @classmethod
-    async def get_config_by_user_id(cls, user_id: str) -> WebSearchConfigTable:
+    async def get_config_by_user_id(cls, user_id: str) -> WebSearchTable:
         async with AsyncSession(async_engine) as session:
-            statement = select(WebSearchConfigTable).where(
-                WebSearchConfigTable.user_id == user_id
+            statement = select(WebSearchTable).where(
+                WebSearchTable.user_id == user_id
             )
             result = await session.exec(statement)
             return result.first()
@@ -17,8 +17,8 @@ class WebSearchConfigDao:
     @classmethod
     async def upsert_config(cls, user_id: str, api_key: str, enabled: bool):
         async with AsyncSession(async_engine) as session:
-            statement = select(WebSearchConfigTable).where(
-                WebSearchConfigTable.user_id == user_id
+            statement = select(WebSearchTable).where(
+                WebSearchTable.user_id == user_id
             )
             result = await session.exec(statement)
             config = result.first()
@@ -29,7 +29,7 @@ class WebSearchConfigDao:
                     config.enabled = enabled
                 session.add(config)
             else:
-                config = WebSearchConfigTable(
+                config = WebSearchTable(
                     user_id=user_id,
                     api_key=api_key if api_key is not None else "",
                     enabled=enabled if enabled is not None else True,

@@ -1,5 +1,5 @@
-from toolmind.database.dao.session import Session, SessionDao
-from toolmind.database.models.session import SessionCreate
+from toolmind.database.dao import Session, SessionDao
+from toolmind.database.models import SessionCreate
 
 
 class SessionService:

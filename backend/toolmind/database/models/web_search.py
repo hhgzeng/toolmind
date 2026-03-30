@@ -4,7 +4,7 @@ from sqlmodel import Field
 from toolmind.database.models.base import SQLModelSerializable
 
 
-class WebSearchConfigTable(SQLModelSerializable, table=True):
+class WebSearchTable(SQLModelSerializable, table=True):
     __tablename__ = "web_search"
 
     config_id: str = Field(default_factory=lambda: uuid4().hex, primary_key=True)

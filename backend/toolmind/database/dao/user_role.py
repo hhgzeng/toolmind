@@ -1,8 +1,7 @@
-from datetime import datetime
-from typing import List, Optional
+from typing import List
 
-from sqlmodel import Field, Session, delete, select
-from toolmind.database.models.role import AdminRole
+from sqlmodel import delete, select
+from toolmind.database.models import AdminRole
 from toolmind.database.models.user_role import UserRole, UserRoleBase
 from toolmind.database.session import session_getter
 

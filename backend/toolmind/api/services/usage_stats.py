@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import DefaultDict, Dict, List, Optional
 
-from toolmind.database.dao.usage_stats import UsageStats, UsageStatsDao
+from toolmind.database.dao import UsageStats, UsageStatsDao
 
 
 class UsageStatsService:

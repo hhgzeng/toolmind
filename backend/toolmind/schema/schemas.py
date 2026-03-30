@@ -3,7 +3,6 @@ from typing import Any, Generic, TypeVar, Union
 from pydantic import BaseModel
 from sqlmodel import Field
 
-# 创建泛型变量
 DataT = TypeVar("DataT")
 
 

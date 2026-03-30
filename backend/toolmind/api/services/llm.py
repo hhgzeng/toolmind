@@ -1,7 +1,7 @@
 from loguru import logger
-from toolmind.database.dao.llm import LLMDao
-from toolmind.database.dao.user_role import UserRoleDao
-from toolmind.database.models.role import AdminRole
+from toolmind.database.dao import LLMDao
+from toolmind.database.dao import UserRoleDao
+from toolmind.database.models import AdminRole
 
 
 class LLMService:

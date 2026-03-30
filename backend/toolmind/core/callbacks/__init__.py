@@ -1,4 +1,3 @@
-from toolmind.core.callbacks.usage_metadata import UsageMetadataCallbackHandler
+from toolmind.core.callbacks.usage_metadata import UsageMetadataCallback
 
-
-usage_metadata_callback = UsageMetadataCallbackHandler()
+__all__ = ["UsageMetadataCallback"]

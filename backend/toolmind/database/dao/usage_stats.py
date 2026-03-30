@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 from sqlmodel import and_, select
-from toolmind.database.models.usage_stats import UsageStats
+from toolmind.database.models import UsageStats
 from toolmind.database.session import async_session_getter, session_getter
 
 

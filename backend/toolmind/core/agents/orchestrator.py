@@ -4,18 +4,18 @@ LangGraph 编排器 — Agent 核心入口
 """
 
 from langgraph.graph import END, START, StateGraph
-from toolmind.api.services.session import SessionService
+from toolmind.api.services import SessionService
 from toolmind.core.agents.evaluator import Evaluator
 from toolmind.core.agents.executor import Executor
+from toolmind.core.agents.model import ModelManager
 from toolmind.core.agents.planner import Planner
 from toolmind.core.agents.state import AgentState
 from toolmind.core.agents.synthesizer import Synthesizer
 from toolmind.core.agents.tool_manager import ToolManager
-from toolmind.core.callbacks import usage_metadata_callback
-from toolmind.core.agents.model import ModelManager
-from toolmind.database.models.session import SessionContext, SessionCreate
-from toolmind.prompts.agent import GenerateTitlePrompt
-from toolmind.schema.agent import AgentTask
+from toolmind.core.callbacks import UsageMetadataCallback
+from toolmind.database.models import SessionContext, SessionCreate
+from toolmind.prompts import GenerateTitlePrompt
+from toolmind.schema import AgentTask
 
 
 async def _increment_loop(state: AgentState) -> dict:
@@ -184,7 +184,7 @@ class Agent:
         streamed_title = ""
         async for title_chunk in conversation_model.astream(
             input=title_prompt,
-            config={"callbacks": [usage_metadata_callback]},
+            config={"callbacks": [UsageMetadataCallback]},
         ):
             chunk_content = getattr(title_chunk, "content", "") or ""
             if not chunk_content:

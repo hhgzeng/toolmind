@@ -7,11 +7,11 @@ from typing import List
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from loguru import logger
+from toolmind.core.agents.model import ModelManager
 from toolmind.core.agents.state import AgentState
 from toolmind.core.agents.tool_manager import ToolManager
-from toolmind.core.callbacks import usage_metadata_callback
-from toolmind.core.agents.model import ModelManager
-from toolmind.prompts.agent import ToolCallPrompt
+from toolmind.core.callbacks import UsageMetadataCallback
+from toolmind.prompts import ToolCallPrompt
 
 
 class Executor:
@@ -63,7 +63,7 @@ class Executor:
         while True:
             response = await tool_call_model.ainvoke(
                 input=step_messages,
-                config={"callbacks": [usage_metadata_callback]},
+                config={"callbacks": [UsageMetadataCallback]},
             )
             step_messages.append(response)
 
