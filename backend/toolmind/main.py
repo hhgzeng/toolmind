@@ -70,11 +70,9 @@ def create_app():
     register_middleware(app)
 
     # 配置 AuthJWT
-    from toolmind.api.JWT import Settings
-
     @AuthJWT.load_config
     def get_config():
-        return Settings()
+        return app_settings
 
     # 全局异常处理：AuthJWTException
     @app.exception_handler(AuthJWTException)

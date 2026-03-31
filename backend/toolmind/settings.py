@@ -7,6 +7,10 @@ class Settings(BaseSettings):
     redis: dict = {}
     mysql: dict = {}
     server: dict = {}
+    # AuthJWT settings
+    authjwt_secret_key: str = "secret"
+    authjwt_token_location: list = ["cookies", "headers"]
+    authjwt_cookie_csrf_protect: bool = False
 
 
 app_settings = Settings()

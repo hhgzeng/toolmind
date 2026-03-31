@@ -2,12 +2,12 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi_jwt_auth import AuthJWT
 from loguru import logger
 from toolmind.api.errcode import UserValidateError
-from toolmind.api.JWT import ACCESS_TOKEN_EXPIRE_TIME
-from toolmind.api.services import UserService, get_user_jwt, redis_client
+from toolmind.api.services import UserService, get_user_jwt
+from toolmind.database import redis_client
 from toolmind.database.dao import UserDao
 from toolmind.database.models import AdminUser
 from toolmind.schema import UnifiedResponseModel, resp_200
-from toolmind.utils.constants import USER_CURRENT_SESSION
+from toolmind.utils import ACCESS_TOKEN_EXPIRE_TIME, USER_CURRENT_SESSION
 
 router = APIRouter(tags=["User"])
 

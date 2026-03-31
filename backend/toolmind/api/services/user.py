@@ -6,13 +6,11 @@ import rsa
 from fastapi import Depends, HTTPException, Request
 from fastapi_jwt_auth import AuthJWT
 from toolmind.api.errcode import UserNameAlreadyExistError
-from toolmind.api.JWT import ACCESS_TOKEN_EXPIRE_TIME
-from toolmind.api.services import redis_client
+from toolmind.database import redis_client
 from toolmind.database.dao import UserDao, UserRoleDao
 from toolmind.database.models import AdminRole, AdminUser, UserTable
 from toolmind.schema import CreateUserReq
-from toolmind.utils import md5_hash
-from toolmind.utils.constants import RSA_KEY
+from toolmind.utils import ACCESS_TOKEN_EXPIRE_TIME, RSA_KEY, md5_hash
 
 
 class UserPayload:

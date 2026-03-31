@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import create_engine
 from toolmind.settings import app_settings
+from toolmind.database.redis import redis_client
 
 # 加载本地的env
 load_dotenv(override=True)
@@ -28,4 +29,4 @@ async_engine = create_async_engine(
     },
 )
 
-__all__ = ["engine", "async_engine"]
+__all__ = ["engine", "async_engine", "redis_client"]
