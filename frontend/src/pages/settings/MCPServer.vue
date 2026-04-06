@@ -7,6 +7,7 @@ import {
   deleteMCPServerAPI,
   getMCPServersAPI,
   updateMCPServerAPI,
+  testMCPServerAPI,
   type CreateMCPServerRequest,
   type MCPServer,
   type MCPServerTool
@@ -76,6 +77,20 @@ const validateForm = () => {
       const parsed = JSON.parse(formData.value.config as string)
       if (!parsed.mcpServers) {
         formErrors.value.config = '必须包含 mcpServers 字段'
+      } else {
+        const serverNames = Object.keys(parsed.mcpServers)
+        if (serverNames.length > 0) {
+          const serverName = serverNames[0]
+          const isDuplicate = servers.value.some((s: MCPServer) => 
+            s.server_name === serverName && 
+            (!editingServer.value || s.mcp_server_id !== editingServer.value.mcp_server_id)
+          )
+          if (isDuplicate) {
+            formErrors.value.config = `服务器名称 "${serverName}" 已存在，请勿重复添加`
+          }
+        } else {
+          formErrors.value.config = 'mcpServers 配置不能为空'
+        }
       }
     } catch (e) {
       formErrors.value.config = '请输入有效的 JSON 格式'
@@ -164,7 +179,7 @@ const handleSubmit = async () => {
 
   formLoading.value = true
   try {
-    let configData = {}
+    let configData: any = {}
     if (formData.value.config && typeof formData.value.config === 'string') {
       try {
         configData = JSON.parse(formData.value.config)
@@ -175,6 +190,21 @@ const handleSubmit = async () => {
       }
     } else {
       configData = formData.value.config || {}
+    }
+
+    try {
+      const testResponse = await testMCPServerAPI({ config: configData })
+      if (!testResponse.data || testResponse.data.status_code !== 200) {
+        const errorMsg = testResponse.data?.status_message || 'MCP 服务器连接测试失败，请检查配置'
+        formErrors.value.config = errorMsg
+        formLoading.value = false
+        return
+      }
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.message || '连接服务器失败：请检查服务器状态和网络连接'
+      formErrors.value.config = errorMsg
+      formLoading.value = false
+      return
     }
 
     if (editingServer.value) {

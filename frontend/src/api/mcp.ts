@@ -53,6 +53,15 @@ export const createMCPServerAPI = (data: CreateMCPServerRequest) => {
   })
 }
 
+// 测试MCP服务器连接
+export const testMCPServerAPI = (data: CreateMCPServerRequest) => {
+  return request<MCPServerSingleResponse>({
+    url: '/api/v1/mcp-servers/test',
+    method: 'POST',
+    data
+  })
+}
+
 // 获取MCP服务器列表
 export const getMCPServersAPI = () => {
   return request<MCPServerResponse>({

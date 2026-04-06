@@ -85,6 +85,17 @@ const handleSessionUpdatedEvent = (event: Event) => {
   }
 }
 
+const handleSessionDeletedEvent = (event: Event) => {
+  const detail = (event as CustomEvent<any>).detail || {}
+  const sessionId = detail.sessionId || detail.session_id
+  if (!sessionId) return
+
+  const index = sessions.value.findIndex(s => s.sessionId === sessionId)
+  if (index !== -1) {
+    sessions.value.splice(index, 1)
+  }
+}
+
 // 按时间分组的会话列表（含置顶分组）
 const groupedSessions = computed(() => {
   const now = new Date()
@@ -388,12 +399,14 @@ onMounted(async () => {
   document.addEventListener('click', handleGlobalClick)
   window.addEventListener('session:new-session', handleNewSessionEvent)
   window.addEventListener('session:session-updated', handleSessionUpdatedEvent)
+  window.addEventListener('session:session-deleted', handleSessionDeletedEvent)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleGlobalClick)
   window.removeEventListener('session:new-session', handleNewSessionEvent)
   window.removeEventListener('session:session-updated', handleSessionUpdatedEvent)
+  window.removeEventListener('session:session-deleted', handleSessionDeletedEvent)
 })
 </script>
 

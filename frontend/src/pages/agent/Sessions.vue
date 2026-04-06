@@ -3,13 +3,11 @@ import { ElMessage } from 'element-plus'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import {
   startAgentTaskAPI
 } from '../../api/agent'
-import { getSessionInfoAPI } from '../../api/sessions'
-import type { TaskSessionState } from '../../store/session-store'
-import { taskSessionStore } from '../../store/session-store'
+import { deleteSessionAPI, getSessionInfoAPI } from '../../api/sessions'
 
 const route = useRoute()
 const router = useRouter()
@@ -56,6 +54,30 @@ const isTaskRunning = ref(false)
 const isTaskFinished = ref(false)
 // 加载状态，用于历史会话切换时防止闪烁
 const isLoading = ref(false)
+
+// 用于保存当前任务的 AbortController，便于中止任务
+const currentTaskAbortController = ref<AbortController | null>(null)
+
+// 退出确认弹窗状态
+const showExitConfirm = ref(false)
+let exitConfirmPromiseResolve: ((value: boolean) => void) | null = null
+
+const promptExitConfirm = async (): Promise<boolean> => {
+  showExitConfirm.value = true
+  return new Promise<boolean>((resolve) => {
+    exitConfirmPromiseResolve = resolve
+  })
+}
+
+const onConfirmExit = () => {
+  showExitConfirm.value = false
+  if (exitConfirmPromiseResolve) exitConfirmPromiseResolve(true)
+}
+
+const onCancelExit = () => {
+  showExitConfirm.value = false
+  if (exitConfirmPromiseResolve) exitConfirmPromiseResolve(false)
+}
 
 // 基于任务图推导严格串行的 To-dos 列表（用户问题 -> step_1 -> step_2 -> ...）
 const todos = computed(() => {
@@ -291,12 +313,7 @@ const taskParams = ref({
   plugins: [] as string[]
 })
 
-// 保存原始参数（用于重新生成）
-const originalParams = ref({
-  query: '',
-  tools: [] as string[],
-  plugins: [] as string[]
-})
+
 
 // 获取当前选中节点的详情
 const selectedNodeDetail = computed(() => {
@@ -338,43 +355,35 @@ onMounted(async () => {
   const sessionId = (route.params.session_id || route.query.session_id) as string
 
   if (sessionId) {
-    // 优先检查 store 中是否有保存的运行状态（组件销毁重建时，如"开启新对话"再点回）
-    if (taskSessionStore.hasSession(sessionId)) {
-      console.log('从 store 恢复运行中会话:', sessionId)
-      restoreStateFromStore(sessionId)
-    } else {
-      // 正常历史会话模式：加载后端数据
-      console.log('历史会话模式，session_id:', sessionId)
-      isLoading.value = true
-      isHistoryMode.value = true
-      await loadSessionInfo(sessionId)
-      isLoading.value = false
-    }
+    // 正常历史会话模式：加载后端数据
+    console.log('历史会话模式，session_id:', sessionId)
+    isLoading.value = true
+    isHistoryMode.value = true
+    await loadSessionInfo(sessionId)
+    isLoading.value = false
   } else {
     // 新任务模式：直接开始执行任务
     console.log('新任务模式')
 
     // 保存参数
-    originalParams.value.query = route.query.query as string || ''
+    const queryStr = route.query.query as string || ''
+    const toolsStr = route.query.tools as string
+    const parsedTools = toolsStr ? JSON.parse(toolsStr) : []
 
-    const tools = route.query.tools as string
-    originalParams.value.tools = tools ? JSON.parse(tools) : []
-    originalParams.value.plugins = originalParams.value.tools
-
-    taskParams.value.query = originalParams.value.query
-    taskParams.value.plugins = originalParams.value.plugins
+    taskParams.value.query = queryStr
+    taskParams.value.plugins = parsedTools
 
     // 保存用户问题用于显示
-    userQuery.value = originalParams.value.query
+    userQuery.value = queryStr
 
-    console.log('✅ 用户问题:', originalParams.value.query)
-    console.log('✅ 选中工具:', originalParams.value.tools)
+    console.log('✅ 用户问题:', queryStr)
+    console.log('✅ 选中工具:', parsedTools)
 
     // 清理 URL 参数（保留功能，隐藏参数）
     router.replace({ path: '/sessions' })
 
     // 直接开始执行任务（AI 自行分解）
-    if (originalParams.value.query) {
+    if (queryStr) {
       console.log('🚀 开始自动执行任务...')
       startTask()
     } else {
@@ -411,235 +420,6 @@ const resetPageState = () => {
   isTaskRunning.value = false
 }
 
-// ---- 会话状态保存/恢复工具方法 ----
-
-/** 将当前组件 ref 状态打包保存到 store（运行中会话切走时调用） */
-const saveCurrentStateToStore = (sessionId: string) => {
-  const state = taskSessionStore.getOrCreate(sessionId)
-  state.taskGraph = [...taskGraph.value]
-  state.nodeStatusMap = new Map(nodeStatusMap.value)
-  state.taskResultContent = taskResultContent.value
-  state.resultBuffer = resultBuffer.value
-  state.userQuery = userQuery.value
-  state.liveResultPages = [...liveResultPages.value]
-  state.liveResultPageIndex = liveResultPageIndex.value
-  state.liveLatestContent = liveLatestContent.value
-  state.showGraph = showGraph.value
-  state.showTaskResult = showTaskResult.value
-  state.isTaskRunning = isTaskRunning.value
-  state.isTaskFinished = isTaskFinished.value
-  state.isReceivingResult = isReceivingResult.value
-  state.isJudging = isJudging.value
-  state.isJudgeSuccess = isJudgeSuccess.value
-  state.isDraining = isDraining.value
-
-  // 关键：将 proxy callbacks 重绑定为写入 store 状态对象
-  // 这样 resetPageState() 清空 ref 后，后台 SSE 事件仍然正确写入 store
-  if (state.callbacks) {
-    const cb = state.callbacks
-    cb.onMessage = (data: any) => {
-      if (typeof data === 'string' && data) {
-        state.resultBuffer += data
-      }
-    }
-    cb.onTaskGraph = (graph: any) => {
-      // 检测 retry：如果已有结果内容，说明是第二轮重跑，归档当前结果
-      const fullContent = state.liveLatestContent + state.resultBuffer
-      if (fullContent) {
-        state.liveResultPages.push(fullContent)
-        state.taskResultContent = ''
-        state.resultBuffer = ''
-        state.liveLatestContent = ''
-        state.isReceivingResult = false
-        state.isJudging = false
-        state.isJudgeSuccess = false
-        state.isTaskFinished = false
-        state.isDraining = false
-        state.showTaskResult = false
-        state.liveResultPageIndex = state.liveResultPages.length
-      }
-      state.taskGraph = graph
-      const nodeSet = new Set<string>()
-      const endNodes = new Set<string>()
-      graph.forEach((item: GraphNode) => {
-        nodeSet.add(item.start)
-        nodeSet.add(item.end)
-        endNodes.add(item.end)
-      })
-      const startNodes = new Set<string>()
-      nodeSet.forEach((node: string) => {
-        if (!endNodes.has(node)) startNodes.add(node)
-      })
-      nodeSet.forEach((node: string) => {
-        if (startNodes.has(node)) {
-          state.nodeStatusMap.set(node, { status: 'completed', message: '用户问题已提交' })
-        } else {
-          state.nodeStatusMap.set(node, { status: 'pending' })
-        }
-      })
-      state.showGraph = true
-    }
-    cb.onStepResult = (stepData: { title: string; message: string }) => {
-      state.nodeStatusMap.set(stepData.title, { status: 'completed', message: stepData.message })
-    }
-    cb.onTaskResult = (messageChunk: string) => {
-      if (typeof messageChunk === 'string') {
-        state.resultBuffer += messageChunk
-      }
-      if (!state.isReceivingResult) {
-        state.isReceivingResult = true
-        state.showTaskResult = true
-      }
-      // 后台模式下直接将 buffer 追加到 content（无需 drain 动画）
-      state.liveLatestContent += state.resultBuffer
-      state.taskResultContent += state.resultBuffer
-      state.resultBuffer = ''
-    }
-    cb.onEvaluating = () => {
-      state.isJudging = true
-      if (!state.isReceivingResult && state.resultBuffer.length === 0) {
-        state.isReceivingResult = true
-      }
-    }
-    cb.onError = (error: any) => {
-      console.error('❌ [后台] 任务执行出错:', error)
-      state.isTaskRunning = false
-      state.isTaskFinished = true
-      taskSessionStore.removeSession(sessionId)
-    }
-    cb.onClose = () => {
-      console.log('✅ [后台] 任务执行完成')
-      // 后台模式：将剩余 buffer 全部追加到 content
-      if (state.resultBuffer.length > 0) {
-        state.liveLatestContent += state.resultBuffer
-        state.taskResultContent += state.resultBuffer
-        state.resultBuffer = ''
-      }
-      state.isReceivingResult = false
-      state.isTaskRunning = false
-      state.isTaskFinished = true
-      state.showTaskResult = true
-      // 注意：不在后台 removeSession——保留完成状态供切回时恢复
-    }
-  }
-
-  console.log('💾 已保存会话状态到 store:', sessionId)
-}
-
-/** 从 store 恢复会话状态到当前组件 ref */
-const restoreStateFromStore = (sessionId: string) => {
-  const state = taskSessionStore.getSession(sessionId)
-  if (!state) return
-  taskGraph.value = [...state.taskGraph]
-  nodeStatusMap.value = new Map(state.nodeStatusMap)
-  taskResultContent.value = state.taskResultContent
-  resultBuffer.value = state.resultBuffer
-  userQuery.value = state.userQuery
-  liveResultPages.value = [...state.liveResultPages]
-  liveResultPageIndex.value = state.liveResultPageIndex
-  liveLatestContent.value = state.liveLatestContent
-  showGraph.value = state.showGraph
-  showTaskResult.value = state.showTaskResult
-  isTaskRunning.value = state.isTaskRunning
-  isTaskFinished.value = state.isTaskFinished
-  isReceivingResult.value = state.isReceivingResult
-  isJudging.value = state.isJudging
-  isJudgeSuccess.value = state.isJudgeSuccess
-  isDraining.value = false // drain 定时器需要重新启动
-  isHistoryMode.value = false
-  currentSessionId.value = sessionId
-
-  // 如果 store 中仍有缓冲需要排空，重新启动 drain
-  if (state.isReceivingResult && state.resultBuffer.length > 0) {
-    startDrain()
-  }
-
-  // 重新绑定 SSE 回调到当前组件 ref
-  if (state.callbacks) {
-    rebindCallbacks(state.callbacks)
-  }
-
-  console.log('🔄 已从 store 恢复会话状态:', sessionId)
-
-  // 如果任务已在后台完成，恢复后清理 store，下次访问走正常历史模式
-  if (!state.isTaskRunning) {
-    taskSessionStore.removeSession(sessionId)
-  }
-}
-
-/** 将 store 中的 SSE 回调代理重新绑定到当前组件的 ref（切回活跃视图时调用） */
-const rebindCallbacks = (callbacks: NonNullable<TaskSessionState['callbacks']>) => {
-  callbacks.onMessage = (data: any) => {
-    if (typeof data === 'string' && data) {
-      exitJudging()
-      resultBuffer.value += data
-      if (isReceivingResult.value && !isDraining.value) {
-        startDrain()
-      }
-    }
-  }
-  callbacks.onTaskGraph = (graph: any) => {
-    // 检测 retry：如果已有结果内容，说明是第二轮重跑，归档当前结果
-    if (taskResultContent.value || resultBuffer.value) {
-      archiveCurrentResult()
-    }
-    taskGraph.value = graph
-    const nodeSet = new Set<string>()
-    const endNodes = new Set<string>()
-    graph.forEach((item: GraphNode) => {
-      nodeSet.add(item.start)
-      nodeSet.add(item.end)
-      endNodes.add(item.end)
-    })
-    const startNodes = new Set<string>()
-    nodeSet.forEach(node => {
-      if (!endNodes.has(node)) startNodes.add(node)
-    })
-    nodeSet.forEach(node => {
-      if (startNodes.has(node)) {
-        updateNodeStatus(node, 'completed', '用户问题已提交')
-      } else {
-        updateNodeStatus(node, 'pending')
-      }
-    })
-    showGraph.value = true
-  }
-  callbacks.onStepResult = (stepData: { title: string; message: string }) => {
-    updateNodeStatus(stepData.title, 'completed', stepData.message)
-  }
-  callbacks.onTaskResult = (messageChunk: string) => {
-    if (typeof messageChunk === 'string') {
-      exitJudging()
-      resultBuffer.value += messageChunk
-    }
-    if (!isReceivingResult.value) {
-      startReceivingResults()
-      return
-    }
-    if (isReceivingResult.value && !isDraining.value) {
-      startDrain()
-    }
-  }
-  callbacks.onEvaluating = () => {
-    isJudging.value = true
-    if (!isReceivingResult.value && resultBuffer.value.length === 0) {
-      isReceivingResult.value = true
-    }
-  }
-  callbacks.onError = (error: any) => {
-    console.error('❌ 任务执行出错:', error)
-    ElMessage.error('任务执行失败')
-    isTaskRunning.value = false
-    isTaskFinished.value = true
-  }
-  callbacks.onClose = () => {
-    console.log('✅ 任务执行完成')
-    startReceivingResults()
-    isTaskRunning.value = false
-    isTaskFinished.value = true
-  }
-}
-
 watch(
   () => route.params.session_id || route.query.session_id,
   async (newSessionId, oldSessionId) => {
@@ -651,9 +431,6 @@ watch(
     // ---- 离开旧会话 ----
     const leavingSessionId = currentSessionId.value || (oldSessionId as string)
     if (leavingSessionId && isTaskRunning.value) {
-      // 运行中的会话：保存状态到 store，不清空
-      saveCurrentStateToStore(leavingSessionId)
-      // 停止本地 drain 定时器（store 中的回调会继续接收数据到 store）
       if (drainTimer !== null) {
         window.clearInterval(drainTimer)
         drainTimer = null
@@ -663,19 +440,11 @@ watch(
     // ---- 进入新会话 ----
     if (newSessionId) {
       const sid = newSessionId as string
-      // 检查是否有后台运行中的会话状态
-      if (taskSessionStore.hasSession(sid)) {
-        // 从 store 恢复
-        resetPageState()
-        restoreStateFromStore(sid)
-      } else {
-        // 正常历史会话模式
-        resetPageState()
-        isLoading.value = true
-        isHistoryMode.value = true
-        await loadSessionInfo(sid)
-        isLoading.value = false
-      }
+      resetPageState()
+      isLoading.value = true
+      isHistoryMode.value = true
+      await loadSessionInfo(sid)
+      isLoading.value = false
     } else {
       resetPageState()
       isHistoryMode.value = false
@@ -859,14 +628,76 @@ const closeNodeDetail = () => {
   selectedNode.value = null
 }
 
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (isTaskRunning.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
+})
+
 onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
   if (drainTimer !== null) {
     window.clearInterval(drainTimer)
     drainTimer = null
   }
-  // 如果有运行中的任务，保存状态到 store（组件销毁但 SSE 继续在后台运行）
-  if (isTaskRunning.value && currentSessionId.value) {
-    saveCurrentStateToStore(currentSessionId.value)
+})
+
+const abortCurrentTask = async () => {
+  if (currentTaskAbortController.value) {
+    currentTaskAbortController.value.abort()
+    currentTaskAbortController.value = null
+  }
+  if (currentSessionId.value) {
+    try {
+      await deleteSessionAPI(currentSessionId.value)
+      // 如果侧边栏有监听删除事件可以自动刷新，或者通过重新加载实现
+      window.dispatchEvent(
+        new CustomEvent('session:session-deleted', {
+          detail: { sessionId: currentSessionId.value }
+        })
+      )
+    } catch (error) {
+      console.error('Failed to delete session:', error)
+    }
+  }
+  isTaskRunning.value = false
+}
+
+onBeforeRouteLeave(async (to, from, next) => {
+  if (isTaskRunning.value) {
+    const isConfirmed = await promptExitConfirm()
+    if (isConfirmed) {
+      await abortCurrentTask()
+      next()
+    } else {
+      next(false)
+    }
+  } else {
+    next()
+  }
+})
+
+onBeforeRouteUpdate(async (to, from, next) => {
+  // 仅当我们确实离开当前运行中的会话时才弹窗，如果是首次新建任务并赋予URL，不应弹窗拦截
+  const toSessionId = to.params.session_id || ''
+  const fromSessionId = from.params.session_id || ''
+  const currentId = currentSessionId.value || ''
+
+  if (isTaskRunning.value && toSessionId !== fromSessionId && toSessionId !== currentId) {
+    const isConfirmed = await promptExitConfirm()
+    if (isConfirmed) {
+      await abortCurrentTask()
+      next()
+    } else {
+      next(false)
+    }
+  } else {
+    next()
   }
 })
 
@@ -881,8 +712,6 @@ const scrollResultToBottom = () => {
     scrollPending = false
   })
 }
-
-
 
 // 开始执行任务
 const startTask = async () => {
@@ -902,6 +731,7 @@ const startTask = async () => {
   isTaskFinished.value = false
   showGraph.value = false
   isTaskRunning.value = true
+  currentTaskAbortController.value = null
   // 清理可能遗留的回放定时器
   if (drainTimer !== null) {
     window.clearInterval(drainTimer)
@@ -909,9 +739,8 @@ const startTask = async () => {
   }
   isDraining.value = false
 
-  // 创建 proxy callbacks 对象：SSE 事件通过这些函数写入数据
-  // 活跃视图时指向组件 ref，切走后由 saveCurrentStateToStore 将后续数据写入 store
-  const proxyCallbacks: NonNullable<TaskSessionState['callbacks']> = {
+  // 创建回调对象：SSE 事件通过这些函数写入数据
+  const proxyCallbacks = {
     onMessage: (data: any) => {
       console.log('📨 接收到文本数据:', data)
       if (typeof data === 'string' && data) {
@@ -979,20 +808,12 @@ const startTask = async () => {
       ElMessage.error('任务执行失败')
       isTaskRunning.value = false
       isTaskFinished.value = true
-      // 任务出错，清理 store 中的运行状态
-      if (currentSessionId.value) {
-        taskSessionStore.removeSession(currentSessionId.value)
-      }
     },
     onClose: () => {
       console.log('✅ 任务执行完成')
       startReceivingResults()
       isTaskRunning.value = false
       isTaskFinished.value = true
-      // 任务完成，清理 store 中的运行状态
-      if (currentSessionId.value) {
-        taskSessionStore.removeSession(currentSessionId.value)
-      }
     },
     onSessionStarted: (sessionInfo) => {
       currentSessionId.value = sessionInfo.sessionId
@@ -1010,11 +831,8 @@ const startTask = async () => {
           }
         })
       )
-      // 在 store 中注册这个会话（仅保存 callbacks 引用，供后台使用）
-      const state = taskSessionStore.getOrCreate(sessionInfo.sessionId)
-      state.callbacks = proxyCallbacks
-      state.isTaskRunning = true
-      state.userQuery = userQuery.value
+      isTaskRunning.value = true
+      userQuery.value = userQuery.value
     },
     onSessionTitleChunk: (sessionInfo) => {
       window.dispatchEvent(
@@ -1053,6 +871,7 @@ const startTask = async () => {
       (sessionInfo) => proxyCallbacks.onSessionUpdated(sessionInfo),
       (sessionInfo) => proxyCallbacks.onSessionTitleChunk(sessionInfo),
     )
+    currentTaskAbortController.value = ctrl
   } catch (error) {
     console.error('任务执行异常:', error)
     ElMessage.error('请求失败，请检查网络连接')
@@ -1240,6 +1059,20 @@ const startTask = async () => {
         </div>
       </div>
     </div>
+
+    <!-- 确认本页离开会话弹窗 -->
+    <transition name="fade">
+      <div v-if="showExitConfirm" class="confirm-dialog-overlay" @click="onCancelExit">
+        <div class="confirm-dialog" @click.stop>
+          <h3 class="dialog-title">终止当前会话</h3>
+          <p class="dialog-message">当前会话正在运行中，离开页面将终止该会话。确认离开吗？</p>
+          <div class="dialog-footer">
+            <button class="dialog-btn cancel-btn" @click="onCancelExit">取消</button>
+            <button class="dialog-btn delete-btn" @click="onConfirmExit">离开</button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -1256,52 +1089,25 @@ $warning: #f59e0b;
 $error: #ef4444;
 
 .task-graph-page {
+  /* 主题变量（该页作用域内） */
+  --bg: #ffffff;
+  --panel: #ffffff;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --text: #111827;
+  --muted: #6b7280;
+  --primary: #2563eb;
+  --primary-600: #1d4ed8;
+  --success: #16a34a;
+  --warning: #d97706;
+  --pending: #94a3b8;
+
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  background-color: #ffffff;
+  background-color: var(--bg);
   overflow: hidden;
   position: relative;
-
-  // 动态背景网格
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image:
-      linear-gradient(rgba(6, 182, 212, 0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(59, 130, 246, 0.08) 1px, transparent 1px);
-    background-size: 50px 50px;
-    pointer-events: none;
-    animation: gridMove 20s linear infinite;
-  }
-
-  // 发光圆形装饰
-  &::after {
-    content: '';
-    position: absolute;
-    width: 600px;
-    height: 600px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
-    top: -200px;
-    right: -200px;
-    animation: float 8s ease-in-out infinite;
-    pointer-events: none;
-  }
-}
-
-@keyframes gridMove {
-  0% {
-    transform: translate(0, 0);
-  }
-
-  100% {
-    transform: translate(50px, 50px);
-  }
 }
 
 // 三列布局
@@ -1310,8 +1116,8 @@ $error: #ef4444;
   display: flex;
   width: 100%;
   height: 100%;
-  gap: 20px;
-  padding: 20px;
+  gap: 12px;
+  padding: 12px;
   position: relative;
   z-index: 1;
 }
@@ -1328,120 +1134,49 @@ $error: #ef4444;
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(24px) saturate(180%);
-  border-radius: 32px !important;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 24px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
-    transform: translateY(-6px) scale(1.01);
-    box-shadow:
-      0 16px 48px rgba(0, 0, 0, 0.18),
-      0 0 0 1px rgba(255, 255, 255, 0.15) inset,
-      0 0 60px rgba(59, 130, 246, 0.15);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   }
 
   .column-header {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 26px 32px;
-    background: linear-gradient(135deg,
-        rgba(6, 182, 212, 0.08) 0%,
-        rgba(59, 130, 246, 0.08) 100%);
-    border-bottom: 1px solid rgba(6, 182, 212, 0.12);
+    padding: 16px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
     flex-shrink: 0;
     position: relative;
     overflow: hidden;
 
-    // 发光顶部渐变条
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg,
-          $primary-start 0%,
-          $primary-end 50%,
-          $secondary-start 100%);
-      box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
-    }
-
-    // 动态光效
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg,
-          transparent,
-          rgba(255, 255, 255, 0.1),
-          transparent);
-      animation: shimmer 3s infinite;
-    }
-
     .header-icon {
-      width: 46px;
-      height: 46px;
+      width: 36px;
+      height: 36px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
-      background: linear-gradient(135deg, $primary-start 0%, $primary-end 100%);
-      border-radius: 14px;
-      box-shadow:
-        0 6px 20px rgba(6, 182, 212, 0.4),
-        0 0 0 4px rgba(6, 182, 212, 0.1);
+      font-size: 18px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 12px;
       flex-shrink: 0;
       position: relative;
       transition: all 0.3s ease;
-
-      // 发光效果
-      &::after {
-        content: '';
-        position: absolute;
-        inset: -3px;
-        background: linear-gradient(135deg, $primary-start 0%, $primary-end 100%);
-        border-radius: 17px;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        z-index: -1;
-        filter: blur(12px);
-      }
-
-      &:hover {
-        transform: scale(1.1) rotate(5deg);
-        box-shadow:
-          0 8px 28px rgba(6, 182, 212, 0.6),
-          0 0 0 4px rgba(6, 182, 212, 0.15);
-
-        &::after {
-          opacity: 0.8;
-        }
-      }
     }
 
     .header-title {
       margin: 0;
       font-size: 19px;
-      font-weight: 800;
+      font-weight: 700;
       flex: 1;
-      background: linear-gradient(135deg,
-          $primary-start 0%,
-          $primary-end 60%,
-          $secondary-start 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: var(--text);
       letter-spacing: -0.5px;
     }
   }
@@ -1452,7 +1187,7 @@ $error: #ef4444;
     flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
-    background: transparent;
+    background: var(--panel);
 
     // 添加内边距以便给内部卡片留出空间
     padding: 0 20px 20px;
@@ -1467,15 +1202,6 @@ $error: #ef4444;
   }
 }
 
-@keyframes shimmer {
-  0% {
-    left: -100%;
-  }
-
-  100% {
-    left: 100%;
-  }
-}
 
 // 用户问题卡片
 .user-query-card {
@@ -1666,10 +1392,14 @@ $error: #ef4444;
       position: relative;
       will-change: contents; // 提示浏览器内容会频繁变化
 
+      &::before {
+        display: none !important;
+      }
+
       p {
         margin: 12px 0;
         line-height: 1.8;
-        color: #374151;
+        color: var(--text);
       }
 
       h1,
@@ -1940,7 +1670,7 @@ $error: #ef4444;
   p {
     font-size: 15px;
     margin: 8px 0;
-    color: #64748b;
+    color: var(--muted);
     font-weight: 500;
   }
 }
@@ -2087,7 +1817,90 @@ $error: #ef4444;
 }
 
 
+// 确认对话框样式
+.confirm-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
 
+.confirm-dialog {
+  background: white;
+  border-radius: 24px;
+  padding: 24px;
+  width: 90%;
+  max-width: 320px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  animation: dialog-scale-in 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  .dialog-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .dialog-message {
+    margin: 0 0 24px 0;
+    font-size: 14px;
+    color: #666;
+    line-height: 1.5;
+  }
+
+  .dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+
+    .dialog-btn {
+      padding: 8px 24px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      background: white;
+      transition: all 0.2s;
+      outline: none;
+
+      &.cancel-btn {
+        border: 1px solid #e5e5e5;
+        color: #333;
+
+        &:hover {
+          background: #f5f5f5;
+        }
+      }
+
+      &.delete-btn {
+        border: 1px solid #ff3b30;
+        color: #ff3b30;
+
+        &:hover {
+          background: #fff0f0;
+        }
+      }
+    }
+  }
+}
+
+@keyframes dialog-scale-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
 
 // 动画
 @keyframes fadeIn {
@@ -2112,130 +1925,6 @@ $error: #ef4444;
   }
 }
 
-/* =============================
-   UI Refresh Overrides (Clean)
-   — 简洁中性色主题覆盖，不改动结构与逻辑
-   ============================= */
-
-.task-graph-page {
-  /* 主题变量（该页作用域内） */
-  --bg: #ffffff;
-  --panel: #ffffff;
-  --border: #e5e7eb;
-  --border-strong: #d1d5db;
-  --text: #111827;
-  --muted: #6b7280;
-  --primary: #2563eb;
-  --primary-600: #1d4ed8;
-  --success: #16a34a;
-  --warning: #d97706;
-  --pending: #94a3b8;
-}
-
-/* 页面背景与装饰调整：移除炫光网格与大光斑 */
-.task-graph-page {
-  background: var(--bg);
-}
-
-.task-graph-page::before,
-.task-graph-page::after {
-  display: none !important;
-}
-
-
-/* 布局与面板 */
-.two-column-layout {
-  gap: 12px;
-  padding: 12px;
-}
-
-.column {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  backdrop-filter: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.column:hover {
-  transform: none;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-}
-
-.column .column-header {
-  padding: 16px 20px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
-}
-
-.column .column-header::before,
-.column .column-header::after {
-  display: none !important;
-}
-
-.column .column-header .header-icon {
-  width: 36px;
-  height: 36px;
-  font-size: 18px;
-  background: var(--primary);
-  color: #fff;
-  border-radius: 12px;
-  box-shadow: none;
-}
-
-.column .column-header .header-icon::after {
-  display: none !important;
-}
-
-.column .column-header .header-icon:hover {
-  transform: none;
-  box-shadow: none;
-}
-
-.column .column-header .header-title {
-  background: none;
-  -webkit-text-fill-color: initial;
-  color: var(--text);
-  font-weight: 700;
-}
-
-.column .column-content {
-  background: var(--panel);
-}
-
-
-/* 流程图区 */
-/* 执行结果区 */
-.column-result .result-wrapper :deep(.md-editor-preview) {
-  background: #fff;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-}
-
-.column-result .result-wrapper :deep(.md-editor-preview)::before {
-  display: none !important;
-}
-
-.column-result .result-wrapper :deep(.md-editor-preview) p {
-  color: var(--text);
-}
-
-/* 空状态文案 */
-.empty-placeholder p {
-  color: var(--muted);
-}
-
-/* 弹窗统一为干净风格 */
-.node-detail-modal .modal-content .modal-header {
-  background: #fff;
-  color: var(--text);
-  border-bottom: 1px solid var(--border);
-}
-
-.node-detail-modal .modal-content .modal-header .modal-close {
-  color: var(--muted);
-}
 
 /* 自我反馈折叠卡片 (iOS 26 风格) - 抽离原生渲染 */
 .feedback-cards-container {
@@ -2342,10 +2031,6 @@ $error: #ef4444;
     background: var(--bg);
   }
 
-  .task-graph-page::before,
-  .task-graph-page::after {
-    display: none !important;
-  }
 
   .two-column-layout {
     padding: 12px;
@@ -2654,6 +2339,43 @@ $error: #ef4444;
 
   .judge-meter-track {
     background: rgba(148, 163, 184, 0.22);
+  }
+
+  .confirm-dialog {
+    background: #242426;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.7);
+
+    .dialog-title {
+      color: #f5f5f7;
+    }
+
+    .dialog-message {
+      color: rgba(235, 235, 245, 0.6);
+    }
+
+    .dialog-footer {
+      .dialog-btn {
+        &.cancel-btn {
+          background: transparent;
+          border-color: #3a3a3c;
+          color: #f5f5f7;
+
+          &:hover {
+            background: #3a3a3c;
+          }
+        }
+
+        &.delete-btn {
+          background: transparent;
+          border-color: #ff453a;
+          color: #ff453a;
+
+          &:hover {
+            background: rgba(255, 69, 58, 0.12);
+          }
+        }
+      }
+    }
   }
 }
 </style>

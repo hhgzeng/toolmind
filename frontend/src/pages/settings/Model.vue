@@ -104,6 +104,37 @@ const openCreateDialog = () => {
   })
 }
 
+// 测试模型连接
+const testLLMConnection = async (baseUrl: string, apiKey: string, model: string) => {
+  try {
+    const url = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
+    const testUrl = `${url}/chat/completions`
+    
+    // 设置 10s 超时
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+    
+    const response = await fetch(testUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [{ role: 'user', content: 'hello' }],
+        max_tokens: 1
+      }),
+      signal: controller.signal
+    })
+    
+    clearTimeout(timeoutId)
+    return response.ok
+  } catch (error) {
+    return false
+  }
+}
+
 // 创建模型
 const handleCreate = async () => {
   // 检查必填字段
@@ -112,13 +143,32 @@ const handleCreate = async () => {
     return
   }
 
+  // 检查模型是否已存在
+  const isExist = models.value.some(m => 
+    m.model === createForm.value.model && 
+    m.base_url === createForm.value.base_url
+  )
+  if (isExist) {
+    ElMessage.warning('模型已存在')
+    return
+  }
+
   createLoading.value = true
   try {
+    // 连接检测
+    const isValid = await testLLMConnection(createForm.value.base_url, createForm.value.api_key, createForm.value.model)
+    if (!isValid) {
+      ElMessage.error('模型添加失败，请检查模型添加信息')
+      createLoading.value = false
+      return
+    }
+
     const response = await createLLMAPI(createForm.value)
 
     if (response.data.status_code === 200) {
       createDialogVisible.value = false
       fetchModels()
+      ElMessage.success('模型添加成功')
     } else {
       ElMessage.error('创建失败: ' + (response.data.status_message || '未知错误'))
     }
@@ -148,13 +198,37 @@ const handleEdit = async () => {
     return
   }
 
+  // 检查模型是否已存在（排除自身）
+  const isExist = models.value.some(m => 
+    m.llm_id !== editForm.value.llm_id &&
+    m.model === editForm.value.model && 
+    m.base_url === editForm.value.base_url
+  )
+  if (isExist) {
+    ElMessage.warning('模型已存在')
+    return
+  }
+
   editLoading.value = true
   try {
+    // 获取原有的 API 密钥（如果表单中不填，那么使用原来的用来测试）
+    const originalModel = models.value.find(m => m.llm_id === editForm.value.llm_id)
+    const testApiKey = editForm.value.api_key || (originalModel ? originalModel.api_key : '')
+
+    // 连接检测
+    const isValid = await testLLMConnection(editForm.value.base_url, testApiKey, editForm.value.model)
+    if (!isValid) {
+      ElMessage.error('模型修改失败，请检查模型修改信息')
+      editLoading.value = false
+      return
+    }
+
     const response = await updateLLMAPI(editForm.value)
 
     if (response.data.status_code === 200) {
       editDialogVisible.value = false
       fetchModels()
+      ElMessage.success('模型修改成功')
     } else {
       ElMessage.error('修改失败: ' + (response.data.status_message || '未知错误'))
     }

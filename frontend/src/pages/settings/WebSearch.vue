@@ -38,9 +38,11 @@ const saveConfig = async () => {
       websearch.value.enabled = res.data.data.enabled ?? true
     } else {
       ElMessage.error(res.data.status_message || "保存联网搜索配置失败")
+      websearch.value.enabled = false
     }
   } catch (error) {
     ElMessage.error("保存联网搜索配置失败")
+    websearch.value.enabled = false
   } finally {
     saving.value = false
   }

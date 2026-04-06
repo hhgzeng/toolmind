@@ -8,6 +8,34 @@ from toolmind.utils import convert_mcp_config
 router = APIRouter(tags=["MCP-Server"])
 
 
+@router.post("/mcp-servers/test")
+async def test_mcp_server(
+    config: dict = Body(..., description="MCP Server的JSON配置", embed=True),
+    login_user: UserPayload = Depends(get_login_user),
+):
+    try:
+        mcp_servers_config = config.get("mcpServers", {})
+        if not mcp_servers_config:
+            raise ValueError("Invalid config format: missing 'mcpServers'")
+
+        server_name = list(mcp_servers_config.keys())[0]
+        server_details = mcp_servers_config[server_name]
+
+        type_str = server_details.get("type", "remote")
+        url_str = server_details.get("url", "")
+
+        server_info = {"server_name": server_name, **server_details}
+        mcp_manager = MCPManager([convert_mcp_config(server_info)])
+        
+        # Test connection by fetching tools directly, raising error if fails
+        server_tools = await mcp_manager.multi_server_client.get_tools(
+            server_name=server_name
+        )
+        return resp_200(data={"status": "success", "tools_count": len(server_tools)})
+    except Exception as err:
+        logger.error(f"MCP Server connection test failed: {err}")
+        return resp_500(message=f"连接测试失败: {str(err)}")
+
 @router.post("/mcp-servers")
 async def create_mcp_server(
     config: dict = Body(..., description="MCP Server的JSON配置", embed=True),
@@ -27,6 +55,9 @@ async def create_mcp_server(
         server_info = {"server_name": server_name, **server_details}
         mcp_manager = MCPManager([convert_mcp_config(server_info)])
         tools_params = await mcp_manager.show_mcp_tools()
+        if not tools_params:
+            raise ValueError(f"无法连接到 MCP 服务器或服务器未提供工具: {server_name}")
+            
         tools_name_str = []
         for key, tools in tools_params.items():
             for tool in tools:
@@ -126,6 +157,9 @@ async def update_mcp_server(
             }
             mcp_manager = MCPManager([convert_mcp_config(server_info)])
             tools_params = await mcp_manager.show_mcp_tools()
+            if not tools_params:
+                raise ValueError(f"无法连接到 MCP 服务器或服务器未提供工具: {server_name}")
+
             tools_str = []
             for key, tools in tools_params.items():
                 for tool in tools:
