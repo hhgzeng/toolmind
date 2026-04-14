@@ -37,9 +37,7 @@ async def _increment_loop(state: AgentState) -> dict:
 
 def _should_retry(state: AgentState) -> str:
     """条件边：决定是否重跑"""
-    if state["eval_score"] >= 80:
-        return "end"
-    if state["loop_count"] >= state["max_loop"]:
+    if state["eval_score"] >= 80 or state["loop_count"] >= state["max_loop"]:
         return "end"
     return "retry"
 

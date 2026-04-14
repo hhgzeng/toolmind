@@ -9,7 +9,8 @@ GenerateTitlePrompt = """
 {query}
 """
 
-GenerateTaskPrompt = """<背景>
+GenerateTaskPrompt = """
+<背景>
 你是任务规划专家，需要把用户问题拆解成**严格串行**的子任务列表。每个子任务完成后结果传递给下一个，最终由最后一个子任务输出整体总结。
 </背景>
 
@@ -86,8 +87,8 @@ ToolCallPrompt = """
 4. **总结阶段**：信息充分后停止工具调用，输出自然语言总结：问题、关键信息、结论、与后续步骤相关的要点。
 
 ## 输入
-- 前置步骤上下文：{step_context}
 - 当前子任务规划：{step_info}
+- 前置步骤上下文：{step_context}
 
 ## 可用工具
 {tools_str}
