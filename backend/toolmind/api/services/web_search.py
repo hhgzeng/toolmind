@@ -7,9 +7,9 @@ from tavily import TavilyClient
 @tool("web_search", parse_docstring=True)
 def web_search(
     query: str,
-    topic: Optional[str],
-    max_results: Optional[int],
-    time_range: Optional[Literal["day", "week", "month", "year"]],
+    topic: Optional[str] = "general",
+    max_results: Optional[int] = 5,
+    time_range: Optional[Literal["day", "week", "month", "year"]] = None,
 ):
     """
     根据用户的问题以及查询参数进行联网搜索（使用 Tavily Search）
@@ -28,10 +28,19 @@ def web_search(
     return _web_search(query, topic, max_results, time_range)
 
 
-def _web_search(query, topic, max_results, time_range, api_key: str = None):
+def _web_search(
+    query,
+    topic: Optional[str] = "general",
+    max_results: Optional[int] = 5,
+    time_range: Optional[Literal["day", "week", "month", "year"]] = None,
+    api_key: str = None,
+):
     """使用 Tavily Search 工具进行联网搜索"""
     if not api_key:
         raise ValueError("Tavily API key is required")
+
+    topic = topic or "general"
+    max_results = max_results or 5
 
     tavily_client = TavilyClient(api_key=api_key)
     response = tavily_client.search(

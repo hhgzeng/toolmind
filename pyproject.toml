@@ -1,0 +1,24 @@
+[project]
+name = "toolmind"
+version = "1.0.0"
+description = "Toolmind is a powerful AI agent framework that enables you to build intelligent applications with ease."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "aiomysql>=0.3.2",
+    "arxiv-mcp-server[pdf]>=0.4.12",
+    "fastapi==0.121.0",
+    "greenlet>=3.4.0",
+    "langchain==1.0.3",
+    "langchain-openai==1.0.2",
+    "langgraph==1.0.7",
+    "langgraph-prebuilt==1.0.7",
+    "loguru==0.7.3",
+    "mcp==1.20.0",
+    "pyfiglet==1.0.4",
+    "pymysql>=1.1.2",
+    "redis==7.0.1",
+    "rsa>=4.9.1",
+    "sqlmodel==0.0.27",
+    "tavily-python==0.7.12",
+]

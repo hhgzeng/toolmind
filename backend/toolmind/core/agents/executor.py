@@ -25,7 +25,8 @@ class Executor:
         """执行当前步骤的 AI 推理与工具调用"""
         tools = await self.tool_manager.obtain_tools()
         model = await ModelManager.get_agent_intent_model(user_id=self.user_id)
-        tool_call_model = model.bind_tools(tools) if len(tools) else model
+        tool_call_model = model.bind_tools(tools, parallel_tool_calls=True) if len(tools) else model
+        conversation_model = await ModelManager.get_conversation_model(user_id=self.user_id)
 
         steps = state.get("steps", [])
         context_task = state.get("context_task", [])
@@ -37,6 +38,7 @@ class Executor:
         # 确定当前执行步骤及其上下文
         step_index = len(context_task)
         step_info = steps[step_index]
+        logger.info(f"👉 正在执行步骤 [{step_index + 1}/{len(steps)}]: {step_info.title}")
         tasks_graph = {step.step_id: step for step in steps}
 
         tools_summary = self.tool_manager.get_tools_summary()
@@ -58,22 +60,59 @@ class Executor:
             HumanMessage(content=state["query"]),
         ]
 
-        # 循环执行直至模型给出最终答复（不再调用工具）
+        # 循环执行直至模型给出最终答复（不再调用工具），限制最多 5 次循环
         step_summary = ""
-        while True:
+        max_iterations = 3
+        iteration_count = 0
+        while iteration_count < max_iterations:
+            iteration_count += 1
             response = await tool_call_model.ainvoke(
                 input=step_messages,
-                config={"callbacks": [UsageMetadataCallback]},
+                config={"callbacks": [UsageMetadataCallback()]},
             )
             step_messages.append(response)
 
             if response.tool_calls:
+                for tc in response.tool_calls:
+                    logger.info(f"🛠️  模型请求调用工具: {tc['name']} | 参数: {tc['args']}")
                 tool_messages = await self.tool_manager.parse_function_call_response(
                     response
                 )
                 step_messages.extend(tool_messages)
+
+                if iteration_count >= max_iterations:
+                    logger.warning(f"⚠️ 步骤 [{step_info.title}] 达到最大工具调用循环次数 ({max_iterations})")
+
+                    tool_results = []
+                    for msg in step_messages:
+                        if getattr(msg, "type", "") == "tool":
+                            tool_results.append(str(msg.content))
+
+                    gathered_content = "\n\n".join(tool_results)
+                    # 达到最大工具循环次数后：用已获得的工具结果做一次“收尾生成”，产出最终 step_summary（不再调用工具）
+                    finalization_prompt = (
+                        "你正在执行一个子任务步骤。由于工具调用轮次已达到上限，不能再调用任何工具。\n"
+                        "请基于【用户问题】、【步骤信息】以及【已获得的工具结果】输出该步骤的最终结论（step_summary）。\n"
+                        "要求：\n"
+                        "- 直接给出可用的最终答案/结论/产出，不要写“执行中断/达到上限/无法继续”等过程性话术。\n"
+                        "- 如果工具结果不足以完全确定，请给出最合理的推断，并明确列出仍缺失的关键信息（用简短要点）。\n"
+                        "- 不要再提出要调用什么工具。\n\n"
+                        f"【用户问题】\n{state['query']}\n\n"
+                        f"【步骤信息】\n{json.dumps(step_info.model_dump(), ensure_ascii=False, indent=2)}\n\n"
+                        f"【已获得的工具结果】\n{gathered_content.strip() or '(无)'}\n"
+                    )
+                    final_response = await conversation_model.ainvoke(
+                        input=[SystemMessage(content=finalization_prompt)],
+                        config={"callbacks": [UsageMetadataCallback()]},
+                    )
+                    step_summary = (getattr(final_response, "content", "") or "").strip()
+                    if not step_summary:
+                        # 极端兜底：如果模型没有返回内容，则退化为工具结果汇总
+                        step_summary = gathered_content.strip() or "未能生成该步骤的最终结论。"
+                    break
             else:
                 step_summary = response.content or ""
+                logger.info(f"✅ 步骤 [{step_info.title}] 执行完成")
                 break
 
         step_info.result = step_summary

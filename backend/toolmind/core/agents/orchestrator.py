@@ -4,6 +4,7 @@ LangGraph 编排器 — Agent 核心入口
 """
 
 from langgraph.graph import END, START, StateGraph
+from loguru import logger
 from toolmind.api.services import SessionService
 from toolmind.core.agents.evaluator import Evaluator
 from toolmind.core.agents.executor import Executor
@@ -134,11 +135,13 @@ class Agent:
         final_state = initial_state
         async for update in self.graph.astream(initial_state, stream_mode="updates"):
             for node_name, state_update in update.items():
+                logger.info(f"🔄 节点流转: 刚完成 [{node_name}] 节点执行")
 
                 # 实时推送节点 SSE 事件并合并状态
-                for sse_event in state_update.get("events", []):
-                    yield sse_event
-                final_state = {**final_state, **state_update}
+                if state_update:
+                    for sse_event in state_update.get("events", []):
+                        yield sse_event
+                    final_state = {**final_state, **state_update}
 
                 # 评估结束后，推送统计并持久化
                 if node_name == "evaluator":
@@ -182,7 +185,7 @@ class Agent:
         streamed_title = ""
         async for title_chunk in conversation_model.astream(
             input=title_prompt,
-            config={"callbacks": [UsageMetadataCallback]},
+            config={"callbacks": [UsageMetadataCallback()]},
         ):
             chunk_content = getattr(title_chunk, "content", "") or ""
             if not chunk_content:

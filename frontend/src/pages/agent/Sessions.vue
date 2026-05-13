@@ -2134,6 +2134,24 @@ $error: #ef4444;
         color: var(--text);
       }
 
+      table {
+        background-color: transparent;
+      }
+
+      th,
+      td {
+        border-color: var(--border-strong);
+        background-color: var(--bg);
+      }
+
+      th {
+        background-color: var(--border);
+      }
+
+      tr:nth-child(2n) td {
+        background-color: var(--panel);
+      }
+
       blockquote {
         background: #2c2c2e;
         border-left-color: var(--primary);
@@ -2241,6 +2259,24 @@ $error: #ef4444;
             th,
             td {
               color: var(--text);
+            }
+
+            table {
+              background-color: transparent;
+            }
+
+            th,
+            td {
+              border-color: var(--border-strong);
+              background-color: var(--bg);
+            }
+
+            th {
+              background-color: var(--border);
+            }
+
+            tr:nth-child(2n) td {
+              background-color: var(--panel);
             }
 
             blockquote {

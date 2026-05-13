@@ -5,6 +5,7 @@
 import json
 
 from langchain_core.messages import HumanMessage
+from loguru import logger
 from toolmind.core.agents.model import ModelManager
 from toolmind.core.agents.state import AgentState
 from toolmind.core.callbacks import UsageMetadataCallback
@@ -34,6 +35,8 @@ class Synthesizer:
             steps_json=json.dumps(final_steps_payload, ensure_ascii=False, indent=2),
         )
 
+        logger.info("📝 开始汇总最终回答...")
+
         final_response = ""
         events = []
         conversation_model = await ModelManager.get_conversation_model(
@@ -41,7 +44,7 @@ class Synthesizer:
         )
         async for chunk in conversation_model.astream(
             [HumanMessage(content=synthesis_prompt)],
-            config={"callbacks": [UsageMetadataCallback]},
+            config={"callbacks": [UsageMetadataCallback()]},
         ):
             final_response += chunk.content
             events.append(
@@ -50,6 +53,8 @@ class Synthesizer:
                     "data": {"message": chunk.content},
                 }
             )
+
+        logger.info("✅ 最终回答汇总完成")
 
         events.append({"event": "evaluating_result", "data": {}})
         return {"final_response": final_response, "events": events}

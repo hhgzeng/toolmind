@@ -6,7 +6,12 @@ from typing import Optional
 
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
+from toolmind.core.agents.reasoning_content import (
+    patch_langchain_openai_reasoning_content,
+)
 from toolmind.database.dao import AgentConfigDao, LLMDao
+
+patch_langchain_openai_reasoning_content()
 
 
 class ModelManager:

@@ -24,6 +24,7 @@ class Planner:
 
     async def __call__(self, state: AgentState) -> dict:
         """执行规划，更新任务流"""
+        logger.info(f"📝 开始规划任务，User Query: {state['query']}")
         await self.tool_manager.obtain_tools()
         # 仅传递工具摘要以节省 Token
         tools_summary = self.tool_manager.get_tools_summary()
@@ -49,6 +50,8 @@ class Planner:
             task_step = AgentTaskStep(**raw_step)
             steps.append(task_step)
             tasks_graph[task_step.step_id] = task_step
+
+        logger.info(f"🎯 规划完成，共生成 {len(steps)} 个子任务")
 
         # 转换并构建前端展示的任务图数据
         for step_info in steps:
@@ -78,19 +81,25 @@ class Planner:
             user_id=self.user_id
         )
         response = await conversation_model.ainvoke(
-            input=agent_task_prompt, config={"callbacks": [UsageMetadataCallback]}
+            input=agent_task_prompt, config={"callbacks": [UsageMetadataCallback()]}
         )
 
         try:
-            return extract_and_parse_json(response.content)
+            res = extract_and_parse_json(response.content)
+            if not isinstance(res, dict):
+                raise ValueError("JSON 必须是字典类型")
+            return res
         except Exception as err:
             fix_message = FixJsonPrompt.format(
                 json_content=response.content, json_error=str(err)
             )
             fix_response = await conversation_model.ainvoke(
-                input=fix_message, config={"callbacks": [UsageMetadataCallback]}
+                input=fix_message, config={"callbacks": [UsageMetadataCallback()]}
             )
             try:
-                return extract_and_parse_json(fix_response.content)
+                res = extract_and_parse_json(fix_response.content)
+                if not isinstance(res, dict):
+                    raise ValueError("JSON 修复后仍非字典类型")
+                return res
             except Exception as fix_err:
                 raise ValueError(f"JSON 修复失败: {fix_err}")

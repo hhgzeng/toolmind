@@ -8,6 +8,8 @@ from typing import List, Optional
 from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.tools.base import ToolException
 from langchain_core.utils.function_calling import convert_to_openai_tool
+from loguru import logger
+
 from toolmind.api.services import MCPService, web_search
 from toolmind.core.mcp import MCPManager
 from toolmind.schema import MCPConfig
@@ -116,6 +118,7 @@ class ToolManager:
 
     async def process_tool_result(self, tool_name: str, tool_args: dict) -> str:
         """调用工具并统一返回文本结果"""
+        logger.info(f"▶️  开始执行工具 [{tool_name}] ...")
 
         def find_mcp_tool(name):
             for tool in self.mcp_tools:
@@ -126,20 +129,35 @@ class ToolManager:
         if tool := find_mcp_tool(tool_name):
             try:
                 text_content, no_text_content = await tool.coroutine(**tool_args)
+                logger.info(f"✔️  工具 [{tool_name}] 执行成功")
             except ToolException as e:
                 text_content = f"[工具执行失败] {tool_name}: {e}"
+                logger.warning(f"❌ 工具 [{tool_name}] 执行失败: {e}")
             except Exception as e:
                 text_content = f"[工具执行失败] {tool_name}: {type(e).__name__} - {e}"
+                logger.warning(
+                    f"❌ 工具 [{tool_name}] 执行失败: {type(e).__name__} - {e}"
+                )
         else:
             if tool_name == "web_search":
                 from toolmind.api.services.web_search import _web_search
 
                 await self._ensure_web_search_config()
-                text_content = _web_search(
-                    **tool_args, api_key=self._web_search_api_key
-                )
+                try:
+                    text_content = _web_search(
+                        **tool_args, api_key=self._web_search_api_key
+                    )
+                    logger.info(f"✔️  工具 [{tool_name}] 执行成功")
+                except Exception as e:
+                    text_content = (
+                        f"[工具执行失败] {tool_name}: {type(e).__name__} - {e}"
+                    )
+                    logger.warning(
+                        f"❌ 工具 [{tool_name}] 执行失败: {type(e).__name__} - {e}"
+                    )
             else:
                 text_content = f"[工具执行失败] 未知内置工具 {tool_name}"
+                logger.warning(f"❌ 工具 [{tool_name}] 未知内置工具")
 
         return text_content
 
@@ -153,7 +171,7 @@ class ToolManager:
         # 并发执行所有工具调用
         async def _run_one(tool_call: dict) -> ToolMessage:
             tool_name = tool_call.get("name")
-            tool_args = tool_call.get("args")
+            tool_args = tool_call.get("args") or {}
             tool_call_id = tool_call.get("id")
             content = await self.process_tool_result(tool_name, tool_args)
             return ToolMessage(
