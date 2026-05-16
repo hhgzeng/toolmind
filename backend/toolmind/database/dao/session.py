@@ -38,6 +38,8 @@ class SessionDao:
     async def update_session_contexts(cls, session_id, session_context):
         async with async_session_getter() as session:
             session_model = await session.get(Session, session_id)
+            if not session_model:
+                return None
             new_contexts = session_model.contexts.copy()
             new_contexts.append(session_context)
             session_model.contexts = new_contexts
@@ -75,6 +77,8 @@ class SessionDao:
     async def clear_session_contexts(cls, session_id):
         async with async_session_getter() as session:
             session_model = await session.get(Session, session_id)
+            if not session_model:
+                return None
             session_model.contexts = []
 
             await session.commit()

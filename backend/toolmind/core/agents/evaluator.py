@@ -56,7 +56,7 @@ class Evaluator:
         eval_model = model.bind_tools(tools, parallel_tool_calls=False) if len(tools) else model
 
         # 循环调用工具进行事实核查，直至给出最终评分，限制最多 5 次循环
-        max_iterations = 3
+        max_iterations = 5
         iteration_count = 0
         while iteration_count < max_iterations:
             iteration_count += 1

@@ -62,7 +62,7 @@ class Executor:
 
         # 循环执行直至模型给出最终答复（不再调用工具），限制最多 5 次循环
         step_summary = ""
-        max_iterations = 3
+        max_iterations = 5
         iteration_count = 0
         while iteration_count < max_iterations:
             iteration_count += 1
@@ -85,8 +85,11 @@ class Executor:
 
                     tool_results = []
                     for msg in step_messages:
-                        if getattr(msg, "type", "") == "tool":
-                            tool_results.append(str(msg.content))
+                        if getattr(msg, "type", "") == "ai" and getattr(msg, "tool_calls", None):
+                            for tc in msg.tool_calls:
+                                tool_results.append(f"调用工具: {tc['name']} | 参数: {tc['args']}")
+                        elif getattr(msg, "type", "") == "tool":
+                            tool_results.append(f"工具返回结果: {str(msg.content)}")
 
                     gathered_content = "\n\n".join(tool_results)
                     # 达到最大工具循环次数后：用已获得的工具结果做一次“收尾生成”，产出最终 step_summary（不再调用工具）

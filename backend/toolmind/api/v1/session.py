@@ -1,9 +1,11 @@
+import asyncio
 import json
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, Request, HTTPException
 from starlette.responses import StreamingResponse
 from toolmind.api.services import SessionService, UserPayload, get_login_user
 from toolmind.core.agents import Agent
+from toolmind.core.agents.registry import agent_registry
 from toolmind.schema import AgentTask, resp_200
 from toolmind.utils import set_user_id_context
 
@@ -26,8 +28,19 @@ async def create_session(
     agent_instance = Agent(login_user.user_id)
 
     async def general_generate():
-        async for chunk in agent_instance.submit_agent_task(task):
-            yield f"data: {json.dumps(chunk)}\n\n"
+        current_task = asyncio.current_task()
+        session_id = None
+        try:
+            async for chunk in agent_instance.submit_agent_task(task):
+                if chunk.get("event") == "session_started":
+                    session_id = chunk["data"]["session_id"]
+                    agent_registry.register(session_id, current_task)
+                yield f"data: {json.dumps(chunk)}\n\n"
+        except asyncio.CancelledError:
+            pass
+        finally:
+            if session_id:
+                agent_registry.unregister(session_id)
 
     return StreamingResponse(general_generate(), media_type="text/event-stream")
 
@@ -52,6 +65,7 @@ async def delete_session(
     login_user: UserPayload = Depends(get_login_user),
 ):
     try:
+        agent_registry.cancel(session_id)
         await SessionService.delete_session([session_id], login_user.user_id)
         return resp_200()
     except Exception as err:
