@@ -17,11 +17,15 @@ async def get_web_search_config(login_user: UserPayload = Depends(get_login_user
     try:
         user_config = await WebSearchDao.get_config_by_user_id(login_user.user_id)
         if user_config:
+            api_key = user_config.api_key or ""
+            enabled = user_config.enabled
+            if not api_key.strip():
+                enabled = False
             return resp_200(
-                data={"api_key": user_config.api_key, "enabled": user_config.enabled}
+                data={"api_key": api_key, "enabled": enabled}
             )
 
-        return resp_200(data={"api_key": "", "enabled": True})
+        return resp_200(data={"api_key": "", "enabled": False})
     except Exception as e:
         return resp_500(message=str(e))
 
@@ -34,8 +38,12 @@ async def update_web_search_config(
     from tavily.errors import MissingAPIKeyError, InvalidAPIKeyError, UsageLimitExceededError
 
     error_msg = None
-    # 仅当传了 api_key 时才测试
-    if req.api_key:
+    if not req.api_key or not req.api_key.strip():
+        req.api_key = ""
+        if req.enabled:
+            error_msg = "Tavily API Key 为空，无法开启联网搜索"
+        req.enabled = False
+    else:
         try:
             tavily_client = TavilyClient(api_key=req.api_key)
             tavily_client.search(query="test", max_results=1)

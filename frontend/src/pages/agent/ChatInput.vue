@@ -2,6 +2,7 @@
 import { ElMessage } from 'element-plus'
 import { nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { getAgentConfigAPI } from '../../api/llm'
 
 const router = useRouter()
 const inputMessage = ref('')
@@ -21,6 +22,8 @@ const autoResize = () => {
 }
 
 
+const checking = ref(false)
+
 // 发送消息
 const handleSend = async () => {
   if (!inputMessage.value.trim()) {
@@ -29,9 +32,29 @@ const handleSend = async () => {
   }
 
   // 如果正在生成回复，不允许发送新消息
-  if (isGenerating.value) {
+  if (isGenerating.value || checking.value) {
     ElMessage.warning('请等待当前回复完成')
     return
+  }
+
+  checking.value = true
+  try {
+    const res = await getAgentConfigAPI()
+    if (res.data.status_code === 200) {
+      const config = res.data.data
+      if (!config || !config.conversation_model_id || !config.tool_call_model_id || !config.reasoning_model_id) {
+        ElMessage.error('模型配置缺失，请先在“设置 -> 模型配置”中配置 Agent 模型后再发送消息')
+        return
+      }
+    } else {
+      ElMessage.error('获取模型配置失败，无法发送消息')
+      return
+    }
+  } catch (error) {
+    ElMessage.error('获取模型配置失败，无法发送消息')
+    return
+  } finally {
+    checking.value = false
   }
 
   const query = inputMessage.value.trim()
@@ -89,11 +112,10 @@ onMounted(async () => {
             rows="2" @keydown="handleKeydown" @input="autoResize"></textarea>
           <div class="input-footer">
             <div class="footer-right">
-              <!-- 发送按钮 -->
               <button class="send-btn"
-                :class="{ 'btn-disabled': isGenerating, 'btn-inactive': !inputMessage.trim() && !isGenerating }"
-                :disabled="isGenerating" @click="handleSend">
-                <svg v-if="!isGenerating" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                :class="{ 'btn-disabled': isGenerating || checking, 'btn-inactive': !inputMessage.trim() && !isGenerating && !checking }"
+                :disabled="isGenerating || checking" @click="handleSend">
+                <svg v-if="!isGenerating && !checking" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
                   fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 20V4M5 11l7-7 7 7" />
                 </svg>

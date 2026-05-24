@@ -805,7 +805,8 @@ const startTask = async () => {
     },
     onError: (error: any) => {
       console.error('❌ 任务执行出错:', error)
-      ElMessage.error('任务执行失败')
+      const errorMsg = error?.message || '任务执行失败'
+      ElMessage.error(errorMsg)
       isTaskRunning.value = false
       isTaskFinished.value = true
     },

@@ -37,8 +37,11 @@ class ToolManager:
             self._web_search_enabled = user_config.enabled
             self._web_search_api_key = user_config.api_key
         else:
-            self._web_search_enabled = True
+            self._web_search_enabled = False
             self._web_search_api_key = None
+
+        if not self._web_search_api_key or not self._web_search_api_key.strip():
+            self._web_search_enabled = False
 
     async def obtain_tools(self) -> list:
         """汇总所有可用工具（内置 + MCP）"""

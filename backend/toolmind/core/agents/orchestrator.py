@@ -20,7 +20,7 @@ from toolmind.schema import AgentTask
 
 
 async def _increment_loop(state: AgentState) -> dict:
-    """每次进入规划前递增循环计数"""
+    """每次进入规划前递增循环计数并清空上一次循环的执行状态数据"""
     new_count = state.get("loop_count", 0) + 1
     events = []
     if new_count > 1:
@@ -33,7 +33,16 @@ async def _increment_loop(state: AgentState) -> dict:
                 },
             }
         )
-    return {"loop_count": new_count, "events": events}
+    return {
+        "loop_count": new_count,
+        "events": events,
+        "steps": [],
+        "tasks_show": [],
+        "context_task": [],
+        "final_response": "",
+        "eval_score": 0,
+        "eval_reasoning": "",
+    }
 
 
 def _should_retry(state: AgentState) -> str:

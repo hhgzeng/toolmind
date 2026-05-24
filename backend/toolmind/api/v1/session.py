@@ -25,6 +25,18 @@ async def create_session(
     # 设置全局变量统计调用
     set_user_id_context(login_user.user_id)
 
+    # 检查模型是否配置
+    from toolmind.core.agents.model import ModelManager
+    try:
+        await ModelManager.get_conversation_model(login_user.user_id)
+        await ModelManager.get_tool_invocation_model(login_user.user_id)
+        await ModelManager.get_reasoning_model(login_user.user_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail="模型配置缺失，请先在“设置 -> 模型配置”中配置 Agent 模型后再发送消息"
+        )
+
     agent_instance = Agent(login_user.user_id)
 
     async def general_generate():

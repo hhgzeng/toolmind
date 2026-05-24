@@ -43,7 +43,21 @@ export const startAgentTaskAPI = async (
         // 非 2xx 状态码，抛错阻止 fetchEventSource 重试
         const errorText = await response.text().catch(() => '')
         console.error(`❌ task_start 请求失败: ${response.status}`, errorText)
-        throw new Error(`HTTP ${response.status}: ${errorText}`)
+        
+        let message = `请求失败 (HTTP ${response.status})`
+        if (errorText) {
+          try {
+            const errObj = JSON.parse(errorText)
+            if (errObj && errObj.detail) {
+              message = errObj.detail
+            } else if (errObj && errObj.message) {
+              message = errObj.message
+            }
+          } catch (_) {
+            message = errorText
+          }
+        }
+        throw new Error(message)
       },
       onmessage(event) {
         console.log('📨 收到原始消息:', event.data)
@@ -112,6 +126,7 @@ export const startAgentTaskAPI = async (
         console.error('Stream 错误:', err)
         onError?.(err)
         ctrl.abort()
+        throw err
       },
       onclose() {
         console.log('Stream 关闭')

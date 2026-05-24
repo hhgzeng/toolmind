@@ -20,7 +20,16 @@ async def get_agent_config(login_user: UserPayload = Depends(get_login_user)):
     try:
         config = await AgentConfigDao.get_config_by_user_id(login_user.user_id)
         if config:
-            return resp_200(data=config.to_dict())
+            config_dict = config.to_dict()
+            # 校验绑定的 llm 是否实际存在于 llm 表中，若不存在则置为 None
+            from toolmind.database.dao import LLMDao
+            for key in ["conversation_model_id", "tool_call_model_id", "reasoning_model_id"]:
+                llm_id = config_dict.get(key)
+                if llm_id:
+                    llm_record = await LLMDao.get_llm_by_id(llm_id)
+                    if not llm_record:
+                        config_dict[key] = None
+            return resp_200(data=config_dict)
         return resp_200(data={})
     except Exception as e:
         return resp_500(message=str(e))

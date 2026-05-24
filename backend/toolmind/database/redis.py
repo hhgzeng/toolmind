@@ -14,7 +14,7 @@ class RedisClient:
             self.pool = ConnectionPool.from_url(url, max_connections=max_connections)
             self.connection = redis.StrictRedis(connection_pool=self.pool)
         else:
-            logger.error(f"redis init only support Standalone mode")
+            logger.error("redis init only support Standalone mode")
 
     # 用于集群模式
     def cluster_nodes(self, key):
